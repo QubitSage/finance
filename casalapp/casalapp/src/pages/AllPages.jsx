@@ -695,25 +695,60 @@ function MimosTab() {
 }
 
 function PlannerTab() {
-  const { data: rounds, insert, remove } = useDB('planner_rounds', { order: 'created_at', asc: true })
+  const { data: rounds, insert, remove, update } = useDB('planner_rounds', { order: 'created_at', asc: true })
   const { data: allOpts } = useDB('planner_options')
   const { insert: insertOpt, remove: removeOpt } = useDB('planner_options')
+  const { user } = useAuth()
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({})
+  const [form, setForm] = useState({atividade:'',companhia:'',visual:'',desejo:'',comunicacao:'',aprovacao:''})
+  const [customText, setCustomText] = useState({atividade:false,companhia:false,visual:false})
   const [manageCol, setManageCol] = useState(null)
   const [newOpt, setNewOpt] = useState('')
+  const [seeded, setSeeded] = useState(false)
 
-  const getOpts = (col) => allOpts.filter(o => o.column_name === col).map(o => o.option_text)
-  const getUsed = (col) => new Set(rounds.map(r => r[col]).filter(Boolean))
-  const getAvail = (col) => getOpts(col).filter(o => !getUsed(col).has(o))
+  const COMUNICACAO_OPTS = ['Fotos','Vídeos','Surpresa','Apenas localização','Celular desligado']
+  const UNIQUE_COLS = ['atividade','companhia','visual']
+  const DEFAULT_OPTS = {
+    atividade:   ['Salão','Compras','Date','Academia','Massagem','Cinema','Casa','Jantar','Almoço'],
+    companhia:   ['Sozinha','Com marido','Acompanhada','Marido só leva','Só busca','Só paga','Aberta','Curiosa'],
+    visual:      ['Casual','Casual-Sexy','Body','Lingerie Visível','Nada','Ousada','Justa','Roupa Nova'],
+    comunicacao: ['Fotos','Vídeos','Surpresa','Apenas localização','Celular desligado'],
+  }
+  const MANAGEABLE_COLS = ['atividade','companhia','visual','comunicacao']
+  const MANAGE_LABELS = {atividade:'Atividade',companhia:'Companhia',visual:'Visual',comunicacao:'Comunicação'}
+
+  useEffect(()=>{
+    if(!user||seeded||allOpts===undefined) return
+    if(allOpts.length===0){
+      setSeeded(true)
+      const seedAll=async()=>{
+        for(const [col,opts] of Object.entries(DEFAULT_OPTS)){
+          for(const opt of opts){ await insertOpt({column_name:col,option_text:opt}) }
+        }
+      }
+      seedAll()
+    } else { setSeeded(true) }
+  },[user,allOpts,seeded])
+
+  const getOpts = (col) => allOpts.filter(o=>o.column_name===col).map(o=>o.option_text)
+  const getUsed = (col) => new Set(rounds.map(r=>r[col]).filter(Boolean))
+  const getAvail = (col) => UNIQUE_COLS.includes(col)
+    ? getOpts(col).filter(o=>!getUsed(col).has(o))
+    : getOpts(col)
 
   const handleAdd = async () => {
-    await insert(form); setAdding(false); setForm({})
+    const row = {...form}
+    if(!row.atividade&&!row.companhia&&!row.visual&&!row.desejo&&!row.comunicacao) return
+    await insert(row)
+    setAdding(false)
+    setForm({atividade:'',companhia:'',visual:'',desejo:'',comunicacao:'',aprovacao:''})
+    setCustomText({atividade:false,companhia:false,visual:false})
   }
+  const setApproval = (id, val) => update(id, {aprovacao: val})
 
   return(
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <PageHeader title="Planner" subtitle="Gincana — cada opção só pode ser usada uma vez"
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+      <PageHeader title="Planner" subtitle="Atividade, Companhia e Visual só podem ser usados uma vez"
         action={
           <div className="flex gap-2">
             <button className="btn-secondary text-xs" onClick={()=>setManageCol('atividade')}>⚙ Opções</button>
@@ -721,18 +756,17 @@ function PlannerTab() {
           </div>
         }/>
 
-      {/* Progress */}
       <div className="card mb-5">
-        <p className="text-sm font-medium text-stone-600 mb-3">Progresso por coluna</p>
-        <div className="grid grid-cols-5 gap-3">
-          {PLANNER_COLS.map(col=>{
-            const used=getUsed(col).size, total=getOpts(col).length||15
+        <p className="text-sm font-medium text-stone-600 mb-3">Progresso (colunas únicas)</p>
+        <div className="grid grid-cols-3 gap-4">
+          {UNIQUE_COLS.map(col=>{
+            const used=getUsed(col).size, total=getOpts(col).length||1
             const pct=total>0?Math.min((used/total)*100,100):0
             return(
               <div key={col}>
-                <p className="text-xs text-stone-400 mb-1 truncate">{PLANNER_COL_LABELS[col].split(' ')[0]}</p>
+                <p className="text-xs text-stone-400 mb-1">{MANAGE_LABELS[col]}</p>
                 <div className="progress mb-1"><div className="progress-fill" style={{width:`${pct}%`,background:pct>=100?'#537A44':'#F5A800'}}/></div>
-                <p className="text-xs text-stone-300">{used}/{total}</p>
+                <p className="text-xs text-stone-300">{used}/{total} usadas</p>
               </div>
             )
           })}
@@ -742,23 +776,39 @@ function PlannerTab() {
       {adding&&(
         <div className="card mb-4">
           <p className="form-section-title">Nova rodada</p>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
-            {PLANNER_COLS.map(col=>{
-              const avail=getAvail(col)
-              return(
-                <div key={col}>
-                  <label className="label">{PLANNER_COL_LABELS[col]}</label>
-                  <select className="select text-xs" value={form[col]||''} onChange={e=>setForm(p=>({...p,[col]:e.target.value}))}>
-                    <option value="">— escolher —</option>
-                    {avail.map(o=><option key={o}>{o}</option>)}
-                  </select>
-                  <p className="text-xs text-stone-300 mt-1">{getUsed(col).size}/{getOpts(col).length} usadas</p>
-                </div>
-              )
-            })}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+            <div>
+              <label className="label flex items-center justify-between">Atividade Principal<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,atividade:!p.atividade}))}>{customText.atividade?'← lista':'texto livre'}</button></label>
+              {customText.atividade
+                ? <input className="input" value={form.atividade} onChange={e=>setForm(p=>({...p,atividade:e.target.value}))} placeholder="Escrever..."/>
+                : <select className="select" value={form.atividade} onChange={e=>setForm(p=>({...p,atividade:e.target.value}))}><option value="">— escolher —</option>{getAvail('atividade').map(o=><option key={o}>{o}</option>)}</select>}
+              <p className="text-xs text-stone-300 mt-1">{getUsed('atividade').size}/{getOpts('atividade').length} usadas</p>
+            </div>
+            <div>
+              <label className="label flex items-center justify-between">Companhia<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,companhia:!p.companhia}))}>{customText.companhia?'← lista':'texto livre'}</button></label>
+              {customText.companhia
+                ? <input className="input" value={form.companhia} onChange={e=>setForm(p=>({...p,companhia:e.target.value}))} placeholder="Escrever..."/>
+                : <select className="select" value={form.companhia} onChange={e=>setForm(p=>({...p,companhia:e.target.value}))}><option value="">— escolher —</option>{getAvail('companhia').map(o=><option key={o}>{o}</option>)}</select>}
+              <p className="text-xs text-stone-300 mt-1">{getUsed('companhia').size}/{getOpts('companhia').length} usadas</p>
+            </div>
+            <div>
+              <label className="label flex items-center justify-between">Visual<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,visual:!p.visual}))}>{customText.visual?'← lista':'texto livre'}</button></label>
+              {customText.visual
+                ? <input className="input" value={form.visual} onChange={e=>setForm(p=>({...p,visual:e.target.value}))} placeholder="Escrever..."/>
+                : <select className="select" value={form.visual} onChange={e=>setForm(p=>({...p,visual:e.target.value}))}><option value="">— escolher —</option>{getAvail('visual').map(o=><option key={o}>{o}</option>)}</select>}
+              <p className="text-xs text-stone-300 mt-1">{getUsed('visual').size}/{getOpts('visual').length} usadas</p>
+            </div>
+            <div>
+              <label className="label">Desejo</label>
+              <input className="input" value={form.desejo} onChange={e=>setForm(p=>({...p,desejo:e.target.value}))} placeholder="Escreva o desejo..."/>
+            </div>
+            <div>
+              <label className="label">Comunicação</label>
+              <select className="select" value={form.comunicacao} onChange={e=>setForm(p=>({...p,comunicacao:e.target.value}))}><option value="">— escolher —</option>{COMUNICACAO_OPTS.map(o=><option key={o}>{o}</option>)}</select>
+            </div>
           </div>
           <div className="flex gap-2 justify-end">
-            <button className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button>
+            <button className="btn-secondary" onClick={()=>{setAdding(false);setForm({atividade:'',companhia:'',visual:'',desejo:'',comunicacao:'',aprovacao:''});setCustomText({atividade:false,companhia:false,visual:false})}}>Cancelar</button>
             <button className="btn-primary" onClick={handleAdd}>Salvar</button>
           </div>
         </div>
@@ -768,15 +818,36 @@ function PlannerTab() {
         <table className="tbl">
           <thead><tr>
             <th>#</th>
-            {PLANNER_COLS.map(col=><th key={col} className={PLANNER_COL_COLORS[col]}>{PLANNER_COL_LABELS[col]}</th>)}
+            <th className="bg-blue-50 text-blue-800">Atividade</th>
+            <th className="bg-violet-50 text-violet-800">Companhia</th>
+            <th className="bg-pink-50 text-pink-800">Visual</th>
+            <th className="bg-amber-50 text-amber-800">Desejo</th>
+            <th className="bg-sage-100 text-sage-800">Comunicação</th>
+            <th>Aprovação</th>
             <th></th>
           </tr></thead>
           <tbody>
-            {rounds.length===0?<tr><td colSpan={7} className="text-center py-8 text-stone-300">Nenhuma rodada ainda.</td></tr>:
-              rounds.map((r,i)=>(
+            {rounds.length===0
+              ? <tr><td colSpan={8} className="text-center py-8 text-stone-300">Nenhuma rodada ainda.</td></tr>
+              : rounds.map((r,i)=>(
                 <tr key={r.id}>
                   <td className="text-stone-300 text-xs">{i+1}</td>
-                  {PLANNER_COLS.map(col=><td key={col}>{r[col]?<span className={`badge ${PLANNER_COL_COLORS[col]}`}>{r[col]}</span>:'—'}</td>)}
+                  <td>{r.atividade?<span className="badge bg-blue-50 text-blue-800 text-xs">{r.atividade}</span>:'—'}</td>
+                  <td>{r.companhia?<span className="badge bg-violet-50 text-violet-800 text-xs">{r.companhia}</span>:'—'}</td>
+                  <td>{r.visual?<span className="badge bg-pink-50 text-pink-800 text-xs">{r.visual}</span>:'—'}</td>
+                  <td className="text-sm text-stone-600 max-w-[140px] truncate" title={r.desejo||''}>{r.desejo||'—'}</td>
+                  <td>{r.comunicacao?<span className="badge bg-sage-100 text-sage-800 text-xs">{r.comunicacao}</span>:'—'}</td>
+                  <td>
+                    {r.aprovacao==='Aprovado'
+                      ? <span className="badge badge-sage text-xs">✓ Aprovado</span>
+                      : r.aprovacao==='Reprovado'
+                        ? <span className="badge badge-blush text-xs">✗ Reprovado</span>
+                        : <div className="flex gap-1">
+                            <button onClick={()=>setApproval(r.id,'Aprovado')} className="btn-icon w-6 h-6" title="Aprovar"><ThumbsUp className="w-3 h-3"/></button>
+                            <button onClick={()=>setApproval(r.id,'Reprovado')} className="btn-icon w-6 h-6" title="Reprovar"><ThumbsDown className="w-3 h-3"/></button>
+                          </div>
+                    }
+                  </td>
                   <td><button onClick={()=>remove(r.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
                 </tr>
               ))}
@@ -784,23 +855,28 @@ function PlannerTab() {
         </table>
       </div></div>
 
-      <Modal open={!!manageCol} onClose={()=>setManageCol(null)} title="Gerenciar opções do Planner" maxWidth="max-w-lg">
+      <Modal open={!!manageCol} onClose={()=>setManageCol(null)} title="Gerenciar opções do Planner">
         <div className="flex gap-2 flex-wrap mb-4">
-          {PLANNER_COLS.map(col=><button key={col} onClick={()=>setManageCol(col)} className={`chip ${manageCol===col?'active':''}`}>{PLANNER_COL_LABELS[col]}</button>)}
+          {MANAGEABLE_COLS.map(col=><button key={col} onClick={()=>setManageCol(col)} className={`chip ${manageCol===col?'active':''}`}>{MANAGE_LABELS[col]}</button>)}
         </div>
         {manageCol&&(
           <>
             <div className="flex flex-col gap-2 mb-3 max-h-48 overflow-y-auto">
-              {getOpts(manageCol).length===0?<p className="text-sm text-stone-300">Nenhuma opção.</p>:
-                getOpts(manageCol).map((o,i)=>(
-                  <div key={i} className="flex items-center gap-2 py-1.5 px-3 bg-stone-50 rounded-lg">
-                    <span className="flex-1 text-sm">{o}</span>
-                    <button onClick={async()=>{const opt=allOpts.find(a=>a.column_name===manageCol&&a.option_text===o);if(opt)await removeOpt(opt.id)}} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
-                  </div>
-                ))}
+              {getOpts(manageCol).length===0
+                ? <p className="text-sm text-stone-300">Nenhuma opção.</p>
+                : getOpts(manageCol).map((o,i)=>{
+                    const used=getUsed(manageCol).has(o)
+                    return(
+                      <div key={i} className="flex items-center gap-2 py-1.5 px-3 bg-stone-50 rounded-lg">
+                        <span className="flex-1 text-sm">{o}</span>
+                        {used&&<span className="text-xs text-amber-500">em uso</span>}
+                        <button onClick={async()=>{const opt=allOpts.find(a=>a.column_name===manageCol&&a.option_text===o);if(opt)await removeOpt(opt.id)}} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
+                      </div>
+                    )
+                  })}
             </div>
             <div className="flex gap-2">
-              <input className="input flex-1" value={newOpt} onChange={e=>setNewOpt(e.target.value)} placeholder="Nova opção..."/>
+              <input className="input flex-1" value={newOpt} onChange={e=>setNewOpt(e.target.value)} placeholder="Nova opção..." onKeyDown={e=>{if(e.key==='Enter'&&newOpt.trim()){insertOpt({column_name:manageCol,option_text:newOpt.trim()});setNewOpt('')}}}/>
               <button className="btn-primary text-sm" onClick={async()=>{if(!newOpt.trim())return;await insertOpt({column_name:manageCol,option_text:newOpt.trim()});setNewOpt('')}}>+</button>
             </div>
           </>
@@ -810,7 +886,6 @@ function PlannerTab() {
   )
 }
 
-// ─── Quiz Page ────────────────────────────────────────────────────
 export function QuizPage() {
   const { data: questions, insert: insertQ, remove: removeQ, update: updateQ } = useDB('quiz_questions')
   const { user } = useAuth()
