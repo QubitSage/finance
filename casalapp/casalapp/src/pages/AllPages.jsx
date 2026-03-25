@@ -614,12 +614,16 @@ function DesiresTab() {
 }
 
 function MimosTab() {
-  const { data, insert, remove } = useDB('mimos')
+  const { data, insert, remove, update } = useDB('mimos')
   const [adding, setAdding] = useState(false)
+  const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente'})
   const MIMO_STATUS=['Pendente','Aprovado','Planejando','Concluído','Cancelado']
 
   const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente'})}
+  const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{date:editItem.date,mimo:editItem.mimo,objective:editItem.objective,tipo:editItem.tipo,category:editItem.category,value:parseFloat(editItem.value)||0,status:editItem.status});setEditItem(null)}
+  const approve=(m)=>update(m.id,{status:'Aprovado'})
+  const disapprove=(m)=>update(m.id,{status:'Cancelado'})
 
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -647,19 +651,43 @@ function MimosTab() {
       {data.length===0?<div className="card text-center py-10 text-stone-300">Nenhum mimo registrado.</div>:
         data.map(m=>(
           <div key={m.id} className="card mb-3">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex gap-1.5 flex-wrap">
-                <span className={`badge ${m.status==='Concluído'?'badge-sage':m.status==='Pendente'?'badge-amber':'badge-stone'}`}>{m.status}</span>
-                {m.tipo&&<span className="badge badge-stone">{m.tipo}</span>}
-              </div>
-              <button onClick={()=>remove(m.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
-            </div>
-            <p className="font-medium text-stone-800 mb-1">{m.mimo}</p>
-            {m.objective&&<p className="text-sm text-stone-400 mb-2">{m.objective}</p>}
-            <div className="flex gap-3 text-xs text-stone-400">
-              {m.value>0&&<span>Valor: <strong className="text-stone-600">{fmt(m.value)}</strong></span>}
-              {m.date&&<span>Receber em: <strong className="text-stone-600">{fmtDate(m.date)}</strong></span>}
-            </div>
+            {editItem?.id===m.id?(
+              <form onSubmit={handleEdit} className="grid gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="label">Data</label><input className="input" type="date" value={editItem.date||''} onChange={e=>setEditItem(p=>({...p,date:e.target.value}))}/></div>
+                  <div><label className="label">Status</label><select className="select" value={editItem.status||'Pendente'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{MIMO_STATUS.map(s=><option key={s}>{s}</option>)}</select></div>
+                </div>
+                <div><label className="label">Qual o mimo?</label><textarea className="textarea" value={editItem.mimo||''} onChange={e=>setEditItem(p=>({...p,mimo:e.target.value}))} required/></div>
+                <div><label className="label">Objetivo</label><textarea className="textarea" value={editItem.objective||''} onChange={e=>setEditItem(p=>({...p,objective:e.target.value}))}/></div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div><label className="label">Tipo</label><input className="input" value={editItem.tipo||''} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}/></div>
+                  <div><label className="label">Categoria</label><input className="input" value={editItem.category||''} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}/></div>
+                  <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.value||''} onChange={e=>setEditItem(p=>({...p,value:e.target.value}))}/></div>
+                </div>
+                <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+              </form>
+            ):(
+              <>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex gap-1.5 flex-wrap">
+                    <span className={`badge ${m.status==='Concluído'?'badge-sage':m.status==='Aprovado'?'badge-sage':m.status==='Pendente'?'badge-amber':m.status==='Cancelado'?'badge-blush':'badge-stone'}`}>{m.status}</span>
+                    {m.tipo&&<span className="badge badge-stone">{m.tipo}</span>}
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <button onClick={()=>approve(m)} className="btn-icon w-7 h-7 text-sage-500" title="Aprovar"><ThumbsUp className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>disapprove(m)} className="btn-icon w-7 h-7 text-blush-500" title="Recusar"><ThumbsDown className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>setEditItem({...m})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>remove(m.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
+                </div>
+                <p className="font-medium text-stone-800 mb-1">{m.mimo}</p>
+                {m.objective&&<p className="text-sm text-stone-400 mb-2">{m.objective}</p>}
+                <div className="flex gap-3 text-xs text-stone-400">
+                  {m.value>0&&<span>Valor: <strong className="text-stone-600">{fmt(m.value)}</strong></span>}
+                  {m.date&&<span>Receber em: <strong className="text-stone-600">{fmtDate(m.date)}</strong></span>}
+                </div>
+              </>
+            )}
           </div>
         ))}
     </div>
@@ -1169,12 +1197,14 @@ import { GOAL_STATUS } from '../lib/utils'
 const GOAL_CATS=['Desenvolvimento','Trabalho','Saúde','Casamento','Finanças','Relacionamento','Lazer','Espiritualidade','Outros']
 
 export function GoalsPage() {
-  const { data: goals, insert, remove } = useDB('goals')
+  const { data: goals, insert, remove, update } = useDB('goals')
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState('todos')
+  const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})
   const filtered=filter==='todos'?goals:goals.filter(g=>g.responsible===filter||g.status===filter)
   const handleAdd=async(e)=>{e.preventDefault();await insert(form);setAdding(false);setForm({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})}
+  const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{goal:editItem.goal,responsible:editItem.responsible,category:editItem.category,tipo:editItem.tipo,status:editItem.status,deadline:editItem.deadline,reward:editItem.reward});setEditItem(null)}
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <PageHeader title="Metas"
@@ -1204,20 +1234,42 @@ export function GoalsPage() {
       {filtered.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma meta encontrada.</div>:
         filtered.map(g=>(
           <div key={g.id} className="card mb-3">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex gap-1.5 flex-wrap">
-                <span className={`badge ${WHO_COLORS[g.responsible]||'badge-stone'}`}>{g.responsible}</span>
-                <span className="badge badge-stone">{g.category}</span>
-                <span className="badge badge-stone">{g.tipo}</span>
-                <span className={`badge ${GOAL_STATUS[g.status]||'badge-stone'}`}>{g.status}</span>
-              </div>
-              <button onClick={()=>remove(g.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
-            </div>
-            <p className="font-medium text-stone-800 mb-1">{g.goal}</p>
-            <div className="flex gap-3 text-xs text-stone-400">
-              {g.deadline&&<span>Prazo: {fmtDate(g.deadline)}</span>}
-              {g.reward&&<span>Recompensa: <strong className="text-stone-600">{g.reward}</strong></span>}
-            </div>
+            {editItem?.id===g.id?(
+              <form onSubmit={handleEdit} className="grid gap-3">
+                <div><label className="label">Meta</label><textarea className="textarea" value={editItem.goal||''} onChange={e=>setEditItem(p=>({...p,goal:e.target.value}))} required/></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+                  <div><label className="label">Categoria</label><select className="select" value={editItem.category||'Desenvolvimento'} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}>{GOAL_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+                  <div><label className="label">Tipo</label><select className="select" value={editItem.tipo||'Médio prazo'} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>Curto prazo</option><option>Médio prazo</option><option>Longo prazo</option></select></div>
+                  <div><label className="label">Status</label><select className="select" value={editItem.status||'Em andamento'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{Object.keys(GOAL_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><label className="label">Prazo</label><input className="input" type="date" value={editItem.deadline||''} onChange={e=>setEditItem(p=>({...p,deadline:e.target.value}))}/></div>
+                  <div><label className="label">Recompensa</label><input className="input" value={editItem.reward||''} onChange={e=>setEditItem(p=>({...p,reward:e.target.value}))}/></div>
+                </div>
+                <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+              </form>
+            ):(
+              <>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex gap-1.5 flex-wrap">
+                    <span className={`badge ${WHO_COLORS[g.responsible]||'badge-stone'}`}>{g.responsible}</span>
+                    <span className="badge badge-stone">{g.category}</span>
+                    <span className="badge badge-stone">{g.tipo}</span>
+                    <span className={`badge ${GOAL_STATUS[g.status]||'badge-stone'}`}>{g.status}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={()=>setEditItem({...g})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>remove(g.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
+                </div>
+                <p className="font-medium text-stone-800 mb-1">{g.goal}</p>
+                <div className="flex gap-3 text-xs text-stone-400">
+                  {g.deadline&&<span>Prazo: {fmtDate(g.deadline)}</span>}
+                  {g.reward&&<span>Recompensa: <strong className="text-stone-600">{g.reward}</strong></span>}
+                </div>
+              </>
+            )}
           </div>
         ))}
     </div>
@@ -1237,34 +1289,109 @@ export function CommitmentsPage() {
   const [copyItem, setCopyItem] = useState(null)
   const [copyDays, setCopyDays] = useState([])
   const [form, setForm] = useState({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]})
-  const openCell=(day,time)=>{setForm({day_of_week:day,time_slot:time,title:'',responsible:'Bruno',recurrence:[]});setModal(true)}
+  const [dragging, setDragging] = useState(null)
+  const [dragOver, setDragOver] = useState(null)
+  const [selecting, setSelecting] = useState(false)
+  const [selCells, setSelCells] = useState([])
+
   const openEdit=(ev,e)=>{e.stopPropagation();setEditItem({...ev});setEditModal(true)}
   const openCopy=(ev,e)=>{e.stopPropagation();setCopyItem(ev);setCopyDays([ev.day_of_week]);setCopyModal(true)}
   const handleAdd=async()=>{if(!form.title.trim())return;const days=(form.recurrence&&form.recurrence.length>0)?form.recurrence:[form.day_of_week];for(const d of days){await insert({day_of_week:d,time_slot:form.time_slot,title:form.title,responsible:form.responsible})};setModal(false)}
   const handleEdit=async()=>{if(!editItem?.title?.trim())return;await update(editItem.id,{day_of_week:editItem.day_of_week,time_slot:editItem.time_slot,title:editItem.title,responsible:editItem.responsible});setEditModal(false)}
   const handleCopy=async()=>{if(!copyItem||copyDays.length===0)return;for(const d of copyDays){await insert({day_of_week:d,time_slot:copyItem.time_slot,title:copyItem.title,responsible:copyItem.responsible})};setCopyModal(false)}
+  const handleMultiCreate=async()=>{if(!form.title.trim()||selCells.length===0)return;for(const c of selCells){await insert({day_of_week:c.day,time_slot:c.time,title:form.title,responsible:form.responsible})};setModal(false);setSelCells([])}
   const toggleRec=(day)=>setForm(p=>({...p,recurrence:(p.recurrence||[]).includes(day)?(p.recurrence||[]).filter(d=>d!==day):[...(p.recurrence||[]),day]}))
+  const onDragStart=(ev,e)=>{e.dataTransfer.effectAllowed='move';setDragging({ev})}
+  const onDrop=async(day,time,e)=>{e.preventDefault();if(!dragging)return;if(day!==dragging.ev.day_of_week||time!==dragging.ev.time_slot){await update(dragging.ev.id,{day_of_week:day,time_slot:time,title:dragging.ev.title,responsible:dragging.ev.responsible})};setDragging(null);setDragOver(null)}
+  const onCellMouseDown=(day,time,e)=>{e.preventDefault();setSelecting(true);setSelCells([{day,time}])}
+  const onCellMouseEnter=(day,time)=>{if(!selecting)return;setSelCells(prev=>{const exists=prev.some(c=>c.day===day&&c.time===time);if(exists)return prev;return [...prev,{day,time}]})}
+  const finishSelect=()=>{if(!selecting)return;setSelecting(false);if(selCells.length>0){setForm(p=>({...p,recurrence:[]}));setModal(true)}}
+  const isSelected=(day,time)=>selCells.some(c=>c.day===day&&c.time===time)
+
   return(
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6" onMouseUp={finishSelect} onDragOver={e=>e.preventDefault()}>
       <PageHeader title="Compromissos" subtitle="Calendário semanal"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}><Plus className="w-4 h-4"/> Compromisso</button>} />
-      <div className="overflow-x-auto rounded-2xl border border-stone-100 shadow-warm bg-white">
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setSelCells([]);setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}><Plus className="w-4 h-4"/> Compromisso</button>} />
+      <div className="overflow-x-auto rounded-2xl border border-stone-100 shadow-warm bg-white" style={{userSelect:'none'}}>
         <table style={{minWidth:640,width:'100%',borderCollapse:'collapse'}}>
-          <thead><tr><th style={{width:60,background:'#F9F7F4',padding:'8px 10px',fontSize:11,color:'#9A8A78',borderBottom:'1px solid #F0ECE6',textAlign:'center'}}>Hora</th>{DAYS_SHORT.map(d=><th key={d} style={{background:'#F9F7F4',padding:'8px 10px',fontSize:12,fontWeight:500,color:'#3E3530',borderBottom:'1px solid #F0ECE6',borderLeft:'1px solid #F0ECE6',textAlign:'center'}}>{d}</th>)}</tr></thead>
-          <tbody>{TIME_SLOTS.map(t=>(<tr key={t}><td style={{background:'#F9F7F4',padding:'3px 8px',fontSize:11,color:'#B5A796',textAlign:'right',borderBottom:'1px solid #F9F7F4',whiteSpace:'nowrap'}}>{t}</td>{DAYS_OF_WEEK.map(d=>{const cellEvents=events.filter(ev=>ev.day_of_week===d&&ev.time_slot===t);return(<td key={d} onClick={()=>openCell(d,t)} style={{borderLeft:'1px solid #F0ECE6',borderBottom:'1px solid #F0ECE6',padding:'2px 3px',minHeight:28,verticalAlign:'top',cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='#F9F7F4'} onMouseLeave={e=>e.currentTarget.style.background=''}>{cellEvents.map(ev=>(<div key={ev.id} style={{background:'#FFFBF0',borderLeft:'2px solid #F5A800',borderRadius:4,padding:'2px 5px 2px 4px',fontSize:11,lineHeight:1.3,marginBottom:2,cursor:'pointer',color:'#6D4800',display:'flex',alignItems:'center',gap:2}} onClick={e=>{e.stopPropagation();openEdit(ev,e)}}><span style={{flex:1}}>{ev.title}</span><button onClick={e=>{e.stopPropagation();openCopy(ev,e)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}} title="Copiar"><Copy style={{width:10,height:10}}/></button><button onClick={e=>{e.stopPropagation();remove(ev.id)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}} title="Remover"><Trash2 style={{width:10,height:10}}/></button></div>))}</td>)})}</tr>))}</tbody>
+          <thead><tr>
+            <th style={{width:60,background:'#F9F7F4',padding:'8px 10px',fontSize:11,color:'#9A8A78',borderBottom:'1px solid #F0ECE6',textAlign:'center'}}>Hora</th>
+            {DAYS_SHORT.map(d=><th key={d} style={{background:'#F9F7F4',padding:'8px 10px',fontSize:12,fontWeight:500,color:'#3E3530',borderBottom:'1px solid #F0ECE6',borderLeft:'1px solid #F0ECE6',textAlign:'center'}}>{d}</th>)}
+          </tr></thead>
+          <tbody>
+            {TIME_SLOTS.map(t=>(
+              <tr key={t}>
+                <td style={{background:'#F9F7F4',padding:'3px 8px',fontSize:11,color:'#B5A796',textAlign:'right',borderBottom:'1px solid #F9F7F4',whiteSpace:'nowrap'}}>{t}</td>
+                {DAYS_OF_WEEK.map(d=>{
+                  const cellEvents=events.filter(ev=>ev.day_of_week===d&&ev.time_slot===t)
+                  const sel=isSelected(d,t)
+                  const over=dragOver&&dragOver.day===d&&dragOver.time===t
+                  return(
+                    <td key={d}
+                      onMouseDown={(e)=>{if(cellEvents.length===0&&!dragging){onCellMouseDown(d,t,e)}}}
+                      onMouseEnter={()=>{onCellMouseEnter(d,t);if(dragging)setDragOver({day:d,time:t})}}
+                      onMouseUp={()=>{if(dragging)onDrop(d,t,{preventDefault:()=>{}})}}
+                      onDragOver={(e)=>{e.preventDefault();if(dragging)setDragOver({day:d,time:t})}}
+                      onDrop={(e)=>onDrop(d,t,e)}
+                      onClick={()=>{if(cellEvents.length===0&&!dragging&&selCells.length===0){setSelCells([]);setForm({day_of_week:d,time_slot:t,title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}}
+                      style={{
+                        borderLeft:'1px solid #F0ECE6',borderBottom:'1px solid #F0ECE6',
+                        padding:'2px 3px',minHeight:28,verticalAlign:'top',
+                        cursor:dragging?'copy':'pointer',
+                        background:over?'#FFF3CD':sel?'#E8F5E9':'',
+                        transition:'background 0.1s'
+                      }}>
+                      {cellEvents.map(ev=>(
+                        <div key={ev.id}
+                          draggable
+                          onDragStart={(e)=>onDragStart(ev,e)}
+                          onDragEnd={()=>{setDragging(null);setDragOver(null)}}
+                          style={{
+                            background:dragging?.ev?.id===ev.id?'#FEF3C7':'#FFFBF0',
+                            borderLeft:`2px solid ${dragging?.ev?.id===ev.id?'#F59E0B':'#F5A800'}`,
+                            borderRadius:4,padding:'2px 5px 2px 4px',fontSize:11,lineHeight:1.3,
+                            marginBottom:2,cursor:'grab',color:'#6D4800',
+                            display:'flex',alignItems:'center',gap:2,
+                            opacity:dragging?.ev?.id===ev.id?0.5:1,
+                          }}
+                          onClick={e=>{e.stopPropagation();openEdit(ev,e)}}>
+                          <span style={{flex:1}}>{ev.title}</span>
+                          <button onClick={e=>{e.stopPropagation();openCopy(ev,e)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}}><Copy style={{width:10,height:10}}/></button>
+                          <button onClick={e=>{e.stopPropagation();remove(ev.id)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}}><Trash2 style={{width:10,height:10}}/></button>
+                        </div>
+                      ))}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
         </table>
       </div>
-      <p className="text-xs text-stone-300 mt-2 text-center">Clique numa célula para adicionar · Clique num evento para editar</p>
-      <Modal open={modal} onClose={()=>setModal(false)} title="Novo compromisso">
+      <p className="text-xs text-stone-300 mt-2 text-center">Clique para adicionar · Arraste um evento para mover · Clique e arraste em células vazias para criar em lote</p>
+
+      <Modal open={modal} onClose={()=>{setModal(false);setSelCells([])}} title={selCells.length>1?"Novo compromisso em "+selCells.length+" horários":"Novo compromisso"}>
         <div className="grid gap-3">
-          <div><label className="label">Dia</label><select className="select" value={form.day_of_week} onChange={e=>setForm(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
-          <div><label className="label">Horário</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
-          <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, Reunião..."/></div>
+          {selCells.length===0&&<>
+            <div><label className="label">Dia</label><select className="select" value={form.day_of_week} onChange={e=>setForm(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
+            <div><label className="label">Horário</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
+          </>}
+          {selCells.length>0&&(
+            <div className="bg-sage-50 rounded-lg p-3 text-sm text-stone-600">
+              <p className="font-medium mb-1">Horários selecionados ({selCells.length}):</p>
+              <div className="flex flex-wrap gap-1">{selCells.map((c,i)=><span key={i} className="badge badge-sage text-xs">{c.day} {c.time}</span>)}</div>
+            </div>
+          )}
+          <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, Reunião..." autoFocus/></div>
           <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-          <div><label className="label mb-1">Repetir também em</label><div className="flex flex-wrap gap-1 mt-1">{DAYS_OF_WEEK.filter(d=>d!==form.day_of_week).map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${(form.recurrence||[]).includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>toggleRec(d)}>{d}</button>))}</div></div>
+          {selCells.length===0&&<div><label className="label mb-1">Repetir também em</label><div className="flex flex-wrap gap-1 mt-1">{DAYS_OF_WEEK.filter(d=>d!==form.day_of_week).map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${(form.recurrence||[]).includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>toggleRec(d)}>{d}</button>))}</div></div>}
         </div>
-        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleAdd}>Salvar</button></div>
+        <div className="flex gap-2 justify-end mt-4">
+          <button className="btn-secondary" onClick={()=>{setModal(false);setSelCells([])}}>Cancelar</button>
+          <button className="btn-primary" onClick={selCells.length>1?handleMultiCreate:handleAdd}>Salvar</button>
+        </div>
       </Modal>
+
       <Modal open={editModal} onClose={()=>setEditModal(false)} title="Editar compromisso">
         {editItem&&<div className="grid gap-3">
           <div><label className="label">Dia</label><select className="select" value={editItem.day_of_week} onChange={e=>setEditItem(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
@@ -1274,6 +1401,7 @@ export function CommitmentsPage() {
         </div>}
         <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setEditModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleEdit}>Salvar</button></div>
       </Modal>
+
       <Modal open={copyModal} onClose={()=>setCopyModal(false)} title="Copiar para outros dias">
         <p className="text-sm text-stone-500 mb-3">Selecione os dias para copiar "{copyItem?.title}":</p>
         <div className="flex flex-wrap gap-2">{DAYS_OF_WEEK.map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${copyDays.includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>setCopyDays(p=>p.includes(d)?p.filter(x=>x!==d):[...p,d])}>{d}</button>))}</div>
@@ -1284,14 +1412,6 @@ export function CommitmentsPage() {
 }
 
 // ─── Pré-Off Page ────────────────────────────────────────────────
-const DEFAULT_PREOFF_QUESTIONS = [
-  'Como você está se sentindo hoje?',
-  'O que você precisa de mim hoje?',
-  'Tem algo que te incomodou essa semana que não falamos ainda?',
-  'Qual foi o melhor momento da nossa semana?',
-  'O que posso fazer para melhorar como parceiro(a)?',
-]
-
 export function PreOffPage() {
   const { data: questions, insert: insertQ, remove: removeQ, update: updateQ } = useDB('preoff_questions')
   const { user } = useAuth()
@@ -1301,17 +1421,6 @@ export function PreOffPage() {
   const [qForm, setQForm] = useState({question:'',who:'Ambos'})
   const [aForm, setAForm] = useState({who:'Bruno',answer:''})
   const [answers, setAnswers] = useState({})
-  const [initialized, setInitialized] = useState(false)
-
-  const displayQuestions = questions.length > 0 ? questions : DEFAULT_PREOFF_QUESTIONS.map((q,i)=>({id:'default_'+i,question:q,who:'Ambos',isDefault:true}))
-
-  useEffect(()=>{
-    if(!user||initialized) return
-    if(questions.length===0){
-      // seed default questions on first load
-      setInitialized(true)
-    }
-  },[user,questions,initialized])
 
   useEffect(()=>{
     if(!questions.length||!user) return
@@ -1325,29 +1434,17 @@ export function PreOffPage() {
 
   const handleAddQ=async(e)=>{e.preventDefault();await insertQ(qForm);setQForm({question:'',who:'Ambos'});setAdding(false)}
   const handleEditQ=async(e)=>{e.preventDefault();if(!editQ?.question?.trim())return;await updateQ(editQ.id,{question:editQ.question,who:editQ.who});setEditQ(null)}
-  const seedDefaultQ=async(q)=>{const r=await insertQ({question:q.question,who:q.who});return r}
   const handleAddA=async()=>{
     if(!aForm.answer.trim()||!ansModal) return
-    let qId = ansModal
-    // If answering a default question, seed it first
-    if(typeof qId === 'string' && qId.startsWith('default_')){
-      const idx = parseInt(qId.replace('default_',''))
-      const seeded = await insertQ({question:DEFAULT_PREOFF_QUESTIONS[idx],who:'Ambos'})
-      qId = seeded?.id || qId
-    }
-    await supabase.from('preoff_answers').insert([{...aForm,question_id:qId}])
+    await supabase.from('preoff_answers').insert([{...aForm,question_id:ansModal}])
     setAnsModal(null);setAForm({who:'Bruno',answer:''})
-    if(questions.length>0){
-      const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
-      const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
-    }
+    const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
+    const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
   }
   const removeAnswer=async(id)=>{
     await supabase.from('preoff_answers').delete().eq('id',id)
-    if(questions.length>0){
-      const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
-      const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
-    }
+    const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
+    const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
   }
 
   return(
@@ -1366,41 +1463,42 @@ export function PreOffPage() {
         </form>
       )}
 
-      {displayQuestions.map((q,i)=>(
-        <div key={q.id} className="card mb-3">
-          {editQ?.id===q.id?(
-            <form onSubmit={handleEditQ} className="grid gap-3">
-              <div><label className="label">Pergunta</label><textarea className="textarea" value={editQ.question} onChange={e=>setEditQ(p=>({...p,question:e.target.value}))} required/></div>
-              <div><label className="label">Para quem?</label><select className="select" value={editQ.who} onChange={e=>setEditQ(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
-              <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditQ(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-            </form>
-          ):(
-            <>
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-sage-50 border border-sage-100 flex items-center justify-center text-xs font-medium text-sage-700">{i+1}</span>
-                  <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
-                  {q.isDefault&&<span className="badge badge-stone text-xs">padrão</span>}
-                </div>
-                <div className="flex gap-1">
-                  <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
-                  {!q.isDefault&&<><button onClick={()=>setEditQ({...q})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button><button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></>}
-                </div>
-              </div>
-              <p className="font-medium text-stone-800 mb-3">{q.question}</p>
-              {(answers[q.id]||[]).map(a=>(
-                <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
-                    <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+      {questions.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma pergunta ainda. Clique em "+ Pergunta" para começar.</div>:
+        questions.map((q,i)=>(
+          <div key={q.id} className="card mb-3">
+            {editQ?.id===q.id?(
+              <form onSubmit={handleEditQ} className="grid gap-3">
+                <div><label className="label">Pergunta</label><textarea className="textarea" value={editQ.question} onChange={e=>setEditQ(p=>({...p,question:e.target.value}))} required/></div>
+                <div><label className="label">Para quem?</label><select className="select" value={editQ.who} onChange={e=>setEditQ(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
+                <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditQ(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+              </form>
+            ):(
+              <>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-sage-50 border border-sage-100 flex items-center justify-center text-xs font-medium text-sage-700">{i+1}</span>
+                    <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
                   </div>
-                  <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
+                  <div className="flex gap-1">
+                    <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
+                    <button onClick={()=>setEditQ({...q})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
                 </div>
-              ))}
-            </>
-          )}
-        </div>
-      ))}
+                <p className="font-medium text-stone-800 mb-3">{q.question}</p>
+                {(answers[q.id]||[]).map(a=>(
+                  <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
+                      <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                    </div>
+                    <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
+                  </div>
+                ))}
+              </>
+            )}
+          </div>
+        ))}
 
       <Modal open={!!ansModal} onClose={()=>setAnsModal(null)} title="Adicionar resposta">
         <div className="grid gap-3">
