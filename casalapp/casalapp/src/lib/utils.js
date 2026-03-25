@@ -81,20 +81,22 @@ export const WHO_COLORS = {
   Ambos:  'bg-sage-100 text-sage-700',
 }
 
-export const PLANNER_COLS = ['atividade','companhia','visual','desejo','comunicacao']
+export const PLANNER_COLS = ['atividade','companhia','visual','desejo','comunicacao','aprovacao']
 export const PLANNER_COL_LABELS = {
-  atividade:  'Atividade principal',
-  companhia:  'Companhia',
-  visual:     'Visual',
-  desejo:     'Desejo',
-  comunicacao:'Comunicação',
+  atividade:   'Atividade Principal',
+  companhia:   'Companhia',
+  visual:      'Visual',
+  desejo:      'Desejo',
+  comunicacao: 'Comunicação',
+  aprovacao:   'Aprovação',
 }
 export const PLANNER_COL_COLORS = {
-  atividade:  'bg-blue-50 text-blue-800',
-  companhia:  'bg-violet-50 text-violet-800',
-  visual:     'bg-pink-50 text-pink-800',
-  desejo:     'bg-amber-50 text-amber-800',
-  comunicacao:'bg-sage-100 text-sage-800',
+  atividade:   'bg-blue-50 text-blue-800',
+  companhia:   'bg-violet-50 text-violet-800',
+  visual:      'bg-pink-50 text-pink-800',
+  desejo:      'bg-amber-50 text-amber-800',
+  comunicacao: 'bg-sage-100 text-sage-800',
+  aprovacao:   'bg-stone-100 text-stone-700',
 }
 
 export const DAYS_OF_WEEK = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo']
