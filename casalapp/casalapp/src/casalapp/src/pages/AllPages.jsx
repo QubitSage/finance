@@ -1,0 +1,1233 @@
+// ─── Wife Page ───────────────────────────────────────────────────
+import { useState } from 'react'
+import { useDB } from '../hooks/useDB'
+import { useSettings } from '../hooks/useSettings'
+import { fmt, monthLabel, monthKey } from '../lib/utils'
+import { subMonths, addMonths, format } from 'date-fns'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Heart, Sparkles } from 'lucide-react'
+import PageHeader from '../components/PageHeader'
+
+export function WifePage() {
+  const [month, setMonth] = useState(monthKey())
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({ description: '', category: 'wife', amount: '', date: format(new Date(),'yyyy-MM-dd') })
+  const { settings } = useSettings()
+  const { data: txs, insert, remove } = useDB('transactions', { filter: { month } })
+
+  const income = txs.filter(t => t.type === 'income').reduce((s, t) => s + +t.amount, 0)
+  const share = income * ((settings?.wife_percentage || 30) / 100)
+  const spent = txs.filter(t => t.type === 'expense' && t.category === 'wife').reduce((s, t) => s + +t.amount, 0)
+  const rem = share - spent
+  const pct = share > 0 ? Math.min((spent / share) * 100, 100) : 0
+  const list = txs.filter(t => t.type === 'expense' && ['wife','personal','savings'].includes(t.category))
+
+  const prev = () => setMonth(monthKey(subMonths(new Date(month+'-01'),1)))
+  const next = () => setMonth(monthKey(addMonths(new Date(month+'-01'),1)))
+
+  const handleAdd = async (e) => {
+    e.preventDefault()
+    await insert({ ...form, amount: parseFloat(form.amount), type: 'expense', month })
+    setForm({ description: '', category: 'wife', amount: '', date: format(new Date(),'yyyy-MM-dd') })
+    setAdding(false)
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <PageHeader title="Mimos da Esposa" subtitle="Controle e saldo disponível"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={() => setAdding(!adding)}><Plus className="w-4 h-4" /> Adicionar</button>} />
+
+      <div className="flex items-center gap-3 mb-4">
+        <button onClick={prev} className="btn-icon"><ChevronLeft className="w-4 h-4"/></button>
+        <span className="text-sm font-medium text-stone-600 min-w-[140px] text-center">{monthLabel(month)}</span>
+        <button onClick={next} className="btn-icon"><ChevronRight className="w-4 h-4"/></button>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <div className="card"><p className="stat-label">Direito ({settings?.wife_percentage||30}%)</p><p className="text-xl font-display font-semibold text-pink-500">{fmt(share)}</p></div>
+        <div className="card"><p className="stat-label">Gasto</p><p className="text-xl font-display font-semibold text-stone-700">{fmt(spent)}</p></div>
+        <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${rem>=0?'text-sage-600':'text-blush-500'}`}>{fmt(rem)}</p></div>
+      </div>
+
+      <div className="card mb-4">
+        <div className="flex justify-between text-xs text-stone-400 mb-2">
+          <span>Utilizado</span><span>{pct.toFixed(0)}%</span>
+        </div>
+        <div className="progress mb-2">
+          <div className="progress-fill" style={{width:`${pct}%`,background:pct>=90?'#C86060':'#537A44'}}/>
+        </div>
+        <p className="text-xs text-stone-400 flex items-center gap-1">
+          <Sparkles className="w-3 h-3"/>
+          {rem >= 0 ? `Ainda disponível: ${fmt(rem)}` : `Excedeu em: ${fmt(Math.abs(rem))}`}
+        </p>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Novo gasto da esposa</p>
+          <div className="grid gap-3">
+            <div><label className="label">Descrição</label><input className="input" value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} required placeholder="Ex: Vestido, SPA..."/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Categoria</label>
+                <select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
+                  <option value="wife">Mimos</option><option value="personal">Pessoal dela</option><option value="savings">Poupança dela</option>
+                </select>
+              </div>
+              <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} required/></div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3">
+            <button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button>
+            <button type="submit" className="btn-primary">Salvar</button>
+          </div>
+        </form>
+      )}
+
+      <div className="tbl-wrap">
+        <table className="tbl">
+          <thead><tr><th>Descrição</th><th className="text-right">Valor</th><th className="w-10"></th></tr></thead>
+          <tbody>
+            {list.length===0?<tr><td colSpan={3} className="text-center py-8 text-stone-300">Nenhum gasto ainda</td></tr>:
+              list.map(t=><tr key={t.id}>
+                <td className="font-medium">{t.description}</td>
+                <td className="text-right font-medium text-pink-500">{fmt(t.amount)}</td>
+                <td><button onClick={()=>remove(t.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5 text-stone-300 hover:text-blush-500"/></button></td>
+              </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
+// ─── Savings Page ─────────────────────────────────────────────────
+export function SavingsPage() {
+  const { data: goals, insert, update, remove } = useDB('savings_goals')
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({name:'',target:'',current:'',emoji:'🎯'})
+  const [depositId, setDepositId] = useState(null)
+  const [depositVal, setDepositVal] = useState('')
+  const EMOJIS = ['🎯','🏠','✈️','🚗','💍','👶','🎓','💻','🎸','🏖️','🐶','💎']
+  const totTarget = goals.reduce((s,g)=>s+ +g.target,0)
+  const totSaved  = goals.reduce((s,g)=>s+ +g.current,0)
+
+  const handleAdd = async (e) => {
+    e.preventDefault()
+    await insert({name:form.name,target:parseFloat(form.target),current:parseFloat(form.current||0),emoji:form.emoji})
+    setForm({name:'',target:'',current:'',emoji:'🎯'}); setAdding(false)
+  }
+  const handleDeposit = async (g) => {
+    const v = parseFloat(depositVal||0)
+    if(v<=0) return
+    await update(g.id,{current:Math.min(+g.current+v,+g.target)})
+    setDepositId(null); setDepositVal('')
+  }
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <PageHeader title="Poupança & Metas"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Nova meta</button>}/>
+
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="card"><p className="stat-label">Total guardado</p><p className="text-xl font-display font-semibold text-sage-600">{fmt(totSaved)}</p></div>
+        <div className="card"><p className="stat-label">Total das metas</p><p className="text-xl font-display font-semibold text-stone-700">{fmt(totTarget)}</p></div>
+      </div>
+
+      {adding && (
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Nova meta</p>
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            {EMOJIS.map(e=><button key={e} type="button" onClick={()=>setForm(p=>({...p,emoji:e}))}
+              className={`w-8 h-8 rounded-lg text-base flex items-center justify-center transition-all ${form.emoji===e?'bg-amber-100 ring-2 ring-amber-300':'bg-stone-100 hover:bg-stone-200'}`}>{e}</button>)}
+          </div>
+          <div className="grid gap-3">
+            <div><label className="label">Nome</label><input className="input" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} required placeholder="Ex: Viagem para Europa"/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Meta (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.target} onChange={e=>setForm(p=>({...p,target:e.target.value}))} required/></div>
+              <div><label className="label">Já guardou</label><input className="input" type="number" step="0.01" min="0" value={form.current} onChange={e=>setForm(p=>({...p,current:e.target.value}))}/></div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3">
+            <button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button>
+            <button type="submit" className="btn-primary">Salvar</button>
+          </div>
+        </form>
+      )}
+
+      {goals.length===0&&<div className="card text-center py-10 text-stone-300">Nenhuma meta criada ainda.</div>}
+      <div className="flex flex-col gap-3">
+        {goals.map(g=>{
+          const pct = +g.target>0?Math.min((+g.current/+g.target)*100,100):0
+          return(
+            <div key={g.id} className="card">
+              <div className="flex gap-3">
+                <div className="w-10 h-10 rounded-xl bg-stone-50 flex items-center justify-center text-xl flex-shrink-0 border border-stone-100">{g.emoji}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="font-medium text-stone-800">{g.name}</p>
+                    <div className="flex gap-1">
+                      <button className="btn-ghost text-xs py-1 px-2" onClick={()=>{setDepositId(g.id);setDepositVal('')}}>+ Dep.</button>
+                      <button onClick={()=>remove(g.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-xs text-stone-400 mb-1.5">
+                    <span>{fmt(g.current)} guardado</span>
+                    <span className="font-medium text-stone-600">{pct.toFixed(0)}% de {fmt(g.target)}</span>
+                  </div>
+                  <div className="progress"><div className="progress-fill" style={{width:`${pct}%`,background:pct>=100?'#537A44':'#F5A800'}}/></div>
+                  {pct>=100&&<p className="text-xs text-sage-600 font-medium mt-1">🎉 Meta atingida!</p>}
+                  {depositId===g.id&&(
+                    <div className="flex gap-2 mt-2">
+                      <input className="input flex-1 text-sm py-1.5" type="number" min="0" step="0.01" placeholder="Valor a depositar" value={depositVal} onChange={e=>setDepositVal(e.target.value)}/>
+                      <button className="btn-primary text-xs py-1.5 px-3" onClick={()=>handleDeposit(g)}>OK</button>
+                      <button className="btn-secondary text-xs py-1.5 px-3" onClick={()=>setDepositId(null)}>✕</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Reports Page ─────────────────────────────────────────────────
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
+import { useEffect } from 'react'
+import { MONTHS_PT } from '../lib/utils'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts'
+
+export function ReportsPage() {
+  const { user } = useAuth()
+  const [data, setData] = useState([])
+
+  useEffect(()=>{
+    if(!user) return
+    const months = Array.from({length:6},(_,i)=>{
+      const d=new Date(); d.setMonth(d.getMonth()-5+i); return d.toISOString().slice(0,7)
+    })
+    Promise.all(months.map(m=>
+      supabase.from('transactions').select('*').eq('user_id',user.id).eq('month',m)
+        .then(({data:rows})=>{
+          const r=rows||[]
+          const [y,mo]=m.split('-')
+          return{
+            label:MONTHS_PT[+mo-1].slice(0,3),
+            income:r.filter(t=>t.type==='income').reduce((s,t)=>s+ +t.amount,0),
+            expense:r.filter(t=>t.type==='expense').reduce((s,t)=>s+ +t.amount,0),
+            wife:r.filter(t=>t.category==='wife').reduce((s,t)=>s+ +t.amount,0),
+            savings:r.filter(t=>t.category==='savings').reduce((s,t)=>s+ +t.amount,0),
+          }
+        })
+    )).then(res=>setData(res.map(r=>({...r,balance:r.income-r.expense}))))
+  },[user])
+
+  const tk={color:'#9A8A78',fontSize:11}
+  const gc='rgba(154,138,120,0.15)'
+
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Relatórios" subtitle="Últimos 6 meses"/>
+      <div className="card mb-4">
+        <p className="text-sm font-medium text-stone-600 mb-3">Entradas vs Saídas</p>
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={data} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" stroke={gc} vertical={false}/>
+            <XAxis dataKey="label" tick={tk} axisLine={false} tickLine={false}/>
+            <YAxis tick={tk} axisLine={false} tickLine={false} tickFormatter={v=>`R$${(v/1000).toFixed(0)}k`}/>
+            <Tooltip formatter={v=>fmt(v)}/>
+            <Legend wrapperStyle={{fontSize:12}}/>
+            <Bar dataKey="income" name="Entradas" fill="#537A44" radius={[4,4,0,0]}/>
+            <Bar dataKey="expense" name="Saídas" fill="#C86060" radius={[4,4,0,0]}/>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="card mb-4">
+        <p className="text-sm font-medium text-stone-600 mb-3">Saldo mensal</p>
+        <ResponsiveContainer width="100%" height={160}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke={gc} vertical={false}/>
+            <XAxis dataKey="label" tick={tk} axisLine={false} tickLine={false}/>
+            <YAxis tick={tk} axisLine={false} tickLine={false} tickFormatter={v=>`R$${(v/1000).toFixed(0)}k`}/>
+            <Tooltip formatter={v=>fmt(v)}/>
+            <Line type="monotone" dataKey="balance" name="Saldo" stroke="#F5A800" strokeWidth={2} dot={{fill:'#F5A800',r:4}}/>
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="card">
+        <p className="text-sm font-medium text-stone-600 mb-3">Mimos & Poupança</p>
+        <ResponsiveContainer width="100%" height={160}>
+          <BarChart data={data} barCategoryGap="30%">
+            <CartesianGrid strokeDasharray="3 3" stroke={gc} vertical={false}/>
+            <XAxis dataKey="label" tick={tk} axisLine={false} tickLine={false}/>
+            <YAxis tick={tk} axisLine={false} tickLine={false} tickFormatter={v=>`R$${(v/1000).toFixed(0)}k`}/>
+            <Tooltip formatter={v=>fmt(v)}/>
+            <Legend wrapperStyle={{fontSize:12}}/>
+            <Bar dataKey="wife" name="Mimos" fill="#EC4899" radius={[4,4,0,0]}/>
+            <Bar dataKey="savings" name="Poupança" fill="#3B82F6" radius={[4,4,0,0]}/>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  )
+}
+
+// ─── Config Page ──────────────────────────────────────────────────
+export function ConfigPage() {
+  const { settings, save } = useSettings()
+  const { signOut } = useAuth()
+  const [form, setForm] = useState(null)
+  const [saved, setSaved] = useState(false)
+  const cur = form ?? settings
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    await save(cur)
+    setSaved(true); setTimeout(()=>setSaved(false),2000)
+  }
+
+  return(
+    <div className="p-4 md:p-6 max-w-xl mx-auto">
+      <PageHeader title="Configurações"/>
+      <form onSubmit={handleSave} className="card mb-4">
+        <div className="grid gap-4">
+          <div><label className="label">Nome do casal</label>
+            <input className="input" value={cur.couple_name||''} onChange={e=>setForm(p=>({...(p??settings),couple_name:e.target.value}))} placeholder="Ex: Bruno & Vianka"/></div>
+          <div><label className="label">% da esposa sobre entradas</label>
+            <div className="flex items-center gap-3">
+              <input className="input max-w-[100px]" type="number" min="0" max="100" step="1" value={cur.wife_percentage||30} onChange={e=>setForm(p=>({...(p??settings),wife_percentage:parseFloat(e.target.value)}))}/>
+              <span className="text-stone-500 font-medium">%</span>
+            </div>
+          </div>
+        </div>
+        <button type="submit" className="btn-primary w-full mt-5">{saved?'✓ Salvo!':'Salvar configurações'}</button>
+      </form>
+      <div className="card bg-stone-50 border-stone-100">
+        <p className="text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">Conta</p>
+        <button onClick={signOut} className="btn-danger text-sm">Sair da conta</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Rules Page ───────────────────────────────────────────────────
+import { RULE_CATEGORIES } from '../lib/utils'
+
+export function RulesPage() {
+  const { data: rules, insert, remove } = useDB('rules')
+  const [form, setForm] = useState({category:'permitido',text:''})
+  const [adding, setAdding] = useState(false)
+
+  const handleAdd = async (e) => {
+    e.preventDefault()
+    await insert(form)
+    setForm({category:'permitido',text:''}); setAdding(false)
+  }
+
+  return(
+    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+      <PageHeader title="Regras" subtitle="Regras do casal por categoria"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Adicionar</button>}/>
+
+      {adding&&(
+        <form onSubmit={handleAdd} className="card mb-5">
+          <p className="form-section-title">Nova regra</p>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="label">Categoria</label>
+              <select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
+                {Object.entries(RULE_CATEGORIES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+          </div>
+          <div><label className="label">Regra</label>
+            <textarea className="textarea" value={form.text} onChange={e=>setForm(p=>({...p,text:e.target.value}))} required placeholder="Descreva a regra..."/>
+          </div>
+          <div className="flex gap-2 justify-end mt-3">
+            <button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button>
+            <button type="submit" className="btn-primary">Salvar</button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Object.entries(RULE_CATEGORIES).map(([key,cat])=>{
+          const items=rules.filter(r=>r.category===key)
+          return(
+            <div key={key} className="card">
+              <div className="flex items-center gap-2 mb-3">
+                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${cat.color}`}>{cat.icon}</span>
+                <span className="font-medium text-stone-700 text-sm">{cat.label}</span>
+                <span className="ml-auto text-xs text-stone-300">{items.length}</span>
+              </div>
+              {items.length===0?<p className="text-xs text-stone-300 text-center py-3">Nenhuma regra</p>:
+                items.map(r=>(
+                  <div key={r.id} className="flex items-start gap-2 py-2 group">
+                    <span className={`status-dot mt-1.5 ${cat.dot}`}/>
+                    <span className="flex-1 text-sm text-stone-600 leading-relaxed">{r.text}</span>
+                    <button onClick={()=>remove(r.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 flex-shrink-0 transition-opacity">
+                      <Trash2 className="w-3 h-3"/>
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Trips Page ───────────────────────────────────────────────────
+import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
+import Modal from '../components/Modal'
+
+export function TripsPage() {
+  const { data: trips, insert, update, remove } = useDB('trips')
+  const [filter, setFilter] = useState('todos')
+  const [modal, setModal] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const [form, setForm] = useState({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''})
+
+  const filtered = filter==='todos'?trips:trips.filter(t=>t.status===filter)
+  const totalBudget = trips.reduce((s,t)=>s+ +t.budget,0)
+  const totalSpent  = trips.reduce((s,t)=>s+ +t.spent,0)
+
+  const openAdd = () => { setEditItem(null); setForm({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''}); setModal(true) }
+  const openEdit = (t) => { setEditItem(t); setForm({destination:t.destination,category:t.category,status:t.status,start_date:t.start_date||'',end_date:t.end_date||'',budget:t.budget||'',spent:t.spent||'',notes:t.notes||''}); setModal(true) }
+
+  const handleSave = async () => {
+    const data={...form,budget:parseFloat(form.budget)||0,spent:parseFloat(form.spent)||0}
+    if(editItem) await update(editItem.id,data)
+    else await insert(data)
+    setModal(false)
+  }
+
+  const dur = (s,e) => { if(!s||!e)return null; const d=(new Date(e)-new Date(s))/(86400000); return d>0?d:null }
+
+  return(
+    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+      <PageHeader title="Viagens" subtitle="Organize e acompanhe as viagens"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={openAdd}><Plus className="w-4 h-4"/>Nova viagem</button>}/>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div className="card"><p className="stat-label">Total</p><p className="text-xl font-display font-semibold text-stone-700">{trips.length}</p></div>
+        <div className="card"><p className="stat-label">Orçamento</p><p className="text-xl font-display font-semibold text-amber-600">{fmt(totalBudget)}</p></div>
+        <div className="card"><p className="stat-label">Gasto</p><p className="text-xl font-display font-semibold text-blush-500">{fmt(totalSpent)}</p></div>
+        <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${totalBudget-totalSpent>=0?'text-sage-600':'text-blush-500'}`}>{fmt(totalBudget-totalSpent)}</p></div>
+      </div>
+
+      <div className="flex gap-2 flex-wrap mb-5">
+        {['todos','interesse','planejando','concluido','cancelado'].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>
+            {f==='todos'?'Todas':TRIP_STATUS[f]?.label||f}
+          </button>
+        ))}
+      </div>
+
+      {filtered.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma viagem encontrada.</div>:
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filtered.map(t=>{
+            const st=TRIP_STATUS[t.status]||TRIP_STATUS.interesse
+            const d=dur(t.start_date,t.end_date)
+            const pct=+t.budget>0?Math.min((+t.spent/+t.budget)*100,100):0
+            return(
+              <div key={t.id} className="card">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <p className="font-semibold text-stone-800">{t.destination}</p>
+                    <div className="flex gap-1.5 mt-1 flex-wrap">
+                      <span className={`badge ${st.cls}`}>{st.label}</span>
+                      <span className="badge badge-stone">{t.category}</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <button className="btn-ghost text-xs py-1 px-2" onClick={()=>openEdit(t)}>Editar</button>
+                    <button onClick={()=>remove(t.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
+                </div>
+                {(t.start_date||t.end_date)&&(
+                  <p className="text-xs text-stone-400 mb-3">{fmtDate(t.start_date)} → {fmtDate(t.end_date)} {d?`· ${d} dias`:''}</p>
+                )}
+                {+t.budget>0&&(
+                  <div>
+                    <div className="flex justify-between text-xs text-stone-400 mb-1">
+                      <span>Orçamento: {fmt(t.budget)}</span><span>Gasto: {fmt(t.spent)}</span>
+                    </div>
+                    <div className="progress mb-1"><div className="progress-fill" style={{width:`${pct}%`,background:pct>=90?'#C86060':'#537A44'}}/></div>
+                    <p className={`text-xs font-medium ${(+t.budget-+t.spent)>=0?'text-sage-600':'text-blush-500'}`}>Saldo: {fmt(+t.budget-+t.spent)}</p>
+                  </div>
+                )}
+                {t.notes&&<p className="text-xs text-stone-400 mt-2 border-t border-stone-50 pt-2">{t.notes}</p>}
+              </div>
+            )
+          })}
+        </div>}
+
+      <Modal open={modal} onClose={()=>setModal(false)} title={editItem?'Editar viagem':'Nova viagem'}>
+        <div className="grid gap-3">
+          <div><label className="label">Destino</label><input className="input" value={form.destination} onChange={e=>setForm(p=>({...p,destination:e.target.value}))} placeholder="Ex: Paris, França"/></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{TRIP_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.entries(TRIP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="label">Partida</label><input className="input" type="date" value={form.start_date} onChange={e=>setForm(p=>({...p,start_date:e.target.value}))}/></div>
+            <div><label className="label">Volta</label><input className="input" type="date" value={form.end_date} onChange={e=>setForm(p=>({...p,end_date:e.target.value}))}/></div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div><label className="label">Orçamento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(p=>({...p,budget:e.target.value}))}/></div>
+            <div><label className="label">Já gasto (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.spent} onChange={e=>setForm(p=>({...p,spent:e.target.value}))}/></div>
+          </div>
+          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Observações..."/></div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4">
+          <button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button>
+          <button className="btn-primary" onClick={handleSave}>Salvar</button>
+        </div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Desires Page (Desejos/Mimos/Planner) ─────────────────────────
+import { WHO_COLORS, PLANNER_COLS, PLANNER_COL_LABELS, PLANNER_COL_COLORS } from '../lib/utils'
+
+export function DesiresPage() {
+  const [subTab, setSubTab] = useState('desejos')
+  return(
+    <div className="flex flex-col h-full">
+      <div className="flex bg-white border-b border-stone-100 px-4 md:px-6 gap-1">
+        {[['desejos','Desejos'],['mimos','Mimos'],['planner','Planner']].map(([v,l])=>(
+          <button key={v} onClick={()=>setSubTab(v)}
+            className={`py-3 px-4 text-sm font-medium border-b-2 transition-all ${subTab===v?'border-amber-500 text-amber-700':'border-transparent text-stone-400 hover:text-stone-600'}`}>{l}</button>
+        ))}
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        {subTab==='desejos'&&<DesiresTab/>}
+        {subTab==='mimos'&&<MimosTab/>}
+        {subTab==='planner'&&<PlannerTab/>}
+      </div>
+    </div>
+  )
+}
+
+function DesiresTab() {
+  const { data, insert, remove } = useDB('desires')
+  const [adding, setAdding] = useState(false)
+  const [filter, setFilter] = useState('todos')
+  const [form, setForm] = useState({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
+  const TIPOS=['Sexual','Não-Sexual','Carreira','Lifestyle']
+  const CATS=['Sozinha','Com o marido','Estética','Viagem']
+  const filtered=filter==='todos'?data:data.filter(d=>d.who===filter||d.status===filter)
+
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,cost:parseFloat(form.cost)||0});setAdding(false);setForm({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})}
+
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Desejos"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Novo</button>}/>
+      <div className="flex gap-2 flex-wrap mb-4">
+        {['todos','Bruno','Vianka','Aprovado','Pendente','Reprovado'].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todos':f}</button>
+        ))}
+      </div>
+      {adding&&(
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Novo desejo</p>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Quem deseja?</label><select className="select" value={form.who} onChange={e=>setForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option></select></div>
+              <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}><option>Pendente</option><option>Aprovado</option><option>Reprovado</option></select></div>
+            </div>
+            <div><label className="label">Qual o desejo?</label><textarea className="textarea" value={form.desire} onChange={e=>setForm(p=>({...p,desire:e.target.value}))} required/></div>
+            <div><label className="label">Por que é importante?</label><textarea className="textarea" value={form.why} onChange={e=>setForm(p=>({...p,why:e.target.value}))}/></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}>{TIPOS.map(t=><option key={t}>{t}</option>)}</select></div>
+              <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Custo (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.cost} onChange={e=>setForm(p=>({...p,cost:e.target.value}))}/></div>
+              <div><label className="label">Data prevista</label><input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+      {filtered.length===0?<div className="card text-center py-10 text-stone-300">Nenhum desejo registrado.</div>:
+        filtered.map(d=>(
+          <div key={d.id} className="card mb-3">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex gap-1.5 flex-wrap">
+                <span className={`badge ${WHO_COLORS[d.who]||'badge-stone'}`}>{d.who}</span>
+                <span className={`badge ${d.status==='Aprovado'?'badge-sage':d.status==='Reprovado'?'badge-blush':'badge-amber'}`}>{d.status}</span>
+                <span className="badge badge-stone">{d.tipo}</span>
+              </div>
+              <button onClick={()=>remove(d.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+            </div>
+            <p className="font-medium text-stone-800 mb-1">{d.desire}</p>
+            {d.why&&<p className="text-sm text-stone-400 mb-2">{d.why}</p>}
+            <div className="flex gap-3 text-xs text-stone-400">
+              {d.cost>0&&<span>Custo: <strong className="text-stone-600">{fmt(d.cost)}</strong></span>}
+              {d.date&&<span>Data: <strong className="text-stone-600">{fmtDate(d.date)}</strong></span>}
+            </div>
+          </div>
+        ))}
+    </div>
+  )
+}
+
+function MimosTab() {
+  const { data, insert, remove } = useDB('mimos')
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente'})
+  const MIMO_STATUS=['Pendente','Aprovado','Planejando','Concluído','Cancelado']
+
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente'})}
+
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Mimos"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Novo mimo</button>}/>
+      {adding&&(
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Novo mimo</p>
+          <div className="grid gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Data que quer receber</label><input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
+              <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{MIMO_STATUS.map(s=><option key={s}>{s}</option>)}</select></div>
+            </div>
+            <div><label className="label">Qual o mimo?</label><textarea className="textarea" value={form.mimo} onChange={e=>setForm(p=>({...p,mimo:e.target.value}))} required/></div>
+            <div><label className="label">Objetivo</label><textarea className="textarea" value={form.objective} onChange={e=>setForm(p=>({...p,objective:e.target.value}))}/></div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><label className="label">Tipo de mimo</label><input className="input" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))} placeholder="A definir"/></div>
+              <div><label className="label">Categoria</label><input className="input" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))} placeholder="A definir"/></div>
+              <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))}/></div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+      {data.length===0?<div className="card text-center py-10 text-stone-300">Nenhum mimo registrado.</div>:
+        data.map(m=>(
+          <div key={m.id} className="card mb-3">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex gap-1.5 flex-wrap">
+                <span className={`badge ${m.status==='Concluído'?'badge-sage':m.status==='Pendente'?'badge-amber':'badge-stone'}`}>{m.status}</span>
+                {m.tipo&&<span className="badge badge-stone">{m.tipo}</span>}
+              </div>
+              <button onClick={()=>remove(m.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+            </div>
+            <p className="font-medium text-stone-800 mb-1">{m.mimo}</p>
+            {m.objective&&<p className="text-sm text-stone-400 mb-2">{m.objective}</p>}
+            <div className="flex gap-3 text-xs text-stone-400">
+              {m.value>0&&<span>Valor: <strong className="text-stone-600">{fmt(m.value)}</strong></span>}
+              {m.date&&<span>Receber em: <strong className="text-stone-600">{fmtDate(m.date)}</strong></span>}
+            </div>
+          </div>
+        ))}
+    </div>
+  )
+}
+
+function PlannerTab() {
+  const { data: rounds, insert, remove } = useDB('planner_rounds', { order: 'created_at', asc: true })
+  const { data: allOpts } = useDB('planner_options')
+  const { insert: insertOpt, remove: removeOpt } = useDB('planner_options')
+  const [adding, setAdding] = useState(false)
+  const [form, setForm] = useState({})
+  const [manageCol, setManageCol] = useState(null)
+  const [newOpt, setNewOpt] = useState('')
+
+  const getOpts = (col) => allOpts.filter(o => o.column_name === col).map(o => o.option_text)
+  const getUsed = (col) => new Set(rounds.map(r => r[col]).filter(Boolean))
+  const getAvail = (col) => getOpts(col).filter(o => !getUsed(col).has(o))
+
+  const handleAdd = async () => {
+    await insert(form); setAdding(false); setForm({})
+  }
+
+  return(
+    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+      <PageHeader title="Planner" subtitle="Gincana — cada opção só pode ser usada uma vez"
+        action={
+          <div className="flex gap-2">
+            <button className="btn-secondary text-xs" onClick={()=>setManageCol('atividade')}>⚙ Opções</button>
+            <button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Nova rodada</button>
+          </div>
+        }/>
+
+      {/* Progress */}
+      <div className="card mb-5">
+        <p className="text-sm font-medium text-stone-600 mb-3">Progresso por coluna</p>
+        <div className="grid grid-cols-5 gap-3">
+          {PLANNER_COLS.map(col=>{
+            const used=getUsed(col).size, total=getOpts(col).length||15
+            const pct=total>0?Math.min((used/total)*100,100):0
+            return(
+              <div key={col}>
+                <p className="text-xs text-stone-400 mb-1 truncate">{PLANNER_COL_LABELS[col].split(' ')[0]}</p>
+                <div className="progress mb-1"><div className="progress-fill" style={{width:`${pct}%`,background:pct>=100?'#537A44':'#F5A800'}}/></div>
+                <p className="text-xs text-stone-300">{used}/{total}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {adding&&(
+        <div className="card mb-4">
+          <p className="form-section-title">Nova rodada</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-3">
+            {PLANNER_COLS.map(col=>{
+              const avail=getAvail(col)
+              return(
+                <div key={col}>
+                  <label className="label">{PLANNER_COL_LABELS[col]}</label>
+                  <select className="select text-xs" value={form[col]||''} onChange={e=>setForm(p=>({...p,[col]:e.target.value}))}>
+                    <option value="">— escolher —</option>
+                    {avail.map(o=><option key={o}>{o}</option>)}
+                  </select>
+                  <p className="text-xs text-stone-300 mt-1">{getUsed(col).size}/{getOpts(col).length} usadas</p>
+                </div>
+              )
+            })}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button>
+            <button className="btn-primary" onClick={handleAdd}>Salvar</button>
+          </div>
+        </div>
+      )}
+
+      <div className="tbl-wrap"><div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr>
+            <th>#</th>
+            {PLANNER_COLS.map(col=><th key={col} className={PLANNER_COL_COLORS[col]}>{PLANNER_COL_LABELS[col]}</th>)}
+            <th></th>
+          </tr></thead>
+          <tbody>
+            {rounds.length===0?<tr><td colSpan={7} className="text-center py-8 text-stone-300">Nenhuma rodada ainda.</td></tr>:
+              rounds.map((r,i)=>(
+                <tr key={r.id}>
+                  <td className="text-stone-300 text-xs">{i+1}</td>
+                  {PLANNER_COLS.map(col=><td key={col}>{r[col]?<span className={`badge ${PLANNER_COL_COLORS[col]}`}>{r[col]}</span>:'—'}</td>)}
+                  <td><button onClick={()=>remove(r.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div></div>
+
+      <Modal open={!!manageCol} onClose={()=>setManageCol(null)} title="Gerenciar opções do Planner" maxWidth="max-w-lg">
+        <div className="flex gap-2 flex-wrap mb-4">
+          {PLANNER_COLS.map(col=><button key={col} onClick={()=>setManageCol(col)} className={`chip ${manageCol===col?'active':''}`}>{PLANNER_COL_LABELS[col]}</button>)}
+        </div>
+        {manageCol&&(
+          <>
+            <div className="flex flex-col gap-2 mb-3 max-h-48 overflow-y-auto">
+              {getOpts(manageCol).length===0?<p className="text-sm text-stone-300">Nenhuma opção.</p>:
+                getOpts(manageCol).map((o,i)=>(
+                  <div key={i} className="flex items-center gap-2 py-1.5 px-3 bg-stone-50 rounded-lg">
+                    <span className="flex-1 text-sm">{o}</span>
+                    <button onClick={async()=>{const opt=allOpts.find(a=>a.column_name===manageCol&&a.option_text===o);if(opt)await removeOpt(opt.id)}} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
+                  </div>
+                ))}
+            </div>
+            <div className="flex gap-2">
+              <input className="input flex-1" value={newOpt} onChange={e=>setNewOpt(e.target.value)} placeholder="Nova opção..."/>
+              <button className="btn-primary text-sm" onClick={async()=>{if(!newOpt.trim())return;await insertOpt({column_name:manageCol,option_text:newOpt.trim()});setNewOpt('')}}>+</button>
+            </div>
+          </>
+        )}
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Quiz Page ────────────────────────────────────────────────────
+export function QuizPage() {
+  const { data: questions, insert: insertQ, remove: removeQ, refetch } = useDB('quiz_questions')
+  const { user } = useAuth()
+  const [adding, setAdding] = useState(false)
+  const [ansModal, setAnsModal] = useState(null)
+  const [qForm, setQForm] = useState({question:'',who:'Ambos'})
+  const [aForm, setAForm] = useState({who:'Bruno',answer:''})
+  const [answers, setAnswers] = useState({})
+
+  useEffect(()=>{
+    if(!questions.length||!user) return
+    supabase.from('quiz_answers').select('*').in('question_id',questions.map(q=>q.id))
+      .then(({data})=>{
+        const map={}
+        ;(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)})
+        setAnswers(map)
+      })
+  },[questions,user])
+
+  const handleAddQ=async(e)=>{e.preventDefault();await insertQ(qForm);setQForm({question:'',who:'Ambos'});setAdding(false)}
+  const handleAddA=async()=>{
+    if(!aForm.answer.trim()||!ansModal) return
+    await supabase.from('quiz_answers').insert([{...aForm,question_id:ansModal}])
+    setAnsModal(null);setAForm({who:'Bruno',answer:''})
+    const {data}=await supabase.from('quiz_answers').select('*').in('question_id',questions.map(q=>q.id))
+    const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
+  }
+  const removeAnswer=async(id)=>{
+    await supabase.from('quiz_answers').delete().eq('id',id)
+    const {data}=await supabase.from('quiz_answers').select('*').in('question_id',questions.map(q=>q.id))
+    const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
+  }
+
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Questionário" subtitle="Perguntas e respostas do casal"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Pergunta</button>}/>
+
+      {adding&&(
+        <form onSubmit={handleAddQ} className="card mb-4">
+          <p className="form-section-title">Nova pergunta</p>
+          <div className="grid gap-3">
+            <div><label className="label">Pergunta</label><textarea className="textarea" value={qForm.question} onChange={e=>setQForm(p=>({...p,question:e.target.value}))} required/></div>
+            <div><label className="label">Quem responde?</label><select className="select" value={qForm.who} onChange={e=>setQForm(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+
+      {questions.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma pergunta ainda.</div>:
+        questions.map((q,i)=>(
+          <div key={q.id} className="card mb-3">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-xs font-medium text-amber-700">{i+1}</span>
+                <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
+              </div>
+              <div className="flex gap-1">
+                <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
+                <button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+              </div>
+            </div>
+            <p className="font-medium text-stone-800 mb-3">{q.question}</p>
+            {(answers[q.id]||[]).map(a=>(
+              <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
+                  <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                </div>
+                <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
+              </div>
+            ))}
+          </div>
+        ))}
+
+      <Modal open={!!ansModal} onClose={()=>setAnsModal(null)} title="Adicionar resposta">
+        <div className="grid gap-3">
+          <div><label className="label">Quem responde?</label><select className="select" value={aForm.who} onChange={e=>setAForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option></select></div>
+          <div><label className="label">Resposta</label><textarea className="textarea min-h-[100px]" value={aForm.answer} onChange={e=>setAForm(p=>({...p,answer:e.target.value}))}/></div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setAnsModal(null)}>Cancelar</button><button className="btn-primary" onClick={handleAddA}>Salvar</button></div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Data/Profile Page ────────────────────────────────────────────
+const PROFILE_SECTIONS=[
+  {name:'Bruno',fields:[{k:'bruno_nome',l:'Nome completo'},{k:'bruno_tel',l:'Telefone'},{k:'bruno_email',l:'E-mail'},{k:'bruno_cpf',l:'CPF'},{k:'bruno_cnpj',l:'CNPJ'},{k:'bruno_end',l:'Endereço'}]},
+  {name:'Vianka',fields:[{k:'vianka_nome',l:'Nome completo'},{k:'vianka_tel',l:'Telefone'},{k:'vianka_email',l:'E-mail'},{k:'vianka_cpf',l:'CPF'},{k:'vianka_cnpj',l:'CNPJ'},{k:'vianka_end',l:'Endereço'}]},
+  {name:'Casal',fields:[{k:'casal_end',l:'Endereço do casal'},{k:'casal_tel',l:'Telefone'},{k:'casal_email',l:'E-mail'},{k:'casal_cnpj',l:'CNPJ empresa'}]},
+]
+export function DataPage() {
+  const { user } = useAuth()
+  const [data, setData] = useState({})
+  const [saved, setSaved] = useState(false)
+  useEffect(()=>{
+    if(!user) return
+    supabase.from('couple_profile').select('*').eq('user_id',user.id).single()
+      .then(({data:r})=>{ if(r) setData(r.data||{}) })
+  },[user])
+  const handleSave=async()=>{
+    await supabase.from('couple_profile').upsert({user_id:user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    setSaved(true); setTimeout(()=>setSaved(false),2000)
+  }
+  return(
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <PageHeader title="Dados" subtitle="Perfil centralizado do casal"
+        action={<button className="btn-primary" onClick={handleSave}>{saved?'✓ Salvo!':'Salvar'}</button>}/>
+      {PROFILE_SECTIONS.map(s=>(
+        <div key={s.name} className="tbl-wrap mb-4">
+          <div className="bg-stone-50 px-4 py-2.5 border-b border-stone-100 text-xs font-medium text-stone-400 uppercase tracking-wide">{s.name}</div>
+          {s.fields.map(f=>(
+            <div key={f.k} className="flex items-center gap-3 px-4 py-3 border-b border-stone-50 last:border-b-0">
+              <span className="text-sm text-stone-400 min-w-[140px]">{f.l}</span>
+              <input className="input flex-1 text-right border-0 bg-transparent focus:bg-stone-50 focus:border focus:border-stone-200 transition-all"
+                value={data[f.k]||''} onChange={e=>setData(p=>({...p,[f.k]:e.target.value}))} placeholder="—"/>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── Market Page ──────────────────────────────────────────────────
+import { MARKET_PRIORITY, MARKET_STATUS } from '../lib/utils'
+const MKT_CATS=['Hortifruti','Laticínios','Carnes','Mercearia','Higiene','Limpeza','Bebidas','Congelados','Outros']
+const MKT_FREQ=['Diário','Semanal','Quinzenal','Mensal','Eventual']
+
+export function MarketPage() {
+  const { data: items, insert, remove } = useDB('market_items')
+  const { data: stock, insert: insertStock, remove: removeStock } = useDB('home_stock')
+  const [adding, setAdding] = useState(false)
+  const [stockModal, setStockModal] = useState(false)
+  const [newStock, setNewStock] = useState('')
+  const [filter, setFilter] = useState('todos')
+  const [form, setForm] = useState({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})
+  const filtered=filter==='todos'?items:items.filter(i=>i.status===filter)
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,quantity:parseFloat(form.quantity)||null});setAdding(false);setForm({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})}
+  return(
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+      <PageHeader title="Mercado"
+        action={<div className="flex gap-2">
+          <button className="btn-secondary text-sm" onClick={()=>setStockModal(true)}>🏠 Em casa</button>
+          <button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Item</button>
+        </div>}/>
+      <div className="flex gap-2 flex-wrap mb-4">
+        {['todos',...Object.keys(MARKET_STATUS)].map(f=><button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todos':f}</button>)}
+      </div>
+      {adding&&(
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Novo item</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{MKT_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+            <div><label className="label">Item</label><input className="input" value={form.item} onChange={e=>setForm(p=>({...p,item:e.target.value}))} required/></div>
+            <div><label className="label">Marca</label><input className="input" value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))}/></div>
+            <div><label className="label">Unidade</label><input className="input" value={form.unit} onChange={e=>setForm(p=>({...p,unit:e.target.value}))} placeholder="kg, g, L..."/></div>
+            <div><label className="label">Qtd</label><input className="input" type="number" min="0" step="0.1" value={form.quantity} onChange={e=>setForm(p=>({...p,quantity:e.target.value}))}/></div>
+            <div><label className="label">Frequência</label><select className="select" value={form.frequency} onChange={e=>setForm(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
+            <div><label className="label">Prioridade</label><select className="select" value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>{Object.keys(MARKET_PRIORITY).map(p=><option key={p}>{p}</option>)}</select></div>
+            <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(MARKET_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+          </div>
+          <div><label className="label">OBS</label><input className="input" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/></div>
+          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+      <div className="tbl-wrap"><div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr><th>Cat.</th><th>Item</th><th>Marca</th><th>Un.</th><th>Qtd</th><th>Freq.</th><th>Prior.</th><th>Resp.</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {filtered.length===0?<tr><td colSpan={10} className="text-center py-8 text-stone-300">Nenhum item</td></tr>:
+              filtered.map(i=>(
+                <tr key={i.id}>
+                  <td><span className="badge badge-stone text-xs">{i.category}</span></td>
+                  <td className="font-medium">{i.item}</td>
+                  <td className="text-stone-400">{i.brand||'—'}</td>
+                  <td className="text-stone-400">{i.unit||'—'}</td>
+                  <td className="text-stone-400">{i.quantity||'—'}</td>
+                  <td className="text-stone-400">{i.frequency||'—'}</td>
+                  <td><span className={`badge text-xs ${MARKET_PRIORITY[i.priority]||'badge-stone'}`}>{i.priority}</span></td>
+                  <td className="text-stone-400">{i.responsible}</td>
+                  <td><span className={`badge text-xs ${MARKET_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
+                  <td><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div></div>
+
+      <Modal open={stockModal} onClose={()=>setStockModal(false)} title="O que tem em casa">
+        <div className="flex flex-col gap-2 mb-3 max-h-60 overflow-y-auto">
+          {stock.length===0?<p className="text-sm text-stone-300">Nenhum item.</p>:
+            stock.map(s=>(
+              <div key={s.id} className="flex items-center justify-between py-1.5 px-3 bg-stone-50 rounded-lg">
+                <span className="text-sm">{s.name}</span>
+                <button onClick={()=>removeStock(s.id)} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
+              </div>
+            ))}
+        </div>
+        <div className="flex gap-2">
+          <input className="input flex-1" value={newStock} onChange={e=>setNewStock(e.target.value)} placeholder="Ex: Arroz, macarrão..."/>
+          <button className="btn-primary text-sm" onClick={async()=>{if(!newStock.trim())return;await insertStock({name:newStock.trim()});setNewStock('')}}>+</button>
+        </div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Apartment Page ───────────────────────────────────────────────
+import { APT_STATUS } from '../lib/utils'
+const APT_ROOMS=['Sala','Quarto','Cozinha','Banheiro','Área de serviço','Varanda','Escritório','Hall']
+
+export function ApartmentPage() {
+  const { data: items, insert, remove } = useDB('apartment_items')
+  const [adding, setAdding] = useState(false)
+  const [sort, setSort] = useState('desc')
+  const [form, setForm] = useState({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})
+  const sorted=[...items].sort((a,b)=>sort==='desc'?(+b.value||0)-(+a.value||0):(+a.value||0)-(+b.value||0))
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})}
+  return(
+    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+      <PageHeader title="Apartamento"
+        action={<div className="flex gap-2">
+          <select className="select w-auto text-sm py-2" value={sort} onChange={e=>setSort(e.target.value)}>
+            <option value="desc">Maior valor</option><option value="asc">Menor valor</option>
+          </select>
+          <button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Item</button>
+        </div>}/>
+      {adding&&(
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Novo item</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+            <div><label className="label">Cômodo</label><select className="select" value={form.room} onChange={e=>setForm(p=>({...p,room:e.target.value}))}>{APT_ROOMS.map(r=><option key={r}>{r}</option>)}</select></div>
+            <div><label className="label">Item</label><input className="input" value={form.item} onChange={e=>setForm(p=>({...p,item:e.target.value}))} required/></div>
+            <div><label className="label">Tamanho</label><input className="input" value={form.size} onChange={e=>setForm(p=>({...p,size:e.target.value}))} placeholder="Ex: 2.10m"/></div>
+            <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))}/></div>
+            <div><label className="label">Marca</label><input className="input" value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))}/></div>
+            <div><label className="label">Modelo</label><input className="input" value={form.model} onChange={e=>setForm(p=>({...p,model:e.target.value}))}/></div>
+            <div className="col-span-2"><label className="label">Link</label><input className="input" type="url" value={form.link} onChange={e=>setForm(p=>({...p,link:e.target.value}))} placeholder="https://..."/></div>
+            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(APT_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+          </div>
+          <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+      <div className="tbl-wrap"><div className="overflow-x-auto">
+        <table className="tbl">
+          <thead><tr><th>Cômodo</th><th>Item</th><th>Tamanho</th><th>Valor</th><th>Marca</th><th>Modelo</th><th>Link</th><th>Status</th><th></th></tr></thead>
+          <tbody>
+            {sorted.length===0?<tr><td colSpan={9} className="text-center py-8 text-stone-300">Nenhum item</td></tr>:
+              sorted.map(i=>(
+                <tr key={i.id}>
+                  <td><span className="badge badge-stone">{i.room}</span></td>
+                  <td className="font-medium">{i.item}</td>
+                  <td className="text-stone-400">{i.size||'—'}</td>
+                  <td className="font-medium text-sage-600">{+i.value>0?fmt(i.value):'—'}</td>
+                  <td className="text-stone-400">{i.brand||'—'}</td>
+                  <td className="text-stone-400">{i.model||'—'}</td>
+                  <td>{i.link?<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline text-xs">Ver link</a>:'—'}</td>
+                  <td><span className={`badge text-xs ${APT_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
+                  <td><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div></div>
+    </div>
+  )
+}
+
+// ─── Wedding Page ─────────────────────────────────────────────────
+export function WeddingPage() {
+  const { user } = useAuth()
+  const { data: guests, insert: insertGuest, remove: removeGuest } = useDB('wedding_guests')
+  const [wData, setWData] = useState({location:'',date:'',budget:''})
+  const [gModal, setGModal] = useState(false)
+  const [gForm, setGForm] = useState({name:'',side:'Bruno',confirmed:'Pendente'})
+  const [saved, setSaved] = useState(false)
+
+  useEffect(()=>{
+    if(!user) return
+    supabase.from('wedding').select('*').eq('user_id',user.id).single()
+      .then(({data:r})=>{ if(r) setWData({location:r.location||'',date:r.date||'',budget:r.budget||''}) })
+  },[user])
+
+  const saveWedding=async()=>{
+    await supabase.from('wedding').upsert({user_id:user.id,location:wData.location,date:wData.date,budget:parseFloat(wData.budget)||0,updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    setSaved(true); setTimeout(()=>setSaved(false),2000)
+  }
+  const addGuest=async()=>{if(!gForm.name.trim())return;await insertGuest(gForm);setGModal(false);setGForm({name:'',side:'Bruno',confirmed:'Pendente'})}
+
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Casamento" subtitle="Organize o grande dia"/>
+      <div className="grid md:grid-cols-2 gap-4 mb-5">
+        <div className="card">
+          <p className="form-section-title">Informações gerais</p>
+          <div className="grid gap-3">
+            <div><label className="label">Local</label><input className="input" value={wData.location} onChange={e=>setWData(p=>({...p,location:e.target.value}))} placeholder="Nome do espaço"/></div>
+            <div><label className="label">Data</label><input className="input" type="date" value={wData.date} onChange={e=>setWData(p=>({...p,date:e.target.value}))}/></div>
+            <div><label className="label">Orçamento (R$)</label><input className="input" type="number" value={wData.budget} onChange={e=>setWData(p=>({...p,budget:e.target.value}))}/></div>
+            <button className="btn-primary" onClick={saveWedding}>{saved?'✓ Salvo!':'Salvar'}</button>
+          </div>
+        </div>
+        <div className="card">
+          <p className="form-section-title">Resumo</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-stone-400">Local</span><span className="font-medium">{wData.location||'—'}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">Data</span><span className="font-medium">{fmtDate(wData.date)}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">Orçamento</span><span className="font-medium text-sage-600">{wData.budget?fmt(wData.budget):'—'}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">Convidados</span><span className="font-medium">{guests.length}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">Confirmados</span><span className="font-medium text-sage-600">{guests.filter(g=>g.confirmed==='Sim').length}</span></div>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-medium text-stone-700">Lista de convidados</p>
+        <button className="btn-primary flex items-center gap-1.5 text-sm" onClick={()=>setGModal(true)}><Plus className="w-3.5 h-3.5"/>Convidado</button>
+      </div>
+      <div className="tbl-wrap">
+        <table className="tbl">
+          <thead><tr><th>Nome</th><th>Lado</th><th>Confirmado</th><th></th></tr></thead>
+          <tbody>
+            {guests.length===0?<tr><td colSpan={4} className="text-center py-8 text-stone-300">Nenhum convidado ainda.</td></tr>:
+              guests.map(g=>(
+                <tr key={g.id}>
+                  <td className="font-medium">{g.name}</td>
+                  <td><span className={`badge ${WHO_COLORS[g.side]||'badge-stone'}`}>{g.side}</span></td>
+                  <td><span className={`badge ${g.confirmed==='Sim'?'badge-sage':g.confirmed==='Não'?'badge-blush':'badge-amber'}`}>{g.confirmed}</span></td>
+                  <td><button onClick={()=>removeGuest(g.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      </div>
+      <Modal open={gModal} onClose={()=>setGModal(false)} title="Novo convidado">
+        <div className="grid gap-3">
+          <div><label className="label">Nome</label><input className="input" value={gForm.name} onChange={e=>setGForm(p=>({...p,name:e.target.value}))}/></div>
+          <div><label className="label">Lado</label><select className="select" value={gForm.side} onChange={e=>setGForm(p=>({...p,side:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+          <div><label className="label">Confirmado?</label><select className="select" value={gForm.confirmed} onChange={e=>setGForm(p=>({...p,confirmed:e.target.value}))}><option>Pendente</option><option>Sim</option><option>Não</option></select></div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setGModal(false)}>Cancelar</button><button className="btn-primary" onClick={addGuest}>Salvar</button></div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Goals Page ───────────────────────────────────────────────────
+import { GOAL_STATUS } from '../lib/utils'
+const GOAL_CATS=['Desenvolvimento','Trabalho','Saúde','Casamento','Finanças','Relacionamento','Lazer','Espiritualidade','Outros']
+
+export function GoalsPage() {
+  const { data: goals, insert, remove } = useDB('goals')
+  const [adding, setAdding] = useState(false)
+  const [filter, setFilter] = useState('todos')
+  const [form, setForm] = useState({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})
+  const filtered=filter==='todos'?goals:goals.filter(g=>g.responsible===filter||g.status===filter)
+  const handleAdd=async(e)=>{e.preventDefault();await insert(form);setAdding(false);setForm({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})}
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Metas"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Nova meta</button>}/>
+      <div className="flex gap-2 flex-wrap mb-4">
+        {['todos','Bruno','Vianka','Ambos','Em andamento','Concluída'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todas':f}</button>)}
+      </div>
+      {adding&&(
+        <form onSubmit={handleAdd} className="card mb-4">
+          <p className="form-section-title">Nova meta</p>
+          <div className="grid gap-3">
+            <div><label className="label">Meta</label><textarea className="textarea" value={form.goal} onChange={e=>setForm(p=>({...p,goal:e.target.value}))} required/></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+              <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{GOAL_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+              <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>Curto prazo</option><option>Médio prazo</option><option>Longo prazo</option></select></div>
+              <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(GOAL_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><label className="label">Prazo</label><input className="input" type="date" value={form.deadline} onChange={e=>setForm(p=>({...p,deadline:e.target.value}))}/></div>
+              <div><label className="label">Recompensa</label><input className="input" value={form.reward} onChange={e=>setForm(p=>({...p,reward:e.target.value}))} placeholder="Ex: Jantar especial"/></div>
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+      {filtered.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma meta encontrada.</div>:
+        filtered.map(g=>(
+          <div key={g.id} className="card mb-3">
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex gap-1.5 flex-wrap">
+                <span className={`badge ${WHO_COLORS[g.responsible]||'badge-stone'}`}>{g.responsible}</span>
+                <span className="badge badge-stone">{g.category}</span>
+                <span className="badge badge-stone">{g.tipo}</span>
+                <span className={`badge ${GOAL_STATUS[g.status]||'badge-stone'}`}>{g.status}</span>
+              </div>
+              <button onClick={()=>remove(g.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+            </div>
+            <p className="font-medium text-stone-800 mb-1">{g.goal}</p>
+            <div className="flex gap-3 text-xs text-stone-400">
+              {g.deadline&&<span>Prazo: {fmtDate(g.deadline)}</span>}
+              {g.reward&&<span>Recompensa: <strong className="text-stone-600">{g.reward}</strong></span>}
+            </div>
+          </div>
+        ))}
+    </div>
+  )
+}
+
+// ─── Commitments (Calendar) Page ──────────────────────────────────
+import { DAYS_OF_WEEK, DAYS_SHORT, genTimeSlots } from '../lib/utils'
+const TIME_SLOTS = genTimeSlots()
+
+export function CommitmentsPage() {
+  const { data: events, insert, remove } = useDB('commitments')
+  const [modal, setModal] = useState(false)
+  const [form, setForm] = useState({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno'})
+  const openCell=(day,time)=>{setForm({day_of_week:day,time_slot:time,title:'',responsible:'Bruno'});setModal(true)}
+  const handleAdd=async()=>{if(!form.title.trim())return;await insert(form);setModal(false)}
+
+  return(
+    <div className="p-4 md:p-6">
+      <PageHeader title="Compromissos" subtitle="Calendário semanal"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno'});setModal(true)}}><Plus className="w-4 h-4"/>Compromisso</button>}/>
+      <div className="overflow-x-auto rounded-2xl border border-stone-100 shadow-warm bg-white">
+        <table style={{minWidth:640,width:'100%',borderCollapse:'collapse'}}>
+          <thead>
+            <tr>
+              <th style={{width:60,background:'#F9F7F4',padding:'8px 10px',fontSize:11,color:'#9A8A78',borderBottom:'1px solid #F0ECE6',textAlign:'center'}}>Hora</th>
+              {DAYS_SHORT.map(d=><th key={d} style={{background:'#F9F7F4',padding:'8px 10px',fontSize:12,fontWeight:500,color:'#3E3530',borderBottom:'1px solid #F0ECE6',borderLeft:'1px solid #F0ECE6',textAlign:'center'}}>{d}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {TIME_SLOTS.map(t=>(
+              <tr key={t}>
+                <td style={{background:'#F9F7F4',padding:'3px 8px',fontSize:11,color:'#B5A796',textAlign:'right',borderBottom:'1px solid #F9F7F4',whiteSpace:'nowrap'}}>{t}</td>
+                {DAYS_OF_WEEK.map(d=>{
+                  const cellEvents=events.filter(e=>e.day_of_week===d&&e.time_slot===t)
+                  return(
+                    <td key={d} onClick={()=>openCell(d,t)}
+                      style={{borderLeft:'1px solid #F0ECE6',borderBottom:'1px solid #F0ECE6',padding:'2px 3px',minHeight:28,verticalAlign:'top',cursor:'pointer'}}
+                      onMouseEnter={e=>e.currentTarget.style.background='#F9F7F4'}
+                      onMouseLeave={e=>e.currentTarget.style.background=''}>
+                      {cellEvents.map(ev=>(
+                        <div key={ev.id} onClick={e=>{e.stopPropagation();remove(ev.id)}}
+                          title="Clique para remover"
+                          style={{background:'#FFFBF0',borderLeft:'2px solid #F5A800',borderRadius:4,padding:'2px 5px',fontSize:11,lineHeight:1.3,marginBottom:2,cursor:'pointer',color:'#6D4800'}}>
+                          {ev.title}
+                        </div>
+                      ))}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-xs text-stone-300 mt-2 text-center">Clique numa célula para adicionar · Clique num evento para remover</p>
+
+      <Modal open={modal} onClose={()=>setModal(false)} title="Novo compromisso">
+        <div className="grid gap-3">
+          <div><label className="label">Dia</label><select className="select" value={form.day_of_week} onChange={e=>setForm(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
+          <div><label className="label">Horário</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
+          <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, Reunião..."/></div>
+          <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleAdd}>Salvar</button></div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Pending Page ─────────────────────────────────────────────────
+export function PendingPage() {
+  return(
+    <div className="p-4 md:p-6 max-w-xl mx-auto">
+      <PageHeader title="Pendências" subtitle="Em breve"/>
+      <div className="card text-center py-16">
+        <p className="text-stone-300 text-sm">Esta seção ainda será definida.</p>
+      </div>
+    </div>
+  )
+}

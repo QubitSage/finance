@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-tap-highlight-color: transparent; }
+  body { @apply bg-stone-50 text-stone-800 antialiased; }
+  * { @apply border-stone-200; }
+}
+
+@layer components {
+  /* Cards */
+  .card { @apply bg-white rounded-2xl border border-stone-100 shadow-warm p-5; }
+  .card-sm { @apply bg-white rounded-xl border border-stone-100 shadow-warm p-4; }
+
+  /* Buttons */
+  .btn-primary {
+    @apply bg-amber-500 text-white px-5 py-2.5 rounded-xl font-medium text-sm
+           hover:bg-amber-600 active:scale-95 transition-all duration-150;
+  }
+  .btn-secondary {
+    @apply bg-stone-100 text-stone-700 px-5 py-2.5 rounded-xl font-medium text-sm
+           hover:bg-stone-200 active:scale-95 transition-all duration-150 border border-stone-200;
+  }
+  .btn-ghost {
+    @apply text-stone-500 px-3 py-1.5 rounded-lg text-sm hover:bg-stone-100
+           active:scale-95 transition-all;
+  }
+  .btn-danger {
+    @apply text-blush-600 px-3 py-1.5 rounded-lg text-sm hover:bg-blush-50
+           active:scale-95 transition-all border border-blush-200;
+  }
+  .btn-icon {
+    @apply w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100
+           active:scale-95 transition-all text-stone-500;
+  }
+
+  /* Inputs */
+  .input {
+    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm
+           text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2
+           focus:ring-amber-300 focus:border-amber-400 transition-all;
+  }
+  .select {
+    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm
+           text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-300
+           focus:border-amber-400 appearance-none cursor-pointer;
+  }
+  .textarea {
+    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm
+           text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2
+           focus:ring-amber-300 focus:border-amber-400 resize-none transition-all;
+  }
+  .label { @apply block text-xs font-medium text-stone-500 mb-1.5 uppercase tracking-wide; }
+
+  /* Badges */
+  .badge { @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium; }
+  .badge-amber { @apply badge bg-amber-100 text-amber-800; }
+  .badge-sage { @apply badge bg-sage-100 text-sage-700; }
+  .badge-blush { @apply badge bg-blush-100 text-blush-700; }
+  .badge-stone { @apply badge bg-stone-100 text-stone-700; }
+  .badge-blue { @apply badge bg-blue-50 text-blue-700; }
+
+  /* Nav */
+  .nav-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+           text-stone-500 hover:bg-stone-100 hover:text-stone-800 transition-all cursor-pointer;
+  }
+  .nav-item.active { @apply bg-amber-50 text-amber-700; }
+
+  /* Bottom nav (mobile) */
+  .bottom-nav-item {
+    @apply flex flex-col items-center gap-0.5 py-2 px-3 text-stone-400
+           hover:text-amber-600 transition-colors cursor-pointer;
+  }
+  .bottom-nav-item.active { @apply text-amber-600; }
+
+  /* Stat cards */
+  .stat-card { @apply card flex flex-col gap-1; }
+  .stat-label { @apply text-xs text-stone-400 font-medium uppercase tracking-wide; }
+  .stat-value { @apply text-2xl font-semibold text-stone-800 font-display; }
+
+  /* Table */
+  .tbl-wrap { @apply bg-white border border-stone-100 rounded-2xl overflow-hidden shadow-warm; }
+  .tbl { @apply w-full text-sm border-collapse; }
+  .tbl thead th { @apply bg-stone-50 text-stone-400 font-medium text-xs uppercase tracking-wide px-4 py-3 text-left border-b border-stone-100 whitespace-nowrap; }
+  .tbl tbody td { @apply px-4 py-3 border-b border-stone-50 text-stone-700; }
+  .tbl tbody tr:last-child td { @apply border-b-0; }
+  .tbl tbody tr:hover td { @apply bg-stone-25; }
+
+  /* Page header */
+  .page-title { @apply font-display text-2xl font-semibold text-stone-800 italic; }
+  .page-subtitle { @apply text-sm text-stone-400 mt-0.5; }
+
+  /* Progress bar */
+  .progress { @apply h-1.5 bg-stone-100 rounded-full overflow-hidden; }
+  .progress-fill { @apply h-full rounded-full transition-all duration-700; }
+
+  /* Form section */
+  .form-section { @apply card mb-4; }
+  .form-section-title { @apply font-medium text-stone-700 text-sm mb-4; }
+
+  /* Status dots */
+  .status-dot { @apply w-2 h-2 rounded-full flex-shrink-0; }
+}
