@@ -223,6 +223,27 @@ create table commitments (
   created_at timestamptz default now()
 );
 
+-- PRÉ-OFF (CHECKIN DO CASAL)
+create table preoff_questions (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  question text not null,
+  who text default 'Ambos',
+  created_at timestamptz default now()
+);
+create table preoff_answers (
+  id uuid default gen_random_uuid() primary key,
+  question_id uuid references preoff_questions on delete cascade not null,
+  who text not null,
+  answer text not null,
+  created_at timestamptz default now()
+);
+
+-- NOVAS COLUNAS
+-- alter table planner_rounds add column if not exists aprovacao text;
+-- alter table desires add column if not exists aprovacao text;
+-- alter table desires add column if not exists delivered boolean default false;
+
 -- ROW LEVEL SECURITY (RLS)
 alter table couple_settings    enable row level security;
 alter table transactions        enable row level security;
@@ -243,6 +264,8 @@ alter table wedding             enable row level security;
 alter table wedding_guests      enable row level security;
 alter table goals               enable row level security;
 alter table commitments         enable row level security;
+alter table preoff_questions    enable row level security;
+alter table preoff_answers      enable row level security;
 
 -- POLICIES (repita o padrão para cada tabela)
 do $$
@@ -252,7 +275,8 @@ begin
     'couple_settings','transactions','savings_goals','rules','trips',
     'desires','mimos','planner_rounds','planner_options','quiz_questions',
     'quiz_answers','couple_profile','market_items','home_stock',
-    'apartment_items','wedding','wedding_guests','goals','commitments'
+    'apartment_items','wedding','wedding_guests','goals','commitments',
+    'preoff_questions'
   ] loop
     execute format('create policy "own data" on %I for all using (auth.uid() = user_id)', t);
   end loop;
