@@ -13,7 +13,7 @@ import {
   WifePage, SavingsPage, ReportsPage, ConfigPage,
   RulesPage, TripsPage, DesiresPage, QuizPage, DataPage,
   MarketPage, ApartmentPage, WeddingPage, GoalsPage,
-  CommitmentsPage, PendingPage,
+  CommitmentsPage, PendingPage, PreOffPage,
 } from './pages/AllPages'
 
 function Guard({ children }) {
@@ -56,6 +56,7 @@ function App() {
         <Route path="casamento"   element={<WeddingPage />} />
         <Route path="metas"       element={<GoalsPage />} />
         <Route path="compromissos" element={<CommitmentsPage />} />
+        <Route path="pre-off"      element={<PreOffPage />} />
         <Route path="pendencias"  element={<PendingPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
