@@ -77,5 +77,6 @@ export default function LoginPage() {
                         <p className="text-center text-xs text-stone-300 mt-6">
                                   Seus dados são privados e s
           </p></div>
+                </div>
         )
 }
