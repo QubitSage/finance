@@ -10,7 +10,7 @@ export function useDB(table, options = {}) {
   const fetch = useCallback(async () => {
     if (!user) return
     setLoading(true)
-    let q = supabase.from(table).select('*').eq('user_id', user.id)
+        let q = supabase.from(table).select('*')
     if (options.filter) Object.entries(options.filter).forEach(([k, v]) => { q = q.eq(k, v) })
     if (options.order) q = q.order(options.order, { ascending: options.asc ?? false })
     else q = q.order('created_at', { ascending: false })
