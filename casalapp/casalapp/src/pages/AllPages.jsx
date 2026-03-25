@@ -4,7 +4,7 @@ import { useDB } from '../hooks/useDB'
 import { useSettings } from '../hooks/useSettings'
 import { fmt, monthLabel, monthKey } from '../lib/utils'
 import { subMonths, addMonths, format } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Heart, Sparkles } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Heart, Sparkles, Pencil, Check, X, Copy, ThumbsUp, ThumbsDown } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export function WifePage() {
@@ -312,69 +312,75 @@ export function ConfigPage() {
   )
 }
 
-// ─── Rules Page ───────────────────────────────────────────────────
+// ─── Rules Page ─────────────────────────────────────────────────────
 import { RULE_CATEGORIES } from '../lib/utils'
 
 export function RulesPage() {
-  const { data: rules, insert, remove } = useDB('rules')
+  const { data: rules, insert, remove, update } = useDB('rules')
   const [form, setForm] = useState({category:'permitido',text:''})
   const [adding, setAdding] = useState(false)
+  const [editItem, setEditItem] = useState(null)
 
   const handleAdd = async (e) => {
     e.preventDefault()
+    if(!form.text.trim()) return
     await insert(form)
     setForm({category:'permitido',text:''}); setAdding(false)
+  }
+  const handleEdit = async (e) => {
+    e.preventDefault()
+    await update(editItem.id, {category: editItem.category, text: editItem.text})
+    setEditItem(null)
   }
 
   return(
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <PageHeader title="Regras" subtitle="Regras do casal por categoria"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Adicionar</button>}/>
-
       {adding&&(
         <form onSubmit={handleAdd} className="card mb-5">
           <p className="form-section-title">Nova regra</p>
           <div className="grid grid-cols-2 gap-3 mb-3">
-            <div><label className="label">Categoria</label>
-              <select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
-                {Object.entries(RULE_CATEGORIES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
-              </select>
-            </div>
+            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{Object.entries(RULE_CATEGORIES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+            <div><label className="label">Regra</label><input className="input" value={form.text} onChange={e=>setForm(p=>({...p,text:e.target.value}))} placeholder="Descreva a regra..."/></div>
           </div>
-          <div><label className="label">Regra</label>
-            <textarea className="textarea" value={form.text} onChange={e=>setForm(p=>({...p,text:e.target.value}))} required placeholder="Descreva a regra..."/>
-          </div>
-          <div className="flex gap-2 justify-end mt-3">
-            <button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button>
-            <button type="submit" className="btn-primary">Salvar</button>
-          </div>
+          <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
         </form>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {Object.entries(RULE_CATEGORIES).map(([key,cat])=>{
-          const items=rules.filter(r=>r.category===key)
-          return(
-            <div key={key} className="card">
-              <div className="flex items-center gap-2 mb-3">
-                <span className={`w-7 h-7 rounded-lg flex items-center justify-center text-sm ${cat.color}`}>{cat.icon}</span>
-                <span className="font-medium text-stone-700 text-sm">{cat.label}</span>
-                <span className="ml-auto text-xs text-stone-300">{items.length}</span>
-              </div>
-              {items.length===0?<p className="text-xs text-stone-300 text-center py-3">Nenhuma regra</p>:
-                items.map(r=>(
-                  <div key={r.id} className="flex items-start gap-2 py-2 group">
-                    <span className={`status-dot mt-1.5 ${cat.dot}`}/>
-                    <span className="flex-1 text-sm text-stone-600 leading-relaxed">{r.text}</span>
-                    <button onClick={()=>remove(r.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 flex-shrink-0 transition-opacity">
-                      <Trash2 className="w-3 h-3"/>
-                    </button>
-                  </div>
-                ))}
+      {Object.entries(RULE_CATEGORIES).map(([key,cat])=>{
+        const catRules=rules.filter(r=>r.category===key)
+        return(
+          <div key={key} className="card mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <span className={`badge ${cat.dot}`}>{cat.icon}</span>
+              <h3 className="font-medium text-stone-700">{cat.label}</h3>
+              <span className="text-xs text-stone-400">({catRules.length})</span>
             </div>
-          )
-        })}
-      </div>
+            {catRules.length===0&&<p className="text-sm text-stone-400 italic py-2">Nenhuma regra nesta categoria.</p>}
+            {catRules.map(r=>(
+              <div key={r.id} className="flex items-start gap-2 py-2 group border-b border-stone-50 last:border-0">
+                <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-stone-300"></span>
+                {editItem?.id===r.id ? (
+                  <form onSubmit={handleEdit} className="flex-1 flex gap-2 flex-wrap">
+                    <input className="input flex-1 min-w-40" value={editItem.text} onChange={e=>setEditItem(p=>({...p,text:e.target.value}))} autoFocus/>
+                    <select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}>{Object.entries(RULE_CATEGORIES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select>
+                    <button type="submit" className="btn-primary text-xs px-3">Salvar</button>
+                    <button type="button" className="btn-secondary text-xs px-3" onClick={()=>setEditItem(null)}>Cancelar</button>
+                  </form>
+                ) : (
+                  <>
+                    <p className="text-sm text-stone-600 flex-1">{r.text}</p>
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button onClick={()=>setEditItem({...r})} className="btn-icon w-6 h-6 flex-shrink-0" title="Editar"><Pencil className="w-3 h-3"/></button>
+                      <button onClick={()=>remove(r.id)} className="btn-icon w-6 h-6 flex-shrink-0" title="Remover"><Trash2 className="w-3 h-3"/></button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -474,7 +480,7 @@ export function TripsPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Partida</label><input className="input" type="date" value={form.start_date} onChange={e=>setForm(p=>({...p,start_date:e.target.value}))}/></div>
-            <div><label className="label">Volta</label><input className="input" type="date" value={form.end_date} onChange={e=>setForm(p=>({...p,end_date:e.target.value}))}/></div>
+            <div><label className="label">Volta</label><input className="input" type="date" value={form.end_date} min={form.start_date} onChange={e=>setForm(p=>({...p,end_date:e.target.value}))}/></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Orçamento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(p=>({...p,budget:e.target.value}))}/></div>
@@ -514,66 +520,95 @@ export function DesiresPage() {
 }
 
 function DesiresTab() {
-  const { data, insert, remove } = useDB('desires')
+  const { data, insert, remove, update } = useDB('desires')
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState('todos')
+  const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
-  const TIPOS=['Sexual','Não-Sexual','Carreira','Lifestyle']
-  const CATS=['Sozinha','Com o marido','Estética','Viagem']
-  const filtered=filter==='todos'?data:data.filter(d=>d.who===filter||d.status===filter)
+  const MIMO_STATUS=['Pendente','Aprovado','Recusado','Entregue']
 
-  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,cost:parseFloat(form.cost)||0});setAdding(false);setForm({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})}
+  const handleAdd = async (e) => {
+    e.preventDefault()
+    if(!form.desire.trim()) return
+    await insert({...form,cost:parseFloat(form.cost)||0})
+    setAdding(false); setForm({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
+  }
+  const handleEdit = async (e) => {
+    e.preventDefault()
+    await update(editItem.id, {...editItem, cost: parseFloat(editItem.cost)||0})
+    setEditItem(null)
+  }
+  const setStatus = async (id, status) => { await update(id, {status}) }
+  const filtered = filter==='todos' ? data : data.filter(m=>m.who===filter)
 
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <PageHeader title="Desejos"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Novo</button>}/>
-      <div className="flex gap-2 flex-wrap mb-4">
-        {['todos','Bruno','Vianka','Aprovado','Pendente','Reprovado'].map(f=>(
-          <button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todos':f}</button>
-        ))}
+      <PageHeader title="Desejos" subtitle="Desejos e pedidos"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Novo desejo</button>}/>
+      <div className="flex gap-2 mb-4">
+        {['todos','Bruno','Vianka'].map(f=><button key={f} className={`badge cursor-pointer ${filter===f?'badge-sage':'badge-stone'}`} onClick={()=>setFilter(f)}>{f==='todos'?'Todos':f}</button>)}
       </div>
       {adding&&(
-        <form onSubmit={handleAdd} className="card mb-4">
+        <form onSubmit={handleAdd} className="card mb-5">
           <p className="form-section-title">Novo desejo</p>
-          <div className="grid gap-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="label">Quem deseja?</label><select className="select" value={form.who} onChange={e=>setForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option></select></div>
-              <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}><option>Pendente</option><option>Aprovado</option><option>Reprovado</option></select></div>
-            </div>
-            <div><label className="label">Qual o desejo?</label><textarea className="textarea" value={form.desire} onChange={e=>setForm(p=>({...p,desire:e.target.value}))} required/></div>
-            <div><label className="label">Por que é importante?</label><textarea className="textarea" value={form.why} onChange={e=>setForm(p=>({...p,why:e.target.value}))}/></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}>{TIPOS.map(t=><option key={t}>{t}</option>)}</select></div>
-              <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div><label className="label">Custo (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.cost} onChange={e=>setForm(p=>({...p,cost:e.target.value}))}/></div>
-              <div><label className="label">Data prevista</label><input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
-            </div>
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div><label className="label">De quem</label><select className="select" value={form.who} onChange={e=>setForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{MIMO_STATUS.map(s=><option key={s}>{s}</option>)}</select></div>
+            <div className="col-span-2"><label className="label">Desejo *</label><textarea className="textarea" value={form.desire} onChange={e=>setForm(p=>({...p,desire:e.target.value}))} placeholder="O que você deseja?"/></div>
+            <div className="col-span-2"><label className="label">Por quê?</label><textarea className="textarea" value={form.why} onChange={e=>setForm(p=>({...p,why:e.target.value}))} placeholder="Motivo..."/></div>
+            <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>Não-Sexual</option><option>Sexual</option><option>Experiência</option><option>Item</option></select></div>
+            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}><option>Com o marido</option><option>Pessoal</option><option>Casal</option><option>Outro</option></select></div>
+            <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.cost} onChange={e=>setForm(p=>({...p,cost:e.target.value}))} placeholder="0,00"/></div>
+            <div><label className="label">Data</label><input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
           </div>
           <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
         </form>
       )}
       {filtered.length===0?<div className="card text-center py-10 text-stone-300">Nenhum desejo registrado.</div>:
-        filtered.map(d=>(
-          <div key={d.id} className="card mb-3">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex gap-1.5 flex-wrap">
-                <span className={`badge ${WHO_COLORS[d.who]||'badge-stone'}`}>{d.who}</span>
-                <span className={`badge ${d.status==='Aprovado'?'badge-sage':d.status==='Reprovado'?'badge-blush':'badge-amber'}`}>{d.status}</span>
-                <span className="badge badge-stone">{d.tipo}</span>
-              </div>
-              <button onClick={()=>remove(d.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
-            </div>
-            <p className="font-medium text-stone-800 mb-1">{d.desire}</p>
-            {d.why&&<p className="text-sm text-stone-400 mb-2">{d.why}</p>}
-            <div className="flex gap-3 text-xs text-stone-400">
-              {d.cost>0&&<span>Custo: <strong className="text-stone-600">{fmt(d.cost)}</strong></span>}
-              {d.date&&<span>Data: <strong className="text-stone-600">{fmtDate(d.date)}</strong></span>}
-            </div>
+        filtered.map(m=>(
+          <div key={m.id} className="card mb-3">
+            {editItem?.id===m.id ? (
+              <form onSubmit={handleEdit} className="grid grid-cols-2 gap-3">
+                <div><label className="label">De quem</label><select className="select" value={editItem.who} onChange={e=>setEditItem(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+                <div><label className="label">Status</label><select className="select" value={editItem.status} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{MIMO_STATUS.map(s=><option key={s}>{s}</option>)}</select></div>
+                <div className="col-span-2"><label className="label">Desejo</label><textarea className="textarea" value={editItem.desire} onChange={e=>setEditItem(p=>({...p,desire:e.target.value}))}/></div>
+                <div className="col-span-2"><label className="label">Por quê?</label><textarea className="textarea" value={editItem.why} onChange={e=>setEditItem(p=>({...p,why:e.target.value}))}/></div>
+                <div><label className="label">Tipo</label><select className="select" value={editItem.tipo} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>Não-Sexual</option><option>Sexual</option><option>Experiência</option><option>Item</option></select></div>
+                <div><label className="label">Categoria</label><select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}><option>Com o marido</option><option>Pessoal</option><option>Casal</option><option>Outro</option></select></div>
+                <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.cost} onChange={e=>setEditItem(p=>({...p,cost:e.target.value}))}/></div>
+                <div><label className="label">Data</label><input className="input" type="date" value={editItem.date||''} onChange={e=>setEditItem(p=>({...p,date:e.target.value}))}/></div>
+                <div className="col-span-2 flex gap-2 justify-end mt-2"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+              </form>
+            ) : (
+              <>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-stone-800">{m.desire}</span>
+                    <span className={`badge ${m.status==='Aprovado'?'badge-sage':m.status==='Recusado'?'badge-blush':m.status==='Entregue'?'bg-blue-50 text-blue-700':'badge-amber'}`}>{m.status}</span>
+                    <span className="badge badge-stone">{m.who}</span>
+                    {m.tipo&&<span className="badge badge-stone">{m.tipo}</span>}
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    {m.status==='Pendente'&&<>
+                      <button onClick={()=>setStatus(m.id,'Aprovado')} className="btn-icon w-7 h-7 text-green-600" title="Aprovar"><ThumbsUp className="w-3.5 h-3.5"/></button>
+                      <button onClick={()=>setStatus(m.id,'Recusado')} className="btn-icon w-7 h-7 text-red-500" title="Recusar"><ThumbsDown className="w-3.5 h-3.5"/></button>
+                    </>}
+                    {m.status!=='Entregue'&&<button onClick={()=>setStatus(m.id,'Entregue')} className="btn-icon w-7 h-7 text-blue-600" title="Marcar como entregue/realizado"><Check className="w-3.5 h-3.5"/></button>}
+                    <button onClick={()=>setEditItem({...m})} className="btn-icon w-7 h-7" title="Editar"><Pencil className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>remove(m.id)} className="btn-icon w-7 h-7" title="Remover"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
+                </div>
+                {m.why&&<p className="text-sm text-stone-400 mb-2">{m.why}</p>}
+                <div className="flex gap-3 text-xs text-stone-400 flex-wrap">
+                  {m.cost>0&&<span>Valor: <strong className="text-stone-600">{fmt(m.cost)}</strong></span>}
+                  {m.date&&<span>Data: <strong className="text-stone-600">{fmtDate(m.date)}</strong></span>}
+                  {m.category&&<span>{m.category}</span>}
+                </div>
+              </>
+            )}
           </div>
-        ))}
+        ))
+      }
     </div>
   )
 }
@@ -749,10 +784,11 @@ function PlannerTab() {
 
 // ─── Quiz Page ────────────────────────────────────────────────────
 export function QuizPage() {
-  const { data: questions, insert: insertQ, remove: removeQ, refetch } = useDB('quiz_questions')
+  const { data: questions, insert: insertQ, remove: removeQ, update: updateQ } = useDB('quiz_questions')
   const { user } = useAuth()
   const [adding, setAdding] = useState(false)
   const [ansModal, setAnsModal] = useState(null)
+  const [editQ, setEditQ] = useState(null)
   const [qForm, setQForm] = useState({question:'',who:'Ambos'})
   const [aForm, setAForm] = useState({who:'Bruno',answer:''})
   const [answers, setAnswers] = useState({})
@@ -768,6 +804,7 @@ export function QuizPage() {
   },[questions,user])
 
   const handleAddQ=async(e)=>{e.preventDefault();await insertQ(qForm);setQForm({question:'',who:'Ambos'});setAdding(false)}
+  const handleEditQ=async(e)=>{e.preventDefault();if(!editQ?.question?.trim())return;await updateQ(editQ.id,{question:editQ.question,who:editQ.who});setEditQ(null)}
   const handleAddA=async()=>{
     if(!aForm.answer.trim()||!ansModal) return
     await supabase.from('quiz_answers').insert([{...aForm,question_id:ansModal}])
@@ -800,26 +837,37 @@ export function QuizPage() {
       {questions.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma pergunta ainda.</div>:
         questions.map((q,i)=>(
           <div key={q.id} className="card mb-3">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-xs font-medium text-amber-700">{i+1}</span>
-                <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
-              </div>
-              <div className="flex gap-1">
-                <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
-                <button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
-              </div>
-            </div>
-            <p className="font-medium text-stone-800 mb-3">{q.question}</p>
-            {(answers[q.id]||[]).map(a=>(
-              <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
-                <div className="flex items-center justify-between mb-1">
-                  <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
-                  <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+            {editQ?.id===q.id?(
+              <form onSubmit={handleEditQ} className="grid gap-3">
+                <div><label className="label">Pergunta</label><textarea className="textarea" value={editQ.question} onChange={e=>setEditQ(p=>({...p,question:e.target.value}))} required/></div>
+                <div><label className="label">Quem responde?</label><select className="select" value={editQ.who} onChange={e=>setEditQ(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
+                <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditQ(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+              </form>
+            ):(
+              <>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-amber-50 border border-amber-100 flex items-center justify-center text-xs font-medium text-amber-700">{i+1}</span>
+                    <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
+                    <button onClick={()=>setEditQ({...q})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
                 </div>
-                <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
-              </div>
-            ))}
+                <p className="font-medium text-stone-800 mb-3">{q.question}</p>
+                {(answers[q.id]||[]).map(a=>(
+                  <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
+                      <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                    </div>
+                    <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
+                  </div>
+                ))}
+              </>
+            )}
           </div>
         ))}
 
@@ -879,15 +927,17 @@ const MKT_CATS=['Hortifruti','Laticínios','Carnes','Mercearia','Higiene','Limpe
 const MKT_FREQ=['Diário','Semanal','Quinzenal','Mensal','Eventual']
 
 export function MarketPage() {
-  const { data: items, insert, remove } = useDB('market_items')
+  const { data: items, insert, remove, update } = useDB('market_items')
   const { data: stock, insert: insertStock, remove: removeStock } = useDB('home_stock')
   const [adding, setAdding] = useState(false)
   const [stockModal, setStockModal] = useState(false)
   const [newStock, setNewStock] = useState('')
   const [filter, setFilter] = useState('todos')
+  const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})
   const filtered=filter==='todos'?items:items.filter(i=>i.status===filter)
-  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,quantity:parseFloat(form.quantity)||null});setAdding(false);setForm({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})}
+  const handleAdd=async(e)=>{e.preventDefault();if(!form.item.trim())return;await insert({...form,quantity:parseFloat(form.quantity)||null});setAdding(false);setForm({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})}
+  const handleEdit=async(e)=>{e.preventDefault();if(!editItem?.item?.trim())return;await update(editItem.id,{category:editItem.category,item:editItem.item,brand:editItem.brand,unit:editItem.unit,quantity:parseFloat(editItem.quantity)||null,frequency:editItem.frequency,priority:editItem.priority,responsible:editItem.responsible,status:editItem.status,notes:editItem.notes});setEditItem(null)}
   return(
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <PageHeader title="Mercado"
@@ -932,12 +982,30 @@ export function MarketPage() {
                   <td><span className={`badge text-xs ${MARKET_PRIORITY[i.priority]||'badge-stone'}`}>{i.priority}</span></td>
                   <td className="text-stone-400">{i.responsible}</td>
                   <td><span className={`badge text-xs ${MARKET_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
-                  <td><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
+                  <td className="flex gap-1"><button onClick={()=>setEditItem({...i,quantity:i.quantity??''})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
                 </tr>
               ))}
           </tbody>
         </table>
       </div></div>
+
+      <Modal open={!!editItem} onClose={()=>setEditItem(null)} title="Editar item">
+        {editItem&&<form onSubmit={handleEdit}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+            <div><label className="label">Categoria</label><select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}>{MKT_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
+            <div><label className="label">Item</label><input className="input" value={editItem.item} onChange={e=>setEditItem(p=>({...p,item:e.target.value}))} required/></div>
+            <div><label className="label">Marca</label><input className="input" value={editItem.brand||''} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/></div>
+            <div><label className="label">Unidade</label><input className="input" value={editItem.unit||''} onChange={e=>setEditItem(p=>({...p,unit:e.target.value}))}/></div>
+            <div><label className="label">Qtd</label><input className="input" type="number" min="0" step="0.1" value={editItem.quantity||''} onChange={e=>setEditItem(p=>({...p,quantity:e.target.value}))}/></div>
+            <div><label className="label">Frequência</label><select className="select" value={editItem.frequency||'Semanal'} onChange={e=>setEditItem(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
+            <div><label className="label">Prioridade</label><select className="select" value={editItem.priority||'Essencial'} onChange={e=>setEditItem(p=>({...p,priority:e.target.value}))}>{Object.keys(MARKET_PRIORITY).map(p=><option key={p}>{p}</option>)}</select></div>
+            <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+            <div><label className="label">Status</label><select className="select" value={editItem.status||'Comprar'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{Object.keys(MARKET_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+          </div>
+          <div className="mb-3"><label className="label">OBS</label><input className="input" value={editItem.notes||''} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/></div>
+          <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>}
+      </Modal>
 
       <Modal open={stockModal} onClose={()=>setStockModal(false)} title="O que tem em casa">
         <div className="flex flex-col gap-2 mb-3 max-h-60 overflow-y-auto">
@@ -1156,65 +1224,190 @@ export function GoalsPage() {
   )
 }
 
-// ─── Commitments (Calendar) Page ──────────────────────────────────
+// ─── Commitments (Calendar) Page ─────────────────────────────────────
 import { DAYS_OF_WEEK, DAYS_SHORT, genTimeSlots } from '../lib/utils'
 const TIME_SLOTS = genTimeSlots()
 
 export function CommitmentsPage() {
-  const { data: events, insert, remove } = useDB('commitments')
+  const { data: events, insert, remove, update } = useDB('commitments')
   const [modal, setModal] = useState(false)
-  const [form, setForm] = useState({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno'})
-  const openCell=(day,time)=>{setForm({day_of_week:day,time_slot:time,title:'',responsible:'Bruno'});setModal(true)}
-  const handleAdd=async()=>{if(!form.title.trim())return;await insert(form);setModal(false)}
-
+  const [editModal, setEditModal] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const [copyModal, setCopyModal] = useState(false)
+  const [copyItem, setCopyItem] = useState(null)
+  const [copyDays, setCopyDays] = useState([])
+  const [form, setForm] = useState({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]})
+  const openCell=(day,time)=>{setForm({day_of_week:day,time_slot:time,title:'',responsible:'Bruno',recurrence:[]});setModal(true)}
+  const openEdit=(ev,e)=>{e.stopPropagation();setEditItem({...ev});setEditModal(true)}
+  const openCopy=(ev,e)=>{e.stopPropagation();setCopyItem(ev);setCopyDays([ev.day_of_week]);setCopyModal(true)}
+  const handleAdd=async()=>{if(!form.title.trim())return;const days=(form.recurrence&&form.recurrence.length>0)?form.recurrence:[form.day_of_week];for(const d of days){await insert({day_of_week:d,time_slot:form.time_slot,title:form.title,responsible:form.responsible})};setModal(false)}
+  const handleEdit=async()=>{if(!editItem?.title?.trim())return;await update(editItem.id,{day_of_week:editItem.day_of_week,time_slot:editItem.time_slot,title:editItem.title,responsible:editItem.responsible});setEditModal(false)}
+  const handleCopy=async()=>{if(!copyItem||copyDays.length===0)return;for(const d of copyDays){await insert({day_of_week:d,time_slot:copyItem.time_slot,title:copyItem.title,responsible:copyItem.responsible})};setCopyModal(false)}
+  const toggleRec=(day)=>setForm(p=>({...p,recurrence:(p.recurrence||[]).includes(day)?(p.recurrence||[]).filter(d=>d!==day):[...(p.recurrence||[]),day]}))
   return(
     <div className="p-4 md:p-6">
       <PageHeader title="Compromissos" subtitle="Calendário semanal"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno'});setModal(true)}}><Plus className="w-4 h-4"/>Compromisso</button>}/>
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}><Plus className="w-4 h-4"/> Compromisso</button>} />
       <div className="overflow-x-auto rounded-2xl border border-stone-100 shadow-warm bg-white">
         <table style={{minWidth:640,width:'100%',borderCollapse:'collapse'}}>
-          <thead>
-            <tr>
-              <th style={{width:60,background:'#F9F7F4',padding:'8px 10px',fontSize:11,color:'#9A8A78',borderBottom:'1px solid #F0ECE6',textAlign:'center'}}>Hora</th>
-              {DAYS_SHORT.map(d=><th key={d} style={{background:'#F9F7F4',padding:'8px 10px',fontSize:12,fontWeight:500,color:'#3E3530',borderBottom:'1px solid #F0ECE6',borderLeft:'1px solid #F0ECE6',textAlign:'center'}}>{d}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {TIME_SLOTS.map(t=>(
-              <tr key={t}>
-                <td style={{background:'#F9F7F4',padding:'3px 8px',fontSize:11,color:'#B5A796',textAlign:'right',borderBottom:'1px solid #F9F7F4',whiteSpace:'nowrap'}}>{t}</td>
-                {DAYS_OF_WEEK.map(d=>{
-                  const cellEvents=events.filter(e=>e.day_of_week===d&&e.time_slot===t)
-                  return(
-                    <td key={d} onClick={()=>openCell(d,t)}
-                      style={{borderLeft:'1px solid #F0ECE6',borderBottom:'1px solid #F0ECE6',padding:'2px 3px',minHeight:28,verticalAlign:'top',cursor:'pointer'}}
-                      onMouseEnter={e=>e.currentTarget.style.background='#F9F7F4'}
-                      onMouseLeave={e=>e.currentTarget.style.background=''}>
-                      {cellEvents.map(ev=>(
-                        <div key={ev.id} onClick={e=>{e.stopPropagation();remove(ev.id)}}
-                          title="Clique para remover"
-                          style={{background:'#FFFBF0',borderLeft:'2px solid #F5A800',borderRadius:4,padding:'2px 5px',fontSize:11,lineHeight:1.3,marginBottom:2,cursor:'pointer',color:'#6D4800'}}>
-                          {ev.title}
-                        </div>
-                      ))}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
+          <thead><tr><th style={{width:60,background:'#F9F7F4',padding:'8px 10px',fontSize:11,color:'#9A8A78',borderBottom:'1px solid #F0ECE6',textAlign:'center'}}>Hora</th>{DAYS_SHORT.map(d=><th key={d} style={{background:'#F9F7F4',padding:'8px 10px',fontSize:12,fontWeight:500,color:'#3E3530',borderBottom:'1px solid #F0ECE6',borderLeft:'1px solid #F0ECE6',textAlign:'center'}}>{d}</th>)}</tr></thead>
+          <tbody>{TIME_SLOTS.map(t=>(<tr key={t}><td style={{background:'#F9F7F4',padding:'3px 8px',fontSize:11,color:'#B5A796',textAlign:'right',borderBottom:'1px solid #F9F7F4',whiteSpace:'nowrap'}}>{t}</td>{DAYS_OF_WEEK.map(d=>{const cellEvents=events.filter(ev=>ev.day_of_week===d&&ev.time_slot===t);return(<td key={d} onClick={()=>openCell(d,t)} style={{borderLeft:'1px solid #F0ECE6',borderBottom:'1px solid #F0ECE6',padding:'2px 3px',minHeight:28,verticalAlign:'top',cursor:'pointer'}} onMouseEnter={e=>e.currentTarget.style.background='#F9F7F4'} onMouseLeave={e=>e.currentTarget.style.background=''}>{cellEvents.map(ev=>(<div key={ev.id} style={{background:'#FFFBF0',borderLeft:'2px solid #F5A800',borderRadius:4,padding:'2px 5px 2px 4px',fontSize:11,lineHeight:1.3,marginBottom:2,cursor:'pointer',color:'#6D4800',display:'flex',alignItems:'center',gap:2}} onClick={e=>{e.stopPropagation();openEdit(ev,e)}}><span style={{flex:1}}>{ev.title}</span><button onClick={e=>{e.stopPropagation();openCopy(ev,e)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}} title="Copiar"><Copy style={{width:10,height:10}}/></button><button onClick={e=>{e.stopPropagation();remove(ev.id)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}} title="Remover"><Trash2 style={{width:10,height:10}}/></button></div>))}</td>)})}</tr>))}</tbody>
         </table>
       </div>
-      <p className="text-xs text-stone-300 mt-2 text-center">Clique numa célula para adicionar · Clique num evento para remover</p>
-
+      <p className="text-xs text-stone-300 mt-2 text-center">Clique numa célula para adicionar · Clique num evento para editar</p>
       <Modal open={modal} onClose={()=>setModal(false)} title="Novo compromisso">
         <div className="grid gap-3">
           <div><label className="label">Dia</label><select className="select" value={form.day_of_week} onChange={e=>setForm(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
           <div><label className="label">Horário</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
           <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, Reunião..."/></div>
           <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+          <div><label className="label mb-1">Repetir também em</label><div className="flex flex-wrap gap-1 mt-1">{DAYS_OF_WEEK.filter(d=>d!==form.day_of_week).map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${(form.recurrence||[]).includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>toggleRec(d)}>{d}</button>))}</div></div>
         </div>
         <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleAdd}>Salvar</button></div>
+      </Modal>
+      <Modal open={editModal} onClose={()=>setEditModal(false)} title="Editar compromisso">
+        {editItem&&<div className="grid gap-3">
+          <div><label className="label">Dia</label><select className="select" value={editItem.day_of_week} onChange={e=>setEditItem(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
+          <div><label className="label">Horário</label><select className="select" value={editItem.time_slot} onChange={e=>setEditItem(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
+          <div><label className="label">Compromisso</label><input className="input" value={editItem.title||''} onChange={e=>setEditItem(p=>({...p,title:e.target.value}))}/></div>
+          <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+        </div>}
+        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setEditModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleEdit}>Salvar</button></div>
+      </Modal>
+      <Modal open={copyModal} onClose={()=>setCopyModal(false)} title="Copiar para outros dias">
+        <p className="text-sm text-stone-500 mb-3">Selecione os dias para copiar "{copyItem?.title}":</p>
+        <div className="flex flex-wrap gap-2">{DAYS_OF_WEEK.map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${copyDays.includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>setCopyDays(p=>p.includes(d)?p.filter(x=>x!==d):[...p,d])}>{d}</button>))}</div>
+        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setCopyModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleCopy} disabled={copyDays.length===0}>Copiar</button></div>
+      </Modal>
+    </div>
+  )
+}
+
+// ─── Pré-Off Page ────────────────────────────────────────────────
+const DEFAULT_PREOFF_QUESTIONS = [
+  'Como você está se sentindo hoje?',
+  'O que você precisa de mim hoje?',
+  'Tem algo que te incomodou essa semana que não falamos ainda?',
+  'Qual foi o melhor momento da nossa semana?',
+  'O que posso fazer para melhorar como parceiro(a)?',
+]
+
+export function PreOffPage() {
+  const { data: questions, insert: insertQ, remove: removeQ, update: updateQ } = useDB('preoff_questions')
+  const { user } = useAuth()
+  const [adding, setAdding] = useState(false)
+  const [editQ, setEditQ] = useState(null)
+  const [ansModal, setAnsModal] = useState(null)
+  const [qForm, setQForm] = useState({question:'',who:'Ambos'})
+  const [aForm, setAForm] = useState({who:'Bruno',answer:''})
+  const [answers, setAnswers] = useState({})
+  const [initialized, setInitialized] = useState(false)
+
+  const displayQuestions = questions.length > 0 ? questions : DEFAULT_PREOFF_QUESTIONS.map((q,i)=>({id:'default_'+i,question:q,who:'Ambos',isDefault:true}))
+
+  useEffect(()=>{
+    if(!user||initialized) return
+    if(questions.length===0){
+      // seed default questions on first load
+      setInitialized(true)
+    }
+  },[user,questions,initialized])
+
+  useEffect(()=>{
+    if(!questions.length||!user) return
+    supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
+      .then(({data})=>{
+        const map={}
+        ;(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)})
+        setAnswers(map)
+      })
+  },[questions,user])
+
+  const handleAddQ=async(e)=>{e.preventDefault();await insertQ(qForm);setQForm({question:'',who:'Ambos'});setAdding(false)}
+  const handleEditQ=async(e)=>{e.preventDefault();if(!editQ?.question?.trim())return;await updateQ(editQ.id,{question:editQ.question,who:editQ.who});setEditQ(null)}
+  const seedDefaultQ=async(q)=>{const r=await insertQ({question:q.question,who:q.who});return r}
+  const handleAddA=async()=>{
+    if(!aForm.answer.trim()||!ansModal) return
+    let qId = ansModal
+    // If answering a default question, seed it first
+    if(typeof qId === 'string' && qId.startsWith('default_')){
+      const idx = parseInt(qId.replace('default_',''))
+      const seeded = await insertQ({question:DEFAULT_PREOFF_QUESTIONS[idx],who:'Ambos'})
+      qId = seeded?.id || qId
+    }
+    await supabase.from('preoff_answers').insert([{...aForm,question_id:qId}])
+    setAnsModal(null);setAForm({who:'Bruno',answer:''})
+    if(questions.length>0){
+      const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
+      const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
+    }
+  }
+  const removeAnswer=async(id)=>{
+    await supabase.from('preoff_answers').delete().eq('id',id)
+    if(questions.length>0){
+      const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
+      const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
+    }
+  }
+
+  return(
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <PageHeader title="Pré-Off" subtitle="Checkin do casal antes do fim de semana"
+        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Pergunta</button>}/>
+
+      {adding&&(
+        <form onSubmit={handleAddQ} className="card mb-4">
+          <p className="form-section-title">Nova pergunta</p>
+          <div className="grid gap-3">
+            <div><label className="label">Pergunta</label><textarea className="textarea" value={qForm.question} onChange={e=>setQForm(p=>({...p,question:e.target.value}))} required/></div>
+            <div><label className="label">Para quem?</label><select className="select" value={qForm.who} onChange={e=>setQForm(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
+          </div>
+          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+        </form>
+      )}
+
+      {displayQuestions.map((q,i)=>(
+        <div key={q.id} className="card mb-3">
+          {editQ?.id===q.id?(
+            <form onSubmit={handleEditQ} className="grid gap-3">
+              <div><label className="label">Pergunta</label><textarea className="textarea" value={editQ.question} onChange={e=>setEditQ(p=>({...p,question:e.target.value}))} required/></div>
+              <div><label className="label">Para quem?</label><select className="select" value={editQ.who} onChange={e=>setEditQ(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
+              <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditQ(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+            </form>
+          ):(
+            <>
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-sage-50 border border-sage-100 flex items-center justify-center text-xs font-medium text-sage-700">{i+1}</span>
+                  <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
+                  {q.isDefault&&<span className="badge badge-stone text-xs">padrão</span>}
+                </div>
+                <div className="flex gap-1">
+                  <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
+                  {!q.isDefault&&<><button onClick={()=>setEditQ({...q})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button><button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></>}
+                </div>
+              </div>
+              <p className="font-medium text-stone-800 mb-3">{q.question}</p>
+              {(answers[q.id]||[]).map(a=>(
+                <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
+                    <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                  </div>
+                  <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      ))}
+
+      <Modal open={!!ansModal} onClose={()=>setAnsModal(null)} title="Adicionar resposta">
+        <div className="grid gap-3">
+          <div><label className="label">Quem responde?</label><select className="select" value={aForm.who} onChange={e=>setAForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option></select></div>
+          <div><label className="label">Resposta</label><textarea className="textarea min-h-[100px]" value={aForm.answer} onChange={e=>setAForm(p=>({...p,answer:e.target.value}))}/></div>
+        </div>
+        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setAnsModal(null)}>Cancelar</button><button className="btn-primary" onClick={handleAddA}>Salvar</button></div>
       </Modal>
     </div>
   )
