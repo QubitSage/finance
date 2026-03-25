@@ -34,7 +34,7 @@ export const RULE_CATEGORIES = {
   liberdade:       { label: 'Liberdade',          color: 'bg-blue-50 text-blue-700',    dot: 'bg-blue-400',   icon: '◎' },
   direitos:        { label: 'Direitos',           color: 'bg-amber-100 text-amber-800', dot: 'bg-amber-400',  icon: '★' },
   responsabilidade:{ label: 'Responsabilidade',   color: 'bg-violet-50 text-violet-700',dot: 'bg-violet-400', icon: '⚑' },
-  legendas:        { label: 'Legendas',           color: 'bg-teal-50 text-teal-700',    dot: 'bg-teal-400',   icon: '◈' },
+  legendas:        { label: 'Dever',           color: 'bg-teal-50 text-teal-700',    dot: 'bg-teal-400',   icon: '◈' },
   gostaria:        { label: 'Gostaria',           color: 'bg-pink-50 text-pink-700',    dot: 'bg-pink-400',   icon: '♡' },
 }
 
