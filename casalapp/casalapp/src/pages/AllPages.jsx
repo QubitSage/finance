@@ -394,6 +394,7 @@ export function ConfigPage() {
   )
 }
 
+import { RULE_CATEGORIES } from '../lib/utils'
 export function RulesPage() {
   const { data: rules, insert, remove, update } = useDB('rules')
   const { addLog } = useLogs()
