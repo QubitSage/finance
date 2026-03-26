@@ -1,4 +1,4 @@
-// âââ Wife Page âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Wife Page ───────────────────────────────────────────────────
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDB } from '../hooks/useDB'
@@ -36,7 +36,7 @@ export function WifePage() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
-      <PageHeader title="Mimos da Esposa" subtitle="Controle e saldo disponÃ­vel"
+      <PageHeader title="Mimos da Esposa" subtitle="Controle e saldo disponível"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={() => setAdding(!adding)}><Plus className="w-4 h-4" /> Adicionar</button>} />
 
       <div className="flex items-center gap-3 mb-4">
@@ -60,7 +60,7 @@ export function WifePage() {
         </div>
         <p className="text-xs text-stone-400 flex items-center gap-1">
           <Sparkles className="w-3 h-3"/>
-          {rem >= 0 ? `Ainda disponÃ­vel: ${fmt(rem)}` : `Excedeu em: ${fmt(Math.abs(rem))}`}
+          {rem >= 0 ? `Ainda disponível: ${fmt(rem)}` : `Excedeu em: ${fmt(Math.abs(rem))}`}
         </p>
       </div>
 
@@ -68,11 +68,11 @@ export function WifePage() {
         <form onSubmit={handleAdd} className="card mb-4">
           <p className="form-section-title">Novo gasto da esposa</p>
           <div className="grid gap-3">
-            <div><label className="label">DescriÃ§Ã£o</label><input className="input" value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} required placeholder="Ex: Vestido, SPA..."/></div>
+            <div><label className="label">Descrição</label><input className="input" value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))} required placeholder="Ex: Vestido, SPA..."/></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Categoria</label>
                 <select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>
-                  <option value="wife">Mimos</option><option value="personal">Pessoal dela</option><option value="savings">PoupanÃ§a dela</option>
+                  <option value="wife">Mimos</option><option value="personal">Pessoal dela</option><option value="savings">Poupança dela</option>
                 </select>
               </div>
               <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.amount} onChange={e=>setForm(p=>({...p,amount:e.target.value}))} required/></div>
@@ -87,7 +87,7 @@ export function WifePage() {
 
       <div className="tbl-wrap">
         <table className="tbl">
-          <thead><tr><th>DescriÃ§Ã£o</th><th className="text-right">Valor</th><th className="w-10"></th></tr></thead>
+          <thead><tr><th>Descrição</th><th className="text-right">Valor</th><th className="w-10"></th></tr></thead>
           <tbody>
             {list.length===0?<tr><td colSpan={3} className="text-center py-8 text-stone-300">Nenhum gasto ainda</td></tr>:
               list.map(t=><tr key={t.id}>
@@ -102,14 +102,14 @@ export function WifePage() {
   )
 }
 
-// âââ Savings Page âââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Savings Page ─────────────────────────────────────────────────
 export function SavingsPage() {
   const { data: goals, insert, update, remove } = useDB('savings_goals')
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({name:'',target:'',current:'',emoji:'ð¯'})
   const [depositId, setDepositId] = useState(null)
   const [depositVal, setDepositVal] = useState('')
-  const EMOJIS = ['ð¯','ð ','âï¸','ð','ð','ð¶','ð','ð»','ð¸','ðï¸','ð¶','ð']
+  const EMOJIS = ['ð¯','ð ','✈️','ð','ð','ð¶','ð','ð»','ð¸','ð️','ð¶','ð']
   const totTarget = goals.reduce((s,g)=>s+ +g.target,0)
   const totSaved  = goals.reduce((s,g)=>s+ +g.current,0)
 
@@ -127,7 +127,7 @@ export function SavingsPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
-      <PageHeader title="PoupanÃ§a & Metas"
+      <PageHeader title="Poupança & Metas"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Nova meta</button>}/>
 
       <div className="grid grid-cols-2 gap-3 mb-5">
@@ -146,7 +146,7 @@ export function SavingsPage() {
             <div><label className="label">Nome</label><input className="input" value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} required placeholder="Ex: Viagem para Europa"/></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="label">Meta (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.target} onChange={e=>setForm(p=>({...p,target:e.target.value}))} required/></div>
-              <div><label className="label">JÃ¡ guardou</label><input className="input" type="number" step="0.01" min="0" value={form.current} onChange={e=>setForm(p=>({...p,current:e.target.value}))}/></div>
+              <div><label className="label">Já guardou</label><input className="input" type="number" step="0.01" min="0" value={form.current} onChange={e=>setForm(p=>({...p,current:e.target.value}))}/></div>
             </div>
           </div>
           <div className="flex gap-2 justify-end mt-3">
@@ -182,7 +182,7 @@ export function SavingsPage() {
                     <div className="flex gap-2 mt-2">
                       <input className="input flex-1 text-sm py-1.5" type="number" min="0" step="0.01" placeholder="Valor a depositar" value={depositVal} onChange={e=>setDepositVal(e.target.value)}/>
                       <button className="btn-primary text-xs py-1.5 px-3" onClick={()=>handleDeposit(g)}>OK</button>
-                      <button className="btn-secondary text-xs py-1.5 px-3" onClick={()=>setDepositId(null)}>â</button>
+                      <button className="btn-secondary text-xs py-1.5 px-3" onClick={()=>setDepositId(null)}>✕</button>
                     </div>
                   )}
                 </div>
@@ -195,7 +195,7 @@ export function SavingsPage() {
   )
 }
 
-// âââ Reports Page âââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Reports Page ─────────────────────────────────────────────────
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { useEffect } from 'react'
@@ -232,9 +232,9 @@ export function ReportsPage() {
 
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <PageHeader title="RelatÃ³rios" subtitle="Ãltimos 6 meses"/>
+      <PageHeader title="Relatórios" subtitle="Últimos 6 meses"/>
       <div className="card mb-4">
-        <p className="text-sm font-medium text-stone-600 mb-3">Entradas vs SaÃ­das</p>
+        <p className="text-sm font-medium text-stone-600 mb-3">Entradas vs Saídas</p>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={data} barCategoryGap="30%">
             <CartesianGrid strokeDasharray="3 3" stroke={gc} vertical={false}/>
@@ -243,7 +243,7 @@ export function ReportsPage() {
             <Tooltip formatter={v=>fmt(v)}/>
             <Legend wrapperStyle={{fontSize:12}}/>
             <Bar dataKey="income" name="Entradas" fill="#537A44" radius={[4,4,0,0]}/>
-            <Bar dataKey="expense" name="SaÃ­das" fill="#C86060" radius={[4,4,0,0]}/>
+            <Bar dataKey="expense" name="Saídas" fill="#C86060" radius={[4,4,0,0]}/>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -260,7 +260,7 @@ export function ReportsPage() {
         </ResponsiveContainer>
       </div>
       <div className="card">
-        <p className="text-sm font-medium text-stone-600 mb-3">Mimos & PoupanÃ§a</p>
+        <p className="text-sm font-medium text-stone-600 mb-3">Mimos & Poupança</p>
         <ResponsiveContainer width="100%" height={160}>
           <BarChart data={data} barCategoryGap="30%">
             <CartesianGrid strokeDasharray="3 3" stroke={gc} vertical={false}/>
@@ -269,7 +269,7 @@ export function ReportsPage() {
             <Tooltip formatter={v=>fmt(v)}/>
             <Legend wrapperStyle={{fontSize:12}}/>
             <Bar dataKey="wife" name="Mimos" fill="#EC4899" radius={[4,4,0,0]}/>
-            <Bar dataKey="savings" name="PoupanÃ§a" fill="#3B82F6" radius={[4,4,0,0]}/>
+            <Bar dataKey="savings" name="Poupança" fill="#3B82F6" radius={[4,4,0,0]}/>
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -465,7 +465,7 @@ export function RulesPage() {
   )
 }
 
-// âââ Trips Page âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Trips Page ───────────────────────────────────────────────────
 import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
 import Modal from '../components/Modal'
 
@@ -500,7 +500,7 @@ export function TripsPage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <div className="card"><p className="stat-label">Total</p><p className="text-xl font-display font-semibold text-stone-700">{trips.length}</p></div>
-        <div className="card"><p className="stat-label">OrÃ§amento</p><p className="text-xl font-display font-semibold text-amber-600">{fmt(totalBudget)}</p></div>
+        <div className="card"><p className="stat-label">Orçamento</p><p className="text-xl font-display font-semibold text-amber-600">{fmt(totalBudget)}</p></div>
         <div className="card"><p className="stat-label">Gasto</p><p className="text-xl font-display font-semibold text-blush-500">{fmt(totalSpent)}</p></div>
         <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${totalBudget-totalSpent>=0?'text-sage-600':'text-blush-500'}`}>{fmt(totalBudget-totalSpent)}</p></div>
       </div>
@@ -535,12 +535,12 @@ export function TripsPage() {
                   </div>
                 </div>
                 {(t.start_date||t.end_date)&&(
-                  <p className="text-xs text-stone-400 mb-3">{fmtDate(t.start_date)} â {fmtDate(t.end_date)} {d?`Â· ${d} dias`:''}</p>
+                  <p className="text-xs text-stone-400 mb-3">{fmtDate(t.start_date)} → {fmtDate(t.end_date)} {d?`· ${d} dias`:''}</p>
                 )}
                 {+t.budget>0&&(
                   <div>
                     <div className="flex justify-between text-xs text-stone-400 mb-1">
-                      <span>OrÃ§amento: {fmt(t.budget)}</span><span>Gasto: {fmt(t.spent)}</span>
+                      <span>Orçamento: {fmt(t.budget)}</span><span>Gasto: {fmt(t.spent)}</span>
                     </div>
                     <div className="progress mb-1"><div className="progress-fill" style={{width:`${pct}%`,background:pct>=90?'#C86060':'#537A44'}}/></div>
                     <p className={`text-xs font-medium ${(+t.budget-+t.spent)>=0?'text-sage-600':'text-blush-500'}`}>Saldo: {fmt(+t.budget-+t.spent)}</p>
@@ -554,7 +554,7 @@ export function TripsPage() {
 
       <Modal open={modal} onClose={()=>setModal(false)} title={editItem?'Editar viagem':'Nova viagem'}>
         <div className="grid gap-3">
-          <div><label className="label">Destino</label><input className="input" value={form.destination} onChange={e=>setForm(p=>({...p,destination:e.target.value}))} placeholder="Ex: Paris, FranÃ§a"/></div>
+          <div><label className="label">Destino</label><input className="input" value={form.destination} onChange={e=>setForm(p=>({...p,destination:e.target.value}))} placeholder="Ex: Paris, França"/></div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{TRIP_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
             <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.entries(TRIP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
@@ -564,10 +564,10 @@ export function TripsPage() {
             <div><label className="label">Volta</label><input className="input" type="date" value={form.end_date} min={form.start_date} onChange={e=>setForm(p=>({...p,end_date:e.target.value}))}/></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">OrÃ§amento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(p=>({...p,budget:e.target.value}))}/></div>
-            <div><label className="label">JÃ¡ gasto (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.spent} onChange={e=>setForm(p=>({...p,spent:e.target.value}))}/></div>
+            <div><label className="label">Orçamento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(p=>({...p,budget:e.target.value}))}/></div>
+            <div><label className="label">Já gasto (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.spent} onChange={e=>setForm(p=>({...p,spent:e.target.value}))}/></div>
           </div>
-          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="ObservaÃ§Ãµes..."/></div>
+          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Observações..."/></div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
           <button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button>
@@ -578,7 +578,7 @@ export function TripsPage() {
   )
 }
 
-// âââ Desires Page (Desejos/Mimos/Planner) âââââââââââââââââââââââââ
+// ─── Desires Page (Desejos/Mimos/Planner) ─────────────────────────
 import { WHO_COLORS, PLANNER_COLS, PLANNER_COL_LABELS, PLANNER_COL_COLORS } from '../lib/utils'
 
 export function DesiresPage() {
@@ -606,14 +606,14 @@ function DesiresTab() {
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState('todos')
   const [editItem, setEditItem] = useState(null)
-  const [form, setForm] = useState({who:'Bruno',desire:'',why:'',tipo:'NÃ£o-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
+  const [form, setForm] = useState({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
   const MIMO_STATUS=['Pendente','Aprovado','Recusado','Entregue']
 
   const handleAdd = async (e) => {
     e.preventDefault()
     if(!form.desire.trim()) return
     await insert({...form,cost:parseFloat(form.cost)||0})
-    setAdding(false); setForm({who:'Bruno',desire:'',why:'',tipo:'NÃ£o-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
+    setAdding(false); setForm({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
   }
   const handleEdit = async (e) => {
     e.preventDefault()
@@ -636,9 +636,9 @@ function DesiresTab() {
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div><label className="label">De quem</label><select className="select" value={form.who} onChange={e=>setForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
             <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{MIMO_STATUS.map(s=><option key={s}>{s}</option>)}</select></div>
-            <div className="col-span-2"><label className="label">Desejo *</label><textarea className="textarea" value={form.desire} onChange={e=>setForm(p=>({...p,desire:e.target.value}))} placeholder="O que vocÃª deseja?"/></div>
-            <div className="col-span-2"><label className="label">Por quÃª?</label><textarea className="textarea" value={form.why} onChange={e=>setForm(p=>({...p,why:e.target.value}))} placeholder="Motivo..."/></div>
-            <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>NÃ£o-Sexual</option><option>Sexual</option><option>ExperiÃªncia</option><option>Item</option></select></div>
+            <div className="col-span-2"><label className="label">Desejo *</label><textarea className="textarea" value={form.desire} onChange={e=>setForm(p=>({...p,desire:e.target.value}))} placeholder="O que você deseja?"/></div>
+            <div className="col-span-2"><label className="label">Por quê?</label><textarea className="textarea" value={form.why} onChange={e=>setForm(p=>({...p,why:e.target.value}))} placeholder="Motivo..."/></div>
+            <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>Não-Sexual</option><option>Sexual</option><option>Experiência</option><option>Item</option></select></div>
             <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}><option>Com o marido</option><option>Pessoal</option><option>Casal</option><option>Outro</option></select></div>
             <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.cost} onChange={e=>setForm(p=>({...p,cost:e.target.value}))} placeholder="0,00"/></div>
             <div><label className="label">Data</label><input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
@@ -654,8 +654,8 @@ function DesiresTab() {
                 <div><label className="label">De quem</label><select className="select" value={editItem.who} onChange={e=>setEditItem(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
                 <div><label className="label">Status</label><select className="select" value={editItem.status} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{MIMO_STATUS.map(s=><option key={s}>{s}</option>)}</select></div>
                 <div className="col-span-2"><label className="label">Desejo</label><textarea className="textarea" value={editItem.desire} onChange={e=>setEditItem(p=>({...p,desire:e.target.value}))}/></div>
-                <div className="col-span-2"><label className="label">Por quÃª?</label><textarea className="textarea" value={editItem.why} onChange={e=>setEditItem(p=>({...p,why:e.target.value}))}/></div>
-                <div><label className="label">Tipo</label><select className="select" value={editItem.tipo} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>NÃ£o-Sexual</option><option>Sexual</option><option>ExperiÃªncia</option><option>Item</option></select></div>
+                <div className="col-span-2"><label className="label">Por quê?</label><textarea className="textarea" value={editItem.why} onChange={e=>setEditItem(p=>({...p,why:e.target.value}))}/></div>
+                <div><label className="label">Tipo</label><select className="select" value={editItem.tipo} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>Não-Sexual</option><option>Sexual</option><option>Experiência</option><option>Item</option></select></div>
                 <div><label className="label">Categoria</label><select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}><option>Com o marido</option><option>Pessoal</option><option>Casal</option><option>Outro</option></select></div>
                 <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.cost} onChange={e=>setEditItem(p=>({...p,cost:e.target.value}))}/></div>
                 <div><label className="label">Data</label><input className="input" type="date" value={editItem.date||''} onChange={e=>setEditItem(p=>({...p,date:e.target.value}))}/></div>
@@ -700,7 +700,7 @@ function MimosTab() {
   const [adding, setAdding] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})
-  const MIMO_STATUS=['Pendente','Aprovado','Planejando','ConcluÃ­do','Cancelado']
+  const MIMO_STATUS=['Pendente','Aprovado','Planejando','Concluído','Cancelado']
 
   const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})}
   const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{date:editItem.date,mimo:editItem.mimo,objective:editItem.objective,tipo:editItem.tipo,category:editItem.category,value:parseFloat(editItem.value)||0,status:editItem.status});setEditItem(null)}
@@ -754,7 +754,7 @@ function MimosTab() {
               <>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex gap-1.5 flex-wrap">
-                    <span className={`badge ${m.status==='ConcluÃ­do'?'badge-sage':m.status==='Aprovado'?'badge-sage':m.status==='Pendente'?'badge-amber':m.status==='Cancelado'?'badge-blush':'badge-stone'}`}>{m.status}</span>
+                    <span className={`badge ${m.status==='Concluído'?'badge-sage':m.status==='Aprovado'?'badge-sage':m.status==='Pendente'?'badge-amber':m.status==='Cancelado'?'badge-blush':'badge-stone'}`}>{m.status}</span>
                     {m.tipo&&<span className="badge badge-stone">{m.tipo}</span>}
                   </div>
                   <div className="flex gap-1 items-center">
@@ -791,16 +791,16 @@ function PlannerTab() {
   const [newOpt, setNewOpt] = useState('')
   const [seeded, setSeeded] = useState(false)
 
-  const COMUNICACAO_OPTS = ['Fotos','VÃ­deos','Surpresa','Apenas localizaÃ§Ã£o','Celular desligado']
+  const COMUNICACAO_OPTS = ['Fotos','Vídeos','Surpresa','Apenas localização','Celular desligado']
   const UNIQUE_COLS = ['atividade','companhia','visual']
   const DEFAULT_OPTS = {
-    atividade:   ['SalÃ£o','Compras','Date','Academia','Massagem','Cinema','Casa','Jantar','AlmoÃ§o'],
-    companhia:   ['Sozinha','Com marido','Acompanhada','Marido sÃ³ leva','SÃ³ busca','SÃ³ paga','Aberta','Curiosa'],
-    visual:      ['Casual','Casual-Sexy','Body','Lingerie VisÃ­vel','Nada','Ousada','Justa','Roupa Nova'],
-    comunicacao: ['Fotos','VÃ­deos','Surpresa','Apenas localizaÃ§Ã£o','Celular desligado'],
+    atividade:   ['Salão','Compras','Date','Academia','Massagem','Cinema','Casa','Jantar','Almoço'],
+    companhia:   ['Sozinha','Com marido','Acompanhada','Marido só leva','Só busca','Só paga','Aberta','Curiosa'],
+    visual:      ['Casual','Casual-Sexy','Body','Lingerie Visível','Nada','Ousada','Justa','Roupa Nova'],
+    comunicacao: ['Fotos','Vídeos','Surpresa','Apenas localização','Celular desligado'],
   }
   const MANAGEABLE_COLS = ['atividade','companhia','visual','comunicacao']
-  const MANAGE_LABELS = {atividade:'Atividade',companhia:'Companhia',visual:'Visual',comunicacao:'ComunicaÃ§Ã£o'}
+  const MANAGE_LABELS = {atividade:'Atividade',companhia:'Companhia',visual:'Visual',comunicacao:'Comunicação'}
 
   useEffect(()=>{
     if(!user||seeded||allOpts===undefined) return
@@ -833,16 +833,16 @@ function PlannerTab() {
 
   return(
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <PageHeader title="Planner" subtitle="Atividade, Companhia e Visual sÃ³ podem ser usados uma vez"
+      <PageHeader title="Planner" subtitle="Atividade, Companhia e Visual só podem ser usados uma vez"
         action={
           <div className="flex gap-2">
-            <button className="btn-secondary text-xs" onClick={()=>setManageCol('atividade')}>â OpÃ§Ãµes</button>
+            <button className="btn-secondary text-xs" onClick={()=>setManageCol('atividade')}>⚙ Opções</button>
             <button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Nova rodada</button>
           </div>
         }/>
 
       <div className="card mb-5">
-        <p className="text-sm font-medium text-stone-600 mb-3">Progresso (colunas Ãºnicas)</p>
+        <p className="text-sm font-medium text-stone-600 mb-3">Progresso (colunas únicas)</p>
         <div className="grid grid-cols-3 gap-4">
           {UNIQUE_COLS.map(col=>{
             const used=getUsed(col).size, total=getOpts(col).length||1
@@ -863,24 +863,24 @@ function PlannerTab() {
           <p className="form-section-title">Nova rodada</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
             <div>
-              <label className="label flex items-center justify-between">Atividade Principal<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,atividade:!p.atividade}))}>{customText.atividade?'â lista':'texto livre'}</button></label>
+              <label className="label flex items-center justify-between">Atividade Principal<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,atividade:!p.atividade}))}>{customText.atividade?'← lista':'texto livre'}</button></label>
               {customText.atividade
                 ? <input className="input" value={form.atividade} onChange={e=>setForm(p=>({...p,atividade:e.target.value}))} placeholder="Escrever..."/>
-                : <select className="select" value={form.atividade} onChange={e=>setForm(p=>({...p,atividade:e.target.value}))}><option value="">â escolher â</option>{getAvail('atividade').map(o=><option key={o}>{o}</option>)}</select>}
+                : <select className="select" value={form.atividade} onChange={e=>setForm(p=>({...p,atividade:e.target.value}))}><option value="">— escolher —</option>{getAvail('atividade').map(o=><option key={o}>{o}</option>)}</select>}
               <p className="text-xs text-stone-300 mt-1">{getUsed('atividade').size}/{getOpts('atividade').length} usadas</p>
             </div>
             <div>
-              <label className="label flex items-center justify-between">Companhia<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,companhia:!p.companhia}))}>{customText.companhia?'â lista':'texto livre'}</button></label>
+              <label className="label flex items-center justify-between">Companhia<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,companhia:!p.companhia}))}>{customText.companhia?'← lista':'texto livre'}</button></label>
               {customText.companhia
                 ? <input className="input" value={form.companhia} onChange={e=>setForm(p=>({...p,companhia:e.target.value}))} placeholder="Escrever..."/>
-                : <select className="select" value={form.companhia} onChange={e=>setForm(p=>({...p,companhia:e.target.value}))}><option value="">â escolher â</option>{getAvail('companhia').map(o=><option key={o}>{o}</option>)}</select>}
+                : <select className="select" value={form.companhia} onChange={e=>setForm(p=>({...p,companhia:e.target.value}))}><option value="">— escolher —</option>{getAvail('companhia').map(o=><option key={o}>{o}</option>)}</select>}
               <p className="text-xs text-stone-300 mt-1">{getUsed('companhia').size}/{getOpts('companhia').length} usadas</p>
             </div>
             <div>
-              <label className="label flex items-center justify-between">Visual<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,visual:!p.visual}))}>{customText.visual?'â lista':'texto livre'}</button></label>
+              <label className="label flex items-center justify-between">Visual<button type="button" className="text-xs text-amber-500 underline" onClick={()=>setCustomText(p=>({...p,visual:!p.visual}))}>{customText.visual?'← lista':'texto livre'}</button></label>
               {customText.visual
                 ? <input className="input" value={form.visual} onChange={e=>setForm(p=>({...p,visual:e.target.value}))} placeholder="Escrever..."/>
-                : <select className="select" value={form.visual} onChange={e=>setForm(p=>({...p,visual:e.target.value}))}><option value="">â escolher â</option>{getAvail('visual').map(o=><option key={o}>{o}</option>)}</select>}
+                : <select className="select" value={form.visual} onChange={e=>setForm(p=>({...p,visual:e.target.value}))}><option value="">— escolher —</option>{getAvail('visual').map(o=><option key={o}>{o}</option>)}</select>}
               <p className="text-xs text-stone-300 mt-1">{getUsed('visual').size}/{getOpts('visual').length} usadas</p>
             </div>
             <div>
@@ -888,8 +888,8 @@ function PlannerTab() {
               <input className="input" value={form.desejo} onChange={e=>setForm(p=>({...p,desejo:e.target.value}))} placeholder="Escreva o desejo..."/>
             </div>
             <div>
-              <label className="label">ComunicaÃ§Ã£o</label>
-              <select className="select" value={form.comunicacao} onChange={e=>setForm(p=>({...p,comunicacao:e.target.value}))}><option value="">â escolher â</option>{COMUNICACAO_OPTS.map(o=><option key={o}>{o}</option>)}</select>
+              <label className="label">Comunicação</label>
+              <select className="select" value={form.comunicacao} onChange={e=>setForm(p=>({...p,comunicacao:e.target.value}))}><option value="">— escolher —</option>{COMUNICACAO_OPTS.map(o=><option key={o}>{o}</option>)}</select>
             </div>
           </div>
           <div className="flex gap-2 justify-end">
@@ -907,8 +907,8 @@ function PlannerTab() {
             <th className="bg-violet-50 text-violet-800">Companhia</th>
             <th className="bg-pink-50 text-pink-800">Visual</th>
             <th className="bg-amber-50 text-amber-800">Desejo</th>
-            <th className="bg-sage-100 text-sage-800">ComunicaÃ§Ã£o</th>
-            <th>AprovaÃ§Ã£o</th>
+            <th className="bg-sage-100 text-sage-800">Comunicação</th>
+            <th>Aprovação</th>
             <th></th>
           </tr></thead>
           <tbody>
@@ -917,16 +917,16 @@ function PlannerTab() {
               : rounds.map((r,i)=>(
                 <tr key={r.id}>
                   <td className="text-stone-300 text-xs">{i+1}</td>
-                  <td>{r.atividade?<span className="badge bg-blue-50 text-blue-800 text-xs">{r.atividade}</span>:'â'}</td>
-                  <td>{r.companhia?<span className="badge bg-violet-50 text-violet-800 text-xs">{r.companhia}</span>:'â'}</td>
-                  <td>{r.visual?<span className="badge bg-pink-50 text-pink-800 text-xs">{r.visual}</span>:'â'}</td>
-                  <td className="text-sm text-stone-600 max-w-[140px] truncate" title={r.desejo||''}>{r.desejo||'â'}</td>
-                  <td>{r.comunicacao?<span className="badge bg-sage-100 text-sage-800 text-xs">{r.comunicacao}</span>:'â'}</td>
+                  <td>{r.atividade?<span className="badge bg-blue-50 text-blue-800 text-xs">{r.atividade}</span>:'—'}</td>
+                  <td>{r.companhia?<span className="badge bg-violet-50 text-violet-800 text-xs">{r.companhia}</span>:'—'}</td>
+                  <td>{r.visual?<span className="badge bg-pink-50 text-pink-800 text-xs">{r.visual}</span>:'—'}</td>
+                  <td className="text-sm text-stone-600 max-w-[140px] truncate" title={r.desejo||''}>{r.desejo||'—'}</td>
+                  <td>{r.comunicacao?<span className="badge bg-sage-100 text-sage-800 text-xs">{r.comunicacao}</span>:'—'}</td>
                   <td>
                     {r.aprovacao==='Aprovado'
-                      ? <span className="badge badge-sage text-xs">â Aprovado</span>
+                      ? <span className="badge badge-sage text-xs">✓ Aprovado</span>
                       : r.aprovacao==='Reprovado'
-                        ? <span className="badge badge-blush text-xs">â Reprovado</span>
+                        ? <span className="badge badge-blush text-xs">✗ Reprovado</span>
                         : <div className="flex gap-1">
                             <button onClick={()=>setApproval(r.id,'Aprovado')} className="btn-icon w-6 h-6" title="Aprovar"><ThumbsUp className="w-3 h-3"/></button>
                             <button onClick={()=>setApproval(r.id,'Reprovado')} className="btn-icon w-6 h-6" title="Reprovar"><ThumbsDown className="w-3 h-3"/></button>
@@ -940,7 +940,7 @@ function PlannerTab() {
         </table>
       </div></div>
 
-      <Modal open={!!manageCol} onClose={()=>setManageCol(null)} title="Gerenciar opÃ§Ãµes do Planner">
+      <Modal open={!!manageCol} onClose={()=>setManageCol(null)} title="Gerenciar opções do Planner">
         <div className="flex gap-2 flex-wrap mb-4">
           {MANAGEABLE_COLS.map(col=><button key={col} onClick={()=>setManageCol(col)} className={`chip ${manageCol===col?'active':''}`}>{MANAGE_LABELS[col]}</button>)}
         </div>
@@ -948,20 +948,20 @@ function PlannerTab() {
           <>
             <div className="flex flex-col gap-2 mb-3 max-h-48 overflow-y-auto">
               {getOpts(manageCol).length===0
-                ? <p className="text-sm text-stone-300">Nenhuma opÃ§Ã£o.</p>
+                ? <p className="text-sm text-stone-300">Nenhuma opção.</p>
                 : getOpts(manageCol).map((o,i)=>{
                     const used=getUsed(manageCol).has(o)
                     return(
                       <div key={i} className="flex items-center gap-2 py-1.5 px-3 bg-stone-50 rounded-lg">
                         <span className="flex-1 text-sm">{o}</span>
                         {used&&<span className="text-xs text-amber-500">em uso</span>}
-                        <button onClick={async()=>{const opt=allOpts.find(a=>a.column_name===manageCol&&a.option_text===o);if(opt)await removeOpt(opt.id)}} className="text-stone-300 hover:text-blush-500 text-xs">â</button>
+                        <button onClick={async()=>{const opt=allOpts.find(a=>a.column_name===manageCol&&a.option_text===o);if(opt)await removeOpt(opt.id)}} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
                       </div>
                     )
                   })}
             </div>
             <div className="flex gap-2">
-              <input className="input flex-1" value={newOpt} onChange={e=>setNewOpt(e.target.value)} placeholder="Nova opÃ§Ã£o..." onKeyDown={e=>{if(e.key==='Enter'&&newOpt.trim()){insertOpt({column_name:manageCol,option_text:newOpt.trim()});setNewOpt('')}}}/>
+              <input className="input flex-1" value={newOpt} onChange={e=>setNewOpt(e.target.value)} placeholder="Nova opção..." onKeyDown={e=>{if(e.key==='Enter'&&newOpt.trim()){insertOpt({column_name:manageCol,option_text:newOpt.trim()});setNewOpt('')}}}/>
               <button className="btn-primary text-sm" onClick={async()=>{if(!newOpt.trim())return;await insertOpt({column_name:manageCol,option_text:newOpt.trim()});setNewOpt('')}}>+</button>
             </div>
           </>
@@ -1008,7 +1008,7 @@ export function QuizPage() {
 
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <PageHeader title="QuestionÃ¡rio" subtitle="Perguntas e respostas do casal"
+      <PageHeader title="Questionário" subtitle="Perguntas e respostas do casal"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Pergunta</button>}/>
 
       {adding&&(
@@ -1070,11 +1070,11 @@ export function QuizPage() {
   )
 }
 
-// âââ Data/Profile Page ââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Data/Profile Page ────────────────────────────────────────────
 const PROFILE_SECTIONS=[
-  {name:'Bruno',fields:[{k:'bruno_nome',l:'Nome completo'},{k:'bruno_tel',l:'Telefone'},{k:'bruno_email',l:'E-mail'},{k:'bruno_cpf',l:'CPF'},{k:'bruno_cnpj',l:'CNPJ'},{k:'bruno_end',l:'EndereÃ§o'}]},
-  {name:'Vianka',fields:[{k:'vianka_nome',l:'Nome completo'},{k:'vianka_tel',l:'Telefone'},{k:'vianka_email',l:'E-mail'},{k:'vianka_cpf',l:'CPF'},{k:'vianka_cnpj',l:'CNPJ'},{k:'vianka_end',l:'EndereÃ§o'}]},
-  {name:'Casal',fields:[{k:'casal_end',l:'EndereÃ§o do casal'},{k:'casal_tel',l:'Telefone'},{k:'casal_email',l:'E-mail'},{k:'casal_cnpj',l:'CNPJ empresa'}]},
+  {name:'Bruno',fields:[{k:'bruno_nome',l:'Nome completo'},{k:'bruno_tel',l:'Telefone'},{k:'bruno_email',l:'E-mail'},{k:'bruno_cpf',l:'CPF'},{k:'bruno_cnpj',l:'CNPJ'},{k:'bruno_end',l:'Endereço'}]},
+  {name:'Vianka',fields:[{k:'vianka_nome',l:'Nome completo'},{k:'vianka_tel',l:'Telefone'},{k:'vianka_email',l:'E-mail'},{k:'vianka_cpf',l:'CPF'},{k:'vianka_cnpj',l:'CNPJ'},{k:'vianka_end',l:'Endereço'}]},
+  {name:'Casal',fields:[{k:'casal_end',l:'Endereço do casal'},{k:'casal_tel',l:'Telefone'},{k:'casal_email',l:'E-mail'},{k:'casal_cnpj',l:'CNPJ empresa'}]},
 ]
 export function DataPage() {
   const { user } = useAuth()
@@ -1082,17 +1082,17 @@ export function DataPage() {
   const [saved, setSaved] = useState(false)
   useEffect(()=>{
     if(!user) return
-    supabase.from('couple_profile').select('*').eq('user_id',user.id).single()
-      .then(({data:r})=>{ if(r) setData(r.data||{}) })
+    supabase.from('couple_profile').select('*').order('created_at',{ascending:true}).limit(1).single()
+      .then(({data:r})=>{ if(r){ setData(r.data||{}); window.__cpUserId=r.user_id } })
   },[user])
   const handleSave=async()=>{
-    await supabase.from('couple_profile').upsert({user_id:user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    await supabase.from('couple_profile').upsert({user_id:window.__cpUserId||user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'})
     setSaved(true); setTimeout(()=>setSaved(false),2000)
   }
   return(
     <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <PageHeader title="Dados" subtitle="Perfil centralizado do casal"
-        action={<button className="btn-primary" onClick={handleSave}>{saved?'â Salvo!':'Salvar'}</button>}/>
+        action={<button className="btn-primary" onClick={handleSave}>{saved?'✓ Salvo!':'Salvar'}</button>}/>
       {PROFILE_SECTIONS.map(s=>(
         <div key={s.name} className="tbl-wrap mb-4">
           <div className="bg-stone-50 px-4 py-2.5 border-b border-stone-100 text-xs font-medium text-stone-400 uppercase tracking-wide">{s.name}</div>
@@ -1100,7 +1100,7 @@ export function DataPage() {
             <div key={f.k} className="flex items-center gap-3 px-4 py-3 border-b border-stone-50 last:border-b-0">
               <span className="text-sm text-stone-400 min-w-[140px]">{f.l}</span>
               <input className="input flex-1 text-right border-0 bg-transparent focus:bg-stone-50 focus:border focus:border-stone-200 transition-all"
-                value={data[f.k]||''} onChange={e=>setData(p=>({...p,[f.k]:e.target.value}))} placeholder="â"/>
+                value={data[f.k]||''} onChange={e=>setData(p=>({...p,[f.k]:e.target.value}))} placeholder="—"/>
             </div>
           ))}
         </div>
@@ -1109,10 +1109,10 @@ export function DataPage() {
   )
 }
 
-// âââ Market Page ââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Market Page ──────────────────────────────────────────────────
 import { MARKET_PRIORITY, MARKET_STATUS } from '../lib/utils'
-const MKT_CATS=['Hortifruti','LaticÃ­nios','Carnes','Mercearia','Higiene','Limpeza','Bebidas','Congelados','Outros']
-const MKT_FREQ=['DiÃ¡rio','Semanal','Quinzenal','Mensal','Eventual']
+const MKT_CATS=['Hortifruti','Laticínios','Carnes','Mercearia','Higiene','Limpeza','Bebidas','Congelados','Outros']
+const MKT_FREQ=['Diário','Semanal','Quinzenal','Mensal','Eventual']
 
 export function MarketPage() {
   const { data: items, insert, remove, update } = useDB('market_items')
@@ -1145,9 +1145,9 @@ export function MarketPage() {
             <div><label className="label">Marca</label><input className="input" value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))}/></div>
             <div><label className="label">Unidade</label><input className="input" value={form.unit} onChange={e=>setForm(p=>({...p,unit:e.target.value}))} placeholder="kg, g, L..."/></div>
             <div><label className="label">Qtd</label><input className="input" type="number" min="0" step="0.1" value={form.quantity} onChange={e=>setForm(p=>({...p,quantity:e.target.value}))}/></div>
-            <div><label className="label">FrequÃªncia</label><select className="select" value={form.frequency} onChange={e=>setForm(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
+            <div><label className="label">Frequência</label><select className="select" value={form.frequency} onChange={e=>setForm(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
             <div><label className="label">Prioridade</label><select className="select" value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>{Object.keys(MARKET_PRIORITY).map(p=><option key={p}>{p}</option>)}</select></div>
-            <div><label className="label">ResponsÃ¡vel</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+            <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
             <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(MARKET_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
           </div>
           <div><label className="label">OBS</label><input className="input" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/></div>
@@ -1163,10 +1163,10 @@ export function MarketPage() {
                 <tr key={i.id}>
                   <td><span className="badge badge-stone text-xs">{i.category}</span></td>
                   <td className="font-medium">{i.item}</td>
-                  <td className="text-stone-400">{i.brand||'â'}</td>
-                  <td className="text-stone-400">{i.unit||'â'}</td>
-                  <td className="text-stone-400">{i.quantity||'â'}</td>
-                  <td className="text-stone-400">{i.frequency||'â'}</td>
+                  <td className="text-stone-400">{i.brand||'—'}</td>
+                  <td className="text-stone-400">{i.unit||'—'}</td>
+                  <td className="text-stone-400">{i.quantity||'—'}</td>
+                  <td className="text-stone-400">{i.frequency||'—'}</td>
                   <td><span className={`badge text-xs ${MARKET_PRIORITY[i.priority]||'badge-stone'}`}>{i.priority}</span></td>
                   <td className="text-stone-400">{i.responsible}</td>
                   <td><span className={`badge text-xs ${MARKET_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
@@ -1185,9 +1185,9 @@ export function MarketPage() {
             <div><label className="label">Marca</label><input className="input" value={editItem.brand||''} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/></div>
             <div><label className="label">Unidade</label><input className="input" value={editItem.unit||''} onChange={e=>setEditItem(p=>({...p,unit:e.target.value}))}/></div>
             <div><label className="label">Qtd</label><input className="input" type="number" min="0" step="0.1" value={editItem.quantity||''} onChange={e=>setEditItem(p=>({...p,quantity:e.target.value}))}/></div>
-            <div><label className="label">FrequÃªncia</label><select className="select" value={editItem.frequency||'Semanal'} onChange={e=>setEditItem(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
+            <div><label className="label">Frequência</label><select className="select" value={editItem.frequency||'Semanal'} onChange={e=>setEditItem(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
             <div><label className="label">Prioridade</label><select className="select" value={editItem.priority||'Essencial'} onChange={e=>setEditItem(p=>({...p,priority:e.target.value}))}>{Object.keys(MARKET_PRIORITY).map(p=><option key={p}>{p}</option>)}</select></div>
-            <div><label className="label">ResponsÃ¡vel</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+            <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
             <div><label className="label">Status</label><select className="select" value={editItem.status||'Comprar'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{Object.keys(MARKET_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
           </div>
           <div className="mb-3"><label className="label">OBS</label><input className="input" value={editItem.notes||''} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/></div>
@@ -1201,12 +1201,12 @@ export function MarketPage() {
             stock.map(s=>(
               <div key={s.id} className="flex items-center justify-between py-1.5 px-3 bg-stone-50 rounded-lg">
                 <span className="text-sm">{s.name}</span>
-                <button onClick={()=>removeStock(s.id)} className="text-stone-300 hover:text-blush-500 text-xs">â</button>
+                <button onClick={()=>removeStock(s.id)} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
               </div>
             ))}
         </div>
         <div className="flex gap-2">
-          <input className="input flex-1" value={newStock} onChange={e=>setNewStock(e.target.value)} placeholder="Ex: Arroz, macarrÃ£o..."/>
+          <input className="input flex-1" value={newStock} onChange={e=>setNewStock(e.target.value)} placeholder="Ex: Arroz, macarrão..."/>
           <button className="btn-primary text-sm" onClick={async()=>{if(!newStock.trim())return;await insertStock({name:newStock.trim()});setNewStock('')}}>+</button>
         </div>
       </Modal>
@@ -1214,9 +1214,9 @@ export function MarketPage() {
   )
 }
 
-// âââ Apartment Page âââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Apartment Page ───────────────────────────────────────────────
 import { APT_STATUS } from '../lib/utils'
-const APT_ROOMS=['Sala','Quarto','Cozinha','Banheiro','Ãrea de serviÃ§o','Varanda','EscritÃ³rio','Hall']
+const APT_ROOMS=['Sala','Quarto','Cozinha','Banheiro','Área de serviço','Varanda','Escritório','Hall']
 
 export function ApartmentPage() {
   const { data: items, insert, remove } = useDB('apartment_items')
@@ -1239,7 +1239,7 @@ export function ApartmentPage() {
         <form onSubmit={handleAdd} className="card mb-4">
           <p className="form-section-title">Novo item</p>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-            <div><label className="label">CÃ´modo</label><select className="select" value={form.room} onChange={e=>setForm(p=>({...p,room:e.target.value}))}>{APT_ROOMS.map(r=><option key={r}>{r}</option>)}</select></div>
+            <div><label className="label">Cômodo</label><select className="select" value={form.room} onChange={e=>setForm(p=>({...p,room:e.target.value}))}>{APT_ROOMS.map(r=><option key={r}>{r}</option>)}</select></div>
             <div><label className="label">Item</label><input className="input" value={form.item} onChange={e=>setForm(p=>({...p,item:e.target.value}))} required/></div>
             <div><label className="label">Tamanho</label><input className="input" value={form.size} onChange={e=>setForm(p=>({...p,size:e.target.value}))} placeholder="Ex: 2.10m"/></div>
             <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))}/></div>
@@ -1253,18 +1253,18 @@ export function ApartmentPage() {
       )}
       <div className="tbl-wrap"><div className="overflow-x-auto">
         <table className="tbl">
-          <thead><tr><th>CÃ´modo</th><th>Item</th><th>Tamanho</th><th>Valor</th><th>Marca</th><th>Modelo</th><th>Link</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Cômodo</th><th>Item</th><th>Tamanho</th><th>Valor</th><th>Marca</th><th>Modelo</th><th>Link</th><th>Status</th><th></th></tr></thead>
           <tbody>
             {sorted.length===0?<tr><td colSpan={9} className="text-center py-8 text-stone-300">Nenhum item</td></tr>:
               sorted.map(i=>(
                 <tr key={i.id}>
                   <td><span className="badge badge-stone">{i.room}</span></td>
                   <td className="font-medium">{i.item}</td>
-                  <td className="text-stone-400">{i.size||'â'}</td>
-                  <td className="font-medium text-sage-600">{+i.value>0?fmt(i.value):'â'}</td>
-                  <td className="text-stone-400">{i.brand||'â'}</td>
-                  <td className="text-stone-400">{i.model||'â'}</td>
-                  <td>{i.link?<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline text-xs">Ver link</a>:'â'}</td>
+                  <td className="text-stone-400">{i.size||'—'}</td>
+                  <td className="font-medium text-sage-600">{+i.value>0?fmt(i.value):'—'}</td>
+                  <td className="text-stone-400">{i.brand||'—'}</td>
+                  <td className="text-stone-400">{i.model||'—'}</td>
+                  <td>{i.link?<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline text-xs">Ver link</a>:'—'}</td>
                   <td><span className={`badge text-xs ${APT_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
                   <td><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
                 </tr>
@@ -1276,7 +1276,7 @@ export function ApartmentPage() {
   )
 }
 
-// âââ Wedding Page âââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Wedding Page ─────────────────────────────────────────────────
 export function WeddingPage() {
   const { user } = useAuth()
   const { data: guests, insert: insertGuest, remove: removeGuest } = useDB('wedding_guests')
@@ -1287,12 +1287,12 @@ export function WeddingPage() {
 
   useEffect(()=>{
     if(!user) return
-    supabase.from('wedding').select('*').eq('user_id',user.id).single()
-      .then(({data:r})=>{ if(r) setWData({location:r.location||'',date:r.date||'',budget:r.budget||''}) })
+    supabase.from('wedding').select('*').order('created_at',{ascending:true}).limit(1).single()
+      .then(({data:r})=>{ if(r){ setWData({location:r.location||'',date:r.date||'',budget:r.budget||''}); window.__wUserId=r.user_id } })
   },[user])
 
   const saveWedding=async()=>{
-    await supabase.from('wedding').upsert({user_id:user.id,location:wData.location,date:wData.date,budget:parseFloat(wData.budget)||0,updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    await supabase.from('wedding').upsert({user_id:window.__wUserId||user.id,location:wData.location,date:wData.date,budget:parseFloat(wData.budget)||0,updated_at:new Date().toISOString()},{onConflict:'user_id'})
     setSaved(true); setTimeout(()=>setSaved(false),2000)
   }
   const addGuest=async()=>{if(!gForm.name.trim())return;await insertGuest(gForm);setGModal(false);setGForm({name:'',side:'Bruno',confirmed:'Pendente'})}
@@ -1302,20 +1302,20 @@ export function WeddingPage() {
       <PageHeader title="Casamento" subtitle="Organize o grande dia"/>
       <div className="grid md:grid-cols-2 gap-4 mb-5">
         <div className="card">
-          <p className="form-section-title">InformaÃ§Ãµes gerais</p>
+          <p className="form-section-title">Informações gerais</p>
           <div className="grid gap-3">
-            <div><label className="label">Local</label><input className="input" value={wData.location} onChange={e=>setWData(p=>({...p,location:e.target.value}))} placeholder="Nome do espaÃ§o"/></div>
+            <div><label className="label">Local</label><input className="input" value={wData.location} onChange={e=>setWData(p=>({...p,location:e.target.value}))} placeholder="Nome do espaço"/></div>
             <div><label className="label">Data</label><input className="input" type="date" value={wData.date} onChange={e=>setWData(p=>({...p,date:e.target.value}))}/></div>
-            <div><label className="label">OrÃ§amento (R$)</label><input className="input" type="number" value={wData.budget} onChange={e=>setWData(p=>({...p,budget:e.target.value}))}/></div>
-            <button className="btn-primary" onClick={saveWedding}>{saved?'â Salvo!':'Salvar'}</button>
+            <div><label className="label">Orçamento (R$)</label><input className="input" type="number" value={wData.budget} onChange={e=>setWData(p=>({...p,budget:e.target.value}))}/></div>
+            <button className="btn-primary" onClick={saveWedding}>{saved?'✓ Salvo!':'Salvar'}</button>
           </div>
         </div>
         <div className="card">
           <p className="form-section-title">Resumo</p>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-stone-400">Local</span><span className="font-medium">{wData.location||'â'}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">Local</span><span className="font-medium">{wData.location||'—'}</span></div>
             <div className="flex justify-between"><span className="text-stone-400">Data</span><span className="font-medium">{fmtDate(wData.date)}</span></div>
-            <div className="flex justify-between"><span className="text-stone-400">OrÃ§amento</span><span className="font-medium text-sage-600">{wData.budget?fmt(wData.budget):'â'}</span></div>
+            <div className="flex justify-between"><span className="text-stone-400">Orçamento</span><span className="font-medium text-sage-600">{wData.budget?fmt(wData.budget):'—'}</span></div>
             <div className="flex justify-between"><span className="text-stone-400">Convidados</span><span className="font-medium">{guests.length}</span></div>
             <div className="flex justify-between"><span className="text-stone-400">Confirmados</span><span className="font-medium text-sage-600">{guests.filter(g=>g.confirmed==='Sim').length}</span></div>
           </div>
@@ -1334,7 +1334,7 @@ export function WeddingPage() {
                 <tr key={g.id}>
                   <td className="font-medium">{g.name}</td>
                   <td><span className={`badge ${WHO_COLORS[g.side]||'badge-stone'}`}>{g.side}</span></td>
-                  <td><span className={`badge ${g.confirmed==='Sim'?'badge-sage':g.confirmed==='NÃ£o'?'badge-blush':'badge-amber'}`}>{g.confirmed}</span></td>
+                  <td><span className={`badge ${g.confirmed==='Sim'?'badge-sage':g.confirmed==='Não'?'badge-blush':'badge-amber'}`}>{g.confirmed}</span></td>
                   <td><button onClick={()=>removeGuest(g.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
                 </tr>
               ))}
@@ -1345,7 +1345,7 @@ export function WeddingPage() {
         <div className="grid gap-3">
           <div><label className="label">Nome</label><input className="input" value={gForm.name} onChange={e=>setGForm(p=>({...p,name:e.target.value}))}/></div>
           <div><label className="label">Lado</label><select className="select" value={gForm.side} onChange={e=>setGForm(p=>({...p,side:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-          <div><label className="label">Confirmado?</label><select className="select" value={gForm.confirmed} onChange={e=>setGForm(p=>({...p,confirmed:e.target.value}))}><option>Pendente</option><option>Sim</option><option>NÃ£o</option></select></div>
+          <div><label className="label">Confirmado?</label><select className="select" value={gForm.confirmed} onChange={e=>setGForm(p=>({...p,confirmed:e.target.value}))}><option>Pendente</option><option>Sim</option><option>Não</option></select></div>
         </div>
         <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setGModal(false)}>Cancelar</button><button className="btn-primary" onClick={addGuest}>Salvar</button></div>
       </Modal>
@@ -1353,9 +1353,9 @@ export function WeddingPage() {
   )
 }
 
-// âââ Goals Page âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Goals Page ───────────────────────────────────────────────────
 import { GOAL_STATUS } from '../lib/utils'
-const GOAL_CATS=['Desenvolvimento','Trabalho','SaÃºde','Casamento','FinanÃ§as','Relacionamento','Lazer','Espiritualidade','Outros']
+const GOAL_CATS=['Desenvolvimento','Trabalho','Saúde','Casamento','Finanças','Relacionamento','Lazer','Espiritualidade','Outros']
 
 export function GoalsPage() {
   const { data: goals, insert, remove, update } = useDB('goals')
@@ -1363,16 +1363,16 @@ export function GoalsPage() {
   const [adding, setAdding] = useState(false)
   const [filter, setFilter] = useState('todos')
   const [editItem, setEditItem] = useState(null)
-  const [form, setForm] = useState({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'MÃ©dio prazo',status:'Em andamento',deadline:'',reward:''})
+  const [form, setForm] = useState({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})
   const filtered=filter==='todos'?goals:goals.filter(g=>g.responsible===filter||g.status===filter)
-  const handleAdd=async(e)=>{e.preventDefault();await insert(form);setAdding(false);setForm({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'MÃ©dio prazo',status:'Em andamento',deadline:'',reward:''})}
+  const handleAdd=async(e)=>{e.preventDefault();await insert(form);setAdding(false);setForm({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})}
   const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{goal:editItem.goal,responsible:editItem.responsible,category:editItem.category,tipo:editItem.tipo,status:editItem.status,deadline:editItem.deadline,reward:editItem.reward});setEditItem(null)}
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <PageHeader title="Metas"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Nova meta</button>}/>
       <div className="flex gap-2 flex-wrap mb-4">
-        {['todos','Bruno','Vianka','Ambos','Em andamento','ConcluÃ­da'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todas':f}</button>)}
+        {['todos','Bruno','Vianka','Ambos','Em andamento','Concluída'].map(f=><button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todas':f}</button>)}
       </div>
       {adding&&(
         <form onSubmit={handleAdd} className="card mb-4">
@@ -1380,9 +1380,9 @@ export function GoalsPage() {
           <div className="grid gap-3">
             <div><label className="label">Meta</label><textarea className="textarea" value={form.goal} onChange={e=>setForm(p=>({...p,goal:e.target.value}))} required/></div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <div><label className="label">ResponsÃ¡vel</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+              <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
               <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{GOAL_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-              <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>Curto prazo</option><option>MÃ©dio prazo</option><option>Longo prazo</option></select></div>
+              <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>Curto prazo</option><option>Médio prazo</option><option>Longo prazo</option></select></div>
               <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(GOAL_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -1400,9 +1400,9 @@ export function GoalsPage() {
               <form onSubmit={handleEdit} className="grid gap-3">
                 <div><label className="label">Meta</label><textarea className="textarea" value={editItem.goal||''} onChange={e=>setEditItem(p=>({...p,goal:e.target.value}))} required/></div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  <div><label className="label">ResponsÃ¡vel</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+                  <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
                   <div><label className="label">Categoria</label><select className="select" value={editItem.category||'Desenvolvimento'} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}>{GOAL_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-                  <div><label className="label">Tipo</label><select className="select" value={editItem.tipo||'MÃ©dio prazo'} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>Curto prazo</option><option>MÃ©dio prazo</option><option>Longo prazo</option></select></div>
+                  <div><label className="label">Tipo</label><select className="select" value={editItem.tipo||'Médio prazo'} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>Curto prazo</option><option>Médio prazo</option><option>Longo prazo</option></select></div>
                   <div><label className="label">Status</label><select className="select" value={editItem.status||'Em andamento'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{Object.keys(GOAL_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -1438,7 +1438,7 @@ export function GoalsPage() {
   )
 }
 
-// âââ Commitments (Calendar) Page âââââââââââââââââââââââââââââââââââââ
+// ─── Commitments (Calendar) Page ─────────────────────────────────────
 import { DAYS_OF_WEEK, DAYS_SHORT, genTimeSlots } from '../lib/utils'
 const TIME_SLOTS = genTimeSlots()
 
@@ -1472,7 +1472,7 @@ export function CommitmentsPage() {
 
   return(
     <div className="p-4 md:p-6" onMouseUp={finishSelect} onDragOver={e=>e.preventDefault()}>
-      <PageHeader title="Compromissos" subtitle="CalendÃ¡rio semanal"
+      <PageHeader title="Compromissos" subtitle="Calendário semanal"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setSelCells([]);setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}><Plus className="w-4 h-4"/> Compromisso</button>} />
       <div className="overflow-x-auto rounded-2xl border border-stone-100 shadow-warm bg-white" style={{userSelect:'none'}}>
         <table style={{minWidth:640,width:'100%',borderCollapse:'collapse'}}>
@@ -1530,23 +1530,23 @@ export function CommitmentsPage() {
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-stone-300 mt-2 text-center">Clique para adicionar Â· Arraste um evento para mover Â· Clique e arraste em cÃ©lulas vazias para criar em lote</p>
+      <p className="text-xs text-stone-300 mt-2 text-center">Clique para adicionar · Arraste um evento para mover · Clique e arraste em células vazias para criar em lote</p>
 
-      <Modal open={modal} onClose={()=>{setModal(false);setSelCells([])}} title={selCells.length>1?"Novo compromisso em "+selCells.length+" horÃ¡rios":"Novo compromisso"}>
+      <Modal open={modal} onClose={()=>{setModal(false);setSelCells([])}} title={selCells.length>1?"Novo compromisso em "+selCells.length+" horários":"Novo compromisso"}>
         <div className="grid gap-3">
           {selCells.length===0&&<>
             <div><label className="label">Dia</label><select className="select" value={form.day_of_week} onChange={e=>setForm(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
-            <div><label className="label">HorÃ¡rio</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
+            <div><label className="label">Horário</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
           </>}
           {selCells.length>0&&(
             <div className="bg-sage-50 rounded-lg p-3 text-sm text-stone-600">
-              <p className="font-medium mb-1">HorÃ¡rios selecionados ({selCells.length}):</p>
+              <p className="font-medium mb-1">Horários selecionados ({selCells.length}):</p>
               <div className="flex flex-wrap gap-1">{selCells.map((c,i)=><span key={i} className="badge badge-sage text-xs">{c.day} {c.time}</span>)}</div>
             </div>
           )}
-          <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, ReuniÃ£o..." autoFocus/></div>
-          <div><label className="label">ResponsÃ¡vel</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-          {selCells.length===0&&<div><label className="label mb-1">Repetir tambÃ©m em</label><div className="flex flex-wrap gap-1 mt-1">{DAYS_OF_WEEK.filter(d=>d!==form.day_of_week).map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${(form.recurrence||[]).includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>toggleRec(d)}>{d}</button>))}</div></div>}
+          <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, Reunião..." autoFocus/></div>
+          <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+          {selCells.length===0&&<div><label className="label mb-1">Repetir também em</label><div className="flex flex-wrap gap-1 mt-1">{DAYS_OF_WEEK.filter(d=>d!==form.day_of_week).map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${(form.recurrence||[]).includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>toggleRec(d)}>{d}</button>))}</div></div>}
         </div>
         <div className="flex gap-2 justify-end mt-4">
           <button className="btn-secondary" onClick={()=>{setModal(false);setSelCells([])}}>Cancelar</button>
@@ -1557,9 +1557,9 @@ export function CommitmentsPage() {
       <Modal open={editModal} onClose={()=>setEditModal(false)} title="Editar compromisso">
         {editItem&&<div className="grid gap-3">
           <div><label className="label">Dia</label><select className="select" value={editItem.day_of_week} onChange={e=>setEditItem(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
-          <div><label className="label">HorÃ¡rio</label><select className="select" value={editItem.time_slot} onChange={e=>setEditItem(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
+          <div><label className="label">Horário</label><select className="select" value={editItem.time_slot} onChange={e=>setEditItem(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
           <div><label className="label">Compromisso</label><input className="input" value={editItem.title||''} onChange={e=>setEditItem(p=>({...p,title:e.target.value}))}/></div>
-          <div><label className="label">ResponsÃ¡vel</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
+          <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
         </div>}
         <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setEditModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleEdit}>Salvar</button></div>
       </Modal>
@@ -1573,7 +1573,7 @@ export function CommitmentsPage() {
   )
 }
 
-// âââ PrÃ©-Off Page ââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Pré-Off Page ────────────────────────────────────────────────
 export function PreOffPage() {
   const { data: questions, insert: insertQ, remove: removeQ, update: updateQ } = useDB('preoff_questions')
   const { user } = useAuth()
@@ -1611,7 +1611,7 @@ export function PreOffPage() {
 
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <PageHeader title="PrÃ©-Off" subtitle="Checkin do casal antes do fim de semana"
+      <PageHeader title="Pré-Off" subtitle="Checkin do casal antes do fim de semana"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Pergunta</button>}/>
 
       {adding&&(
@@ -1625,7 +1625,7 @@ export function PreOffPage() {
         </form>
       )}
 
-      {questions.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma pergunta ainda. Clique em "+ Pergunta" para comeÃ§ar.</div>:
+      {questions.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma pergunta ainda. Clique em "+ Pergunta" para começar.</div>:
         questions.map((q,i)=>(
           <div key={q.id} className="card mb-3">
             {editQ?.id===q.id?(
@@ -1673,13 +1673,13 @@ export function PreOffPage() {
   )
 }
 
-// âââ Pending Page âââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Pending Page ─────────────────────────────────────────────────
 export function PendingPage() {
   return(
     <div className="p-4 md:p-6 max-w-xl mx-auto">
-      <PageHeader title="PendÃªncias" subtitle="Em breve"/>
+      <PageHeader title="Pendências" subtitle="Em breve"/>
       <div className="card text-center py-16">
-        <p className="text-stone-300 text-sm">Esta seÃ§Ã£o ainda serÃ¡ definida.</p>
+        <p className="text-stone-300 text-sm">Esta seção ainda será definida.</p>
       </div>
     </div>
   )
