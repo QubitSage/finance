@@ -699,10 +699,10 @@ function MimosTab() {
   const { data, insert, remove, update } = useDB('mimos')
   const [adding, setAdding] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente'})
+  const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})
   const MIMO_STATUS=['Pendente','Aprovado','Planejando','ConcluÃ­do','Cancelado']
 
-  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente'})}
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})}
   const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{date:editItem.date,mimo:editItem.mimo,objective:editItem.objective,tipo:editItem.tipo,category:editItem.category,value:parseFloat(editItem.value)||0,status:editItem.status});setEditItem(null)}
   const approve=(m)=>update(m.id,{status:'Aprovado'})
   const disapprove=(m)=>update(m.id,{status:'Cancelado'})
@@ -726,6 +726,7 @@ function MimosTab() {
               <div><label className="label">Categoria</label><input className="input" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))} placeholder="A definir"/></div>
               <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))}/></div>
             </div>
+            <div><label className="label">Link (opcional)</label><input className="input" type="url" placeholder="https://..." value={form.link||''} onChange={e=>setForm(p=>({...p,link:e.target.value}))}/></div>
           </div>
           <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
         </form>
@@ -746,6 +747,7 @@ function MimosTab() {
                   <div><label className="label">Categoria</label><input className="input" value={editItem.category||''} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}/></div>
                   <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.value||''} onChange={e=>setEditItem(p=>({...p,value:e.target.value}))}/></div>
                 </div>
+                <div><label className="label">Link (opcional)</label><input className="input" type="url" placeholder="https://..." value={editItem.link||''} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/></div>
                 <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
               </form>
             ):(
@@ -767,6 +769,7 @@ function MimosTab() {
                 <div className="flex gap-3 text-xs text-stone-400">
                   {m.value>0&&<span>Valor: <strong className="text-stone-600">{fmt(m.value)}</strong></span>}
                   {m.date&&<span>Receber em: <strong className="text-stone-600">{fmtDate(m.date)}</strong></span>}
+                {m.link&&<a href={m.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-amber-600 hover:text-amber-700 font-medium mt-1"><ExternalLink className="w-3 h-3"/>Ver link</a>}
                 </div>
               </>
             )}
