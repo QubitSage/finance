@@ -1082,11 +1082,11 @@ export function DataPage() {
   const [saved, setSaved] = useState(false)
   useEffect(()=>{
     if(!user) return
-    supabase.from('couple_profile').select('*').order('updated_at',{ascending:true}).limit(1).single()
-      .then(({data:r})=>{ if(r){ setData(r.data||{}); window.__cpUserId=r.user_id } })
+    supabase.from('couple_profile').select('*').eq('user_id',user.id).single()
+      .then(({data:r})=>{ if(r){ setData(r.data||{}) } })
   },[user])
   const handleSave=async()=>{
-    await supabase.from('couple_profile').upsert({user_id:window.__cpUserId||user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    await supabase.from('couple_profile').upsert({user_id:user.id,data,updated_at:new Date().toISOString()},{onConflict:'user_id'})
     setSaved(true); setTimeout(()=>setSaved(false),2000)
   }
   return(
