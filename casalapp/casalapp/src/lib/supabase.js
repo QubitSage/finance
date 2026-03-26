@@ -7,10 +7,10 @@ export const supabase = createClient(supabaseUrl, supabaseKey)
 
 /*
 ================================================================
-  SUPABASE SQL — Cole e execute no SQL Editor do seu projeto
+  SUPABASE SQL â Cole e execute no SQL Editor do seu projeto
 ================================================================
 
--- CONFIGURAÇÕES DO CASAL
+-- CONFIGURAÃÃES DO CASAL
 create table couple_settings (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null unique,
@@ -19,7 +19,7 @@ create table couple_settings (
   updated_at timestamptz default now()
 );
 
--- TRANSAÇÕES FINANCEIRAS
+-- TRANSAÃÃES FINANCEIRAS
 create table transactions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null,
@@ -32,14 +32,14 @@ create table transactions (
   created_at timestamptz default now()
 );
 
--- METAS DE POUPANÇA
+-- METAS DE POUPANÃA
 create table savings_goals (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null,
   name text not null,
   target numeric(12,2) not null,
   current numeric(12,2) default 0,
-  emoji text default '🎯',
+  emoji text default 'ð¯',
   created_at timestamptz default now()
 );
 
@@ -118,7 +118,7 @@ create table planner_options (
   created_at timestamptz default now()
 );
 
--- QUESTIONÁRIO
+-- QUESTIONÃRIO
 create table quiz_questions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null,
@@ -223,7 +223,7 @@ create table commitments (
   created_at timestamptz default now()
 );
 
--- PRÉ-OFF (CHECKIN DO CASAL)
+-- PRÃ-OFF (CHECKIN DO CASAL)
 create table preoff_questions (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references auth.users not null,
@@ -238,6 +238,24 @@ create table preoff_answers (
   answer text not null,
   created_at timestamptz default now()
 );
+
+-- LOGS DE ATIVIDADE
+create table if not exists activity_logs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  action text not null,
+  section text,
+  route text,
+  detail text,
+  created_at timestamptz default now()
+);
+alter table activity_logs enable row level security;
+create policy "own data" on activity_logs for all using (auth.uid() = user_id);
+
+-- NOVAS COLUNAS COUPLE_SETTINGS
+-- alter table couple_settings add column if not exists apartment_percentage numeric(5,2) default 40;
+-- alter table couple_settings add column if not exists wedding_percentage numeric(5,2) default 20;
+-- alter table couple_settings add column if not exists company_percentage numeric(5,2) default 20;
 
 -- NOVAS COLUNAS
 -- alter table planner_rounds add column if not exists aprovacao text;
@@ -267,7 +285,7 @@ alter table commitments         enable row level security;
 alter table preoff_questions    enable row level security;
 alter table preoff_answers      enable row level security;
 
--- POLICIES (repita o padrão para cada tabela)
+-- POLICIES (repita o padrÃ£o para cada tabela)
 do $$
 declare t text;
 begin
