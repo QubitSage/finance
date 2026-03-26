@@ -1082,7 +1082,7 @@ export function DataPage() {
   const [saved, setSaved] = useState(false)
   useEffect(()=>{
     if(!user) return
-    supabase.from('couple_profile').select('*').order('created_at',{ascending:true}).limit(1).single()
+    supabase.from('couple_profile').select('*').order('updated_at',{ascending:true}).limit(1).single()
       .then(({data:r})=>{ if(r){ setData(r.data||{}); window.__cpUserId=r.user_id } })
   },[user])
   const handleSave=async()=>{
@@ -1287,7 +1287,7 @@ export function WeddingPage() {
 
   useEffect(()=>{
     if(!user) return
-    supabase.from('wedding').select('*').order('created_at',{ascending:true}).limit(1).single()
+    supabase.from('wedding').select('*').order('updated_at',{ascending:true}).limit(1).single()
       .then(({data:r})=>{ if(r){ setWData({location:r.location||'',date:r.date||'',budget:r.budget||''}); window.__wUserId=r.user_id } })
   },[user])
 
