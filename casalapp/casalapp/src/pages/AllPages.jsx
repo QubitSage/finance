@@ -1685,3 +1685,180 @@ export function PendingPage() {
     </div>
   )
 }
+
+// --- Spreadsheet Page ---
+export function SpreadsheetPage() {
+    const [month, setMonth] = useState(monthKey())
+    const { data: txs } = useDB('transactions', { filter: { month } })
+    const { settings } = useSettings()
+
+    const prev = () => setMonth(monthKey(subMonths(new Date(month + '-01'), 1)))
+    const next = () => setMonth(monthKey(addMonths(new Date(month + '-01'), 1)))
+
+    const wifePct = (settings?.wife_percentage || 30) / 100
+    const aptPct = (settings?.apartment_percentage || 40) / 100
+    const weddingPct = (settings?.wedding_percentage || 20) / 100
+    const companyPct = (settings?.company_percentage || 20) / 100
+
+    const sorted = [...(txs || [])].sort((a, b) => new Date(a.date) - new Date(b.date))
+
+    let runningWife = 0
+    let runningApt = 0
+    let runningWedding = 0
+    let runningCompany = 0
+
+    const rows = sorted.map((t, i) => {
+          const amt = Number(t.amount) || 0
+          const isIncome = t.type === 'income'
+
+          if (isIncome) {
+                  runningWife += amt * wifePct
+                  runningApt += amt * aptPct
+                  runningWedding += amt * weddingPct
+                  runningCompany += amt * companyPct
+          } else {
+                  if (t.category === 'wife') runningWife -= amt
+                  else if (t.category === 'savings' || t.category === 'apartment') runningApt -= amt
+                  else if (t.category === 'wedding') runningWedding -= amt
+                  else if (t.category === 'company') runningCompany -= amt
+                  else {
+                            runningWife -= amt * wifePct
+                            runningApt -= amt * aptPct
+                            runningWedding -= amt * weddingPct
+                            runningCompany -= amt * companyPct
+                  }
+          }
+
+          return {
+                  ...t,
+                  idx: i + 1,
+                  saldoMimos: runningWife,
+                  saldoApt: runningApt,
+                  saldoWedding: runningWedding,
+                  saldoCompany: runningCompany,
+          }
+    })
+
+    const fmt = (v) => v?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+    const categoryLabel = {
+          work: 'Trabalho',
+          personal: 'Pessoal',
+          wife: 'Mimos Esposa',
+          savings: 'Poupança',
+          company: 'Empresa',
+          apartment: 'Apartamento',
+          wedding: 'Casamento',
+    }
+
+    const totIncome = (txs || []).filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+    const totExpense = (txs || []).filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+    const lastRow = rows[rows.length - 1]
+
+    return (
+          <div className="p-4 md:p-6 max-w-full mx-auto">
+                <PageHeader title="Planilha" subtitle="Visão completa das movimentações" />
+          
+                <div className="flex items-center gap-3 mb-4">
+                        <button onClick={prev} className="btn-secondary px-3 py-1.5 text-sm flex items-center gap-1">
+                                  <ChevronLeft size={16} /> Anterior
+                        </button>button>
+                        <span className="font-semibold text-stone-700">{monthLabel(month)}</span>span>
+                        <button onClick={next} className="btn-secondary px-3 py-1.5 text-sm flex items-center gap-1">
+                                  Próximo <ChevronRight size={16} />
+                        </button>button>
+                </div>div>
+          
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                        <div className="card p-3 text-center">
+                                  <p className="text-xs text-stone-500 mb-1">Entradas</p>p>
+                                  <p className="font-bold text-green-600">{fmt(totIncome)}</p>p>
+                        </div>div>
+                        <div className="card p-3 text-center">
+                                  <p className="text-xs text-stone-500 mb-1">Saídas</p>p>
+                                  <p className="font-bold text-red-500">{fmt(totExpense)}</p>p>
+                        </div>div>
+                        <div className="card p-3 text-center">
+                                  <p className="text-xs text-stone-500 mb-1">Saldo Mimos</p>p>
+                                  <p className={`font-bold ${(lastRow?.saldoMimos || 0) >= 0 ? 'text-pink-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoMimos || 0)}</p>p>
+                        </div>div>
+                        <div className="card p-3 text-center">
+                                  <p className="text-xs text-stone-500 mb-1">Saldo Apartamento</p>p>
+                                  <p className={`font-bold ${(lastRow?.saldoApt || 0) >= 0 ? 'text-amber-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoApt || 0)}</p>p>
+                        </div>div>
+                        <div className="card p-3 text-center">
+                                  <p className="text-xs text-stone-500 mb-1">Saldo Casamento</p>p>
+                                  <p className={`font-bold ${(lastRow?.saldoWedding || 0) >= 0 ? 'text-rose-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoWedding || 0)}</p>p>
+                        </div>div>
+                        <div className="card p-3 text-center">
+                                  <p className="text-xs text-stone-500 mb-1">Saldo Empresa</p>p>
+                                  <p className={`font-bold ${(lastRow?.saldoCompany || 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoCompany || 0)}</p>p>
+                        </div>div>
+                </div>div>
+          
+                <div className="card overflow-x-auto">
+                        <table className="w-full text-xs md:text-sm border-collapse">
+                                  <thead>
+                                              <tr className="bg-stone-100 text-stone-600">
+                                                            <th className="p-2 text-left border-b border-stone-200">#</th>th>
+                                                            <th className="p-2 text-left border-b border-stone-200">Data</th>th>
+                                                            <th className="p-2 text-left border-b border-stone-200">Descrição</th>th>
+                                                            <th className="p-2 text-left border-b border-stone-200">Categoria</th>th>
+                                                            <th className="p-2 text-right border-b border-stone-200">Entrada</th>th>
+                                                            <th className="p-2 text-right border-b border-stone-200">Saída</th>th>
+                                                            <th className="p-2 text-right border-b border-stone-200">Saldo Mimos</th>th>
+                                                            <th className="p-2 text-right border-b border-stone-200">Saldo Apto</th>th>
+                                                            <th className="p-2 text-right border-b border-stone-200">Saldo Casamento</th>th>
+                                                            <th className="p-2 text-right border-b border-stone-200">Saldo Empresa</th>th>
+                                              </tr>tr>
+                                  </thead>thead>
+                                  <tbody>
+                                    {rows.length === 0 && (
+                          <tr>
+                                          <td colSpan={10} className="p-6 text-center text-stone-400">Nenhuma movimentação neste mês</td>td>
+                          </tr>tr>
+                                              )}
+                                    {rows.map((r) => (
+                          <tr key={r.id} className={`border-b border-stone-100 hover:bg-stone-50 transition-colors ${r.type === 'income' ? 'bg-green-50/30' : ''}`}>
+                                          <td className="p-2 text-stone-400">{r.idx}</td>td>
+                                          <td className="p-2 text-stone-600 whitespace-nowrap">{r.date ? format(new Date(r.date + 'T12:00:00'), 'dd/MM/yyyy') : '-'}</td>td>
+                                          <td className="p-2 text-stone-800 max-w-[180px] truncate" title={r.description}>{r.description}</td>td>
+                                          <td className="p-2">
+                                                            <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                                                r.category === 'wife' ? 'bg-pink-100 text-pink-700' :
+                                                r.category === 'work' ? 'bg-green-100 text-green-700' :
+                                                r.category === 'company' ? 'bg-blue-100 text-blue-700' :
+                                                r.category === 'savings' || r.category === 'apartment' ? 'bg-amber-100 text-amber-700' :
+                                                r.category === 'wedding' ? 'bg-rose-100 text-rose-700' :
+                                                'bg-stone-100 text-stone-600'
+                          }`}>
+                                                              {categoryLabel[r.category] || r.category}
+                                                            </span>span>
+                                          </td>td>
+                                          <td className="p-2 text-right font-medium text-green-600">{r.type === 'income' ? fmt(r.amount) : ''}</td>td>
+                                          <td className="p-2 text-right font-medium text-red-500">{r.type === 'expense' ? fmt(r.amount) : ''}</td>td>
+                                          <td className={`p-2 text-right font-medium ${r.saldoMimos >= 0 ? 'text-pink-600' : 'text-red-500'}`}>{fmt(r.saldoMimos)}</td>td>
+                                          <td className={`p-2 text-right font-medium ${r.saldoApt >= 0 ? 'text-amber-600' : 'text-red-500'}`}>{fmt(r.saldoApt)}</td>td>
+                                          <td className={`p-2 text-right font-medium ${r.saldoWedding >= 0 ? 'text-rose-600' : 'text-red-500'}`}>{fmt(r.saldoWedding)}</td>td>
+                                          <td className={`p-2 text-right font-medium ${r.saldoCompany >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{fmt(r.saldoCompany)}</td>td>
+                          </tr>tr>
+                        ))}
+                                  </tbody>tbody>
+                          {rows.length > 0 && (
+                        <tfoot>
+                                      <tr className="bg-stone-100 font-semibold text-stone-700">
+                                                      <td colSpan={4} className="p-2 text-right">Totais</td>td>
+                                                      <td className="p-2 text-right text-green-600">{fmt(totIncome)}</td>td>
+                                                      <td className="p-2 text-right text-red-500">{fmt(totExpense)}</td>td>
+                                                      <td className={`p-2 text-right ${(lastRow?.saldoMimos || 0) >= 0 ? 'text-pink-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoMimos || 0)}</td>td>
+                                                      <td className={`p-2 text-right ${(lastRow?.saldoApt || 0) >= 0 ? 'text-amber-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoApt || 0)}</td>td>
+                                                      <td className={`p-2 text-right ${(lastRow?.saldoWedding || 0) >= 0 ? 'text-rose-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoWedding || 0)}</td>td>
+                                                      <td className={`p-2 text-right ${(lastRow?.saldoCompany || 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>{fmt(lastRow?.saldoCompany || 0)}</td>td>
+                                      </tr>tr>
+                        </tfoot>tfoot>
+                                  )}
+                        </table>table>
+                </div>div>
+          </div>div>
+        )
+}</div>
