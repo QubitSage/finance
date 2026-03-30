@@ -13,7 +13,7 @@ import {
   WifePage, SavingsPage, ReportsPage, ConfigPage,
   RulesPage, TripsPage, DesiresPage, QuizPage, DataPage,
   MarketPage, ApartmentPage, WeddingPage, GoalsPage,
-  CommitmentsPage, PendingPage, PreOffPage,
+  CommitmentsPage, PendingPage, PreOffPage, SpreadsheetPage,
 } from './pages/AllPages'
 
 function Guard({ children }) {
@@ -45,6 +45,7 @@ function App() {
         <Route path="esposa"      element={<WifePage />} />
         <Route path="poupanca"    element={<SavingsPage />} />
         <Route path="relatorios"  element={<ReportsPage />} />
+                      <Route path="planilha"      element={<SpreadsheetPage />} />
         <Route path="config"      element={<ConfigPage />} />
         <Route path="regras"      element={<RulesPage />} />
         <Route path="viagens"     element={<TripsPage />} />
