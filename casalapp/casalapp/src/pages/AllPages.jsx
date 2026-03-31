@@ -486,7 +486,7 @@ export function TripsPage() {
   const openEdit = (t) => { setEditItem(t); setForm({destination:t.destination,category:t.category,status:t.status,start_date:t.start_date||'',end_date:t.end_date||'',budget:t.budget||'',spent:t.spent||'',notes:t.notes||''}); setModal(true) }
 
   const handleSave = async () => {
-    const data={...form,budget:parseFloat(form.budget)||0,spent:parseFloat(form.spent)||0}
+    const data={...form,budget:parseFloat(form.budget)||0,spent:parseFloat(form.spent)||0,start_date:form.start_date||null,end_date:form.end_date||null}
     if(editItem) await update(editItem.id,data)
     else await insert(data)
     setModal(false)
@@ -613,12 +613,12 @@ function DesiresTab() {
   const handleAdd = async (e) => {
     e.preventDefault()
     if(!form.desire.trim()) return
-    await insert({...form,cost:parseFloat(form.cost)||0})
+    await insert({...form,cost:parseFloat(form.cost)||0,date:form.date||null})
     setAdding(false); setForm({who:'Bruno',desire:'',why:'',tipo:'Não-Sexual',category:'Com o marido',cost:'',date:'',status:'Pendente'})
   }
   const handleEdit = async (e) => {
     e.preventDefault()
-    await update(editItem.id, {...editItem, cost: parseFloat(editItem.cost)||0})
+    await update(editItem.id, {...editItem, cost: parseFloat(editItem.cost)||0, date: editItem.date||null})
     setEditItem(null)
   }
   const setStatus = async (id, status) => { await update(id, {status}) }
@@ -703,7 +703,7 @@ function MimosTab() {
   const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})
   const MIMO_STATUS=['Pendente','Aprovado','Planejando','Concluído','Cancelado']
 
-  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})}
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0,date:form.date||null});setAdding(false);setForm({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})}
   const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{date:editItem.date,mimo:editItem.mimo,objective:editItem.objective,tipo:editItem.tipo,category:editItem.category,value:parseFloat(editItem.value)||0,status:editItem.status});setEditItem(null)}
   const approve=(m)=>update(m.id,{status:'Aprovado'})
   const disapprove=(m)=>update(m.id,{status:'Cancelado'})
@@ -1293,7 +1293,7 @@ export function WeddingPage() {
   },[user])
 
   const saveWedding=async()=>{
-    await supabase.from('wedding').upsert({user_id:window.__wUserId||user.id,location:wData.location,date:wData.date,budget:parseFloat(wData.budget)||0,updated_at:new Date().toISOString()},{onConflict:'user_id'})
+    await supabase.from('wedding').upsert({user_id:window.__wUserId||user.id,location:wData.location,date:wData.date||null,budget:parseFloat(wData.budget)||0,updated_at:new Date().toISOString()},{onConflict:'user_id'})
     setSaved(true); setTimeout(()=>setSaved(false),2000)
   }
   const addGuest=async()=>{if(!gForm.name.trim())return;await insertGuest(gForm);setGModal(false);setGForm({name:'',side:'Bruno',confirmed:'Pendente'})}
@@ -1366,7 +1366,7 @@ export function GoalsPage() {
   const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})
   const filtered=filter==='todos'?goals:goals.filter(g=>g.responsible===filter||g.status===filter)
-  const handleAdd=async(e)=>{e.preventDefault();await insert(form);setAdding(false);setForm({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})}
+  const handleAdd=async(e)=>{e.preventDefault();await insert({...form, deadline: form.deadline||null});setAdding(false);setForm({goal:'',responsible:'Bruno',category:'Desenvolvimento',tipo:'Médio prazo',status:'Em andamento',deadline:'',reward:''})}
   const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{goal:editItem.goal,responsible:editItem.responsible,category:editItem.category,tipo:editItem.tipo,status:editItem.status,deadline:editItem.deadline,reward:editItem.reward});setEditItem(null)}
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -1604,8 +1604,8 @@ export function PendingPage() {
 
   const handleAdd = async () => {
     if (!form.client_name.trim()) return
-    await insert({ ...form, amount_paid: parseFloat(form.amount_paid) || 0 })
-    await addLog('pedido_adicionado', `Pedido de ${form.client_name} adicionado`)
+    await insert({ ...form, amount_paid: parseFloat(form.amount_paid) || 0, order_date: form.order_date || null, delivery_date: form.delivery_date || null })
+    await addLog('pedido_adicionado', 'Pedidos', '/pendencias', `Pedido de ${form.client_name} adicionado`)
     setForm({ client_name: '', order_date: format(new Date(), 'yyyy-MM-dd'), delivery_date: '', amount_paid: '', material_provided: '', description: '', status: 'pendente', notes: '' })
     setAdding(false)
   }
@@ -1616,13 +1616,13 @@ export function PendingPage() {
   }
 
   const handleSave = async () => {
-    await update(editId, { ...editForm, amount_paid: parseFloat(editForm.amount_paid) || 0 })
+    await update(editId, { ...editForm, amount_paid: parseFloat(editForm.amount_paid) || 0, order_date: editForm.order_date || null, delivery_date: editForm.delivery_date || null })
     setEditId(null)
   }
 
   const handleRemove = async (id, name) => {
     await remove(id)
-    await addLog('pedido_removido', `Pedido de ${name} removido`)
+    await addLog('pedido_removido', 'Pedidos', '/pendencias', `Pedido de ${name} removido`)
   }
 
   const sortedOrders = [...(orders || [])].sort((a, b) => new Date(a.delivery_date || '9999') - new Date(b.delivery_date || '9999'))
