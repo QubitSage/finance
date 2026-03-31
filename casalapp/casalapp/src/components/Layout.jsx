@@ -4,7 +4,7 @@ import { useSettings } from '../hooks/useSettings'
 import {
   LayoutDashboard, ArrowLeftRight, Heart, PiggyBank, BarChart2,
   Globe, Sparkles, HelpCircle, User, ShoppingCart, Home,
-  Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, HeartHandshake, Table2,
+  Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, Table2,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -19,7 +19,6 @@ const NAV = [
   { to: '/viagens',       icon: Globe,           label: 'Viagens',         group: 'Casal' },
   { to: '/desejos',       icon: Sparkles,        label: 'Desejos',         group: 'Casal' },
   { to: '/questionario',  icon: HelpCircle,      label: 'Questionário',    group: 'Casal' },
-  { to: '/pre-off',       icon: HeartHandshake,  label: 'Pré-Off',         group: 'Casal' },
   { to: '/dados',         icon: User,            label: 'Dados',           group: 'Casal' },
   { to: '/mercado',       icon: ShoppingCart,    label: 'Mercado',         group: 'Casa' },
   { to: '/apartamento',   icon: Home,            label: 'Apartamento',     group: 'Casa' },
