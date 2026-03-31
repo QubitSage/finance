@@ -95,6 +95,9 @@ create table mimos (
   value numeric(12,2) default 0,
   status text default 'Pendente',
   created_at timestamptz default now()
+    com_quem text,
+      resposta_marido text,
+        resposta_status text default 'Pendente',
 );
 
 -- PLANNER ROUNDS
@@ -261,6 +264,9 @@ create policy "own data" on activity_logs for all using (auth.uid() = user_id);
 -- alter table planner_rounds add column if not exists aprovacao text;
 -- alter table desires add column if not exists aprovacao text;
 -- alter table desires add column if not exists delivered boolean default false;
+  alter table mimos add column if not exists com_quem text;
+  alter table mimos add column if not exists resposta_marido text;
+  alter table mimos add column if not exists resposta_status text default 'Pendente';
 
 -- ROW LEVEL SECURITY (RLS)
 alter table couple_settings    enable row level security;
