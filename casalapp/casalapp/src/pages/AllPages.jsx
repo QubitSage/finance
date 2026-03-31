@@ -1573,114 +1573,213 @@ export function CommitmentsPage() {
     </div>
   )
 }
-
-// ─── Pré-Off Page ────────────────────────────────────────────────
-export function PreOffPage() {
-  const { data: questions, insert: insertQ, remove: removeQ, update: updateQ } = useDB('preoff_questions')
-  const { user } = useAuth()
+export function PendingPage() {
+  const { data: orders, insert, remove, update } = useDB('client_orders')
+  const { addLog } = useLogs()
   const [adding, setAdding] = useState(false)
-  const [editQ, setEditQ] = useState(null)
-  const [ansModal, setAnsModal] = useState(null)
-  const [qForm, setQForm] = useState({question:'',who:'Ambos'})
-  const [aForm, setAForm] = useState({who:'Bruno',answer:''})
-  const [answers, setAnswers] = useState({})
+  const [editId, setEditId] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [form, setForm] = useState({
+    client_name: '',
+    order_date: format(new Date(), 'yyyy-MM-dd'),
+    delivery_date: '',
+    amount_paid: '',
+    material_provided: '',
+    description: '',
+    status: 'pendente',
+    notes: '',
+  })
 
-  useEffect(()=>{
-    if(!questions.length||!user) return
-    supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
-      .then(({data})=>{
-        const map={}
-        ;(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)})
-        setAnswers(map)
-      })
-  },[questions,user])
+  const STATUS_OPTIONS = [
+    { value: 'pendente',     label: 'Pendente',     color: 'bg-amber-100 text-amber-700' },
+    { value: 'em_andamento', label: 'Em andamento', color: 'bg-blue-100 text-blue-700' },
+    { value: 'concluido',    label: 'Concluído',    color: 'bg-green-100 text-green-700' },
+    { value: 'cancelado',    label: 'Cancelado',    color: 'bg-red-100 text-red-700' },
+  ]
 
-  const handleAddQ=async(e)=>{e.preventDefault();await insertQ(qForm);setQForm({question:'',who:'Ambos'});setAdding(false)}
-  const handleEditQ=async(e)=>{e.preventDefault();if(!editQ?.question?.trim())return;await updateQ(editQ.id,{question:editQ.question,who:editQ.who});setEditQ(null)}
-  const handleAddA=async()=>{
-    if(!aForm.answer.trim()||!ansModal) return
-    await supabase.from('preoff_answers').insert([{...aForm,question_id:ansModal}])
-    setAnsModal(null);setAForm({who:'Bruno',answer:''})
-    const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
-    const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
-  }
-  const removeAnswer=async(id)=>{
-    await supabase.from('preoff_answers').delete().eq('id',id)
-    const {data}=await supabase.from('preoff_answers').select('*').in('question_id',questions.map(q=>q.id))
-    const map={};(data||[]).forEach(a=>{if(!map[a.question_id])map[a.question_id]=[];map[a.question_id].push(a)});setAnswers(map)
+  const statusBadge = (val) => {
+    const opt = STATUS_OPTIONS.find(s => s.value === val) || STATUS_OPTIONS[0]
+    return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${opt.color}`}>{opt.label}</span>
   }
 
-  return(
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <PageHeader title="Pré-Off" subtitle="Checkin do casal antes do fim de semana"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Pergunta</button>}/>
+  const handleAdd = async () => {
+    if (!form.client_name.trim()) return
+    await insert({ ...form, amount_paid: parseFloat(form.amount_paid) || 0 })
+    await addLog('pedido_adicionado', `Pedido de ${form.client_name} adicionado`)
+    setForm({ client_name: '', order_date: format(new Date(), 'yyyy-MM-dd'), delivery_date: '', amount_paid: '', material_provided: '', description: '', status: 'pendente', notes: '' })
+    setAdding(false)
+  }
 
-      {adding&&(
-        <form onSubmit={handleAddQ} className="card mb-4">
-          <p className="form-section-title">Nova pergunta</p>
-          <div className="grid gap-3">
-            <div><label className="label">Pergunta</label><textarea className="textarea" value={qForm.question} onChange={e=>setQForm(p=>({...p,question:e.target.value}))} required/></div>
-            <div><label className="label">Para quem?</label><select className="select" value={qForm.who} onChange={e=>setQForm(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
+  const handleEdit = (order) => {
+    setEditId(order.id)
+    setEditForm({ ...order })
+  }
+
+  const handleSave = async () => {
+    await update(editId, { ...editForm, amount_paid: parseFloat(editForm.amount_paid) || 0 })
+    setEditId(null)
+  }
+
+  const handleRemove = async (id, name) => {
+    await remove(id)
+    await addLog('pedido_removido', `Pedido de ${name} removido`)
+  }
+
+  const sortedOrders = [...(orders || [])].sort((a, b) => new Date(a.delivery_date || '9999') - new Date(b.delivery_date || '9999'))
+
+  return (
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+      <div className="flex items-center justify-between">
+        <PageHeader title="Pedidos de Clientes" subtitle={`${(orders||[]).length} pedido(s) registrado(s)`} />
+        <button onClick={() => setAdding(!adding)} className="btn-primary flex items-center gap-1.5 text-sm">
+          <Plus size={15} /> Novo Pedido
+        </button>
+      </div>
+
+      {adding && (
+        <div className="card space-y-3">
+          <p className="text-sm font-semibold text-stone-700">Novo Pedido</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-stone-500 mb-1 block">Cliente *</label>
+              <input className="input w-full" placeholder="Nome do cliente" value={form.client_name} onChange={e => setForm({...form, client_name: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 mb-1 block">Valor Pago (R$)</label>
+              <input className="input w-full" type="number" placeholder="0,00" value={form.amount_paid} onChange={e => setForm({...form, amount_paid: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 mb-1 block">Data do Pedido</label>
+              <input className="input w-full" type="date" value={form.order_date} onChange={e => setForm({...form, order_date: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 mb-1 block">Data de Entrega</label>
+              <input className="input w-full" type="date" value={form.delivery_date} onChange={e => setForm({...form, delivery_date: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 mb-1 block">Material Fornecido</label>
+              <input className="input w-full" placeholder="Ex: Tecido, linha..." value={form.material_provided} onChange={e => setForm({...form, material_provided: e.target.value})} />
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 mb-1 block">Status</label>
+              <select className="input w-full" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
+                {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs text-stone-500 mb-1 block">Descrição do Pedido</label>
+              <input className="input w-full" placeholder="O que foi pedido..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs text-stone-500 mb-1 block">Observações</label>
+              <input className="input w-full" placeholder="Notas adicionais..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
+            </div>
           </div>
-          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-        </form>
+          <div className="flex gap-2 pt-1">
+            <button onClick={handleAdd} className="btn-primary text-sm">Salvar</button>
+            <button onClick={() => setAdding(false)} className="btn-secondary text-sm">Cancelar</button>
+          </div>
+        </div>
       )}
 
-      {questions.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma pergunta ainda. Clique em "+ Pergunta" para começar.</div>:
-        questions.map((q,i)=>(
-          <div key={q.id} className="card mb-3">
-            {editQ?.id===q.id?(
-              <form onSubmit={handleEditQ} className="grid gap-3">
-                <div><label className="label">Pergunta</label><textarea className="textarea" value={editQ.question} onChange={e=>setEditQ(p=>({...p,question:e.target.value}))} required/></div>
-                <div><label className="label">Para quem?</label><select className="select" value={editQ.who} onChange={e=>setEditQ(p=>({...p,who:e.target.value}))}><option>Ambos</option><option>Bruno</option><option>Vianka</option></select></div>
-                <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditQ(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-              </form>
-            ):(
-              <>
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-full bg-sage-50 border border-sage-100 flex items-center justify-center text-xs font-medium text-sage-700">{i+1}</span>
-                    <span className={`badge ${WHO_COLORS[q.who]||'badge-stone'}`}>{q.who}</span>
+      {sortedOrders.length === 0 && !adding && (
+        <div className="card text-center py-12">
+          <ClipboardList size={32} className="mx-auto text-stone-300 mb-2" />
+          <p className="text-stone-400 text-sm">Nenhum pedido registrado.</p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {sortedOrders.map(order => (
+          <div key={order.id} className="card space-y-2">
+            {editId === order.id ? (
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-stone-700">Editando Pedido</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-stone-500 mb-1 block">Cliente</label>
+                    <input className="input w-full" value={editForm.client_name||''} onChange={e => setEditForm({...editForm, client_name: e.target.value})} />
                   </div>
-                  <div className="flex gap-1">
-                    <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setAnsModal(q.id)}>+ Resposta</button>
-                    <button onClick={()=>setEditQ({...q})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button>
-                    <button onClick={()=>removeQ(q.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                  <div>
+                    <label className="text-xs text-stone-500 mb-1 block">Valor Pago (R$)</label>
+                    <input className="input w-full" type="number" value={editForm.amount_paid||''} onChange={e => setEditForm({...editForm, amount_paid: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone-500 mb-1 block">Data do Pedido</label>
+                    <input className="input w-full" type="date" value={editForm.order_date||''} onChange={e => setEditForm({...editForm, order_date: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone-500 mb-1 block">Data de Entrega</label>
+                    <input className="input w-full" type="date" value={editForm.delivery_date||''} onChange={e => setEditForm({...editForm, delivery_date: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone-500 mb-1 block">Material Fornecido</label>
+                    <input className="input w-full" value={editForm.material_provided||''} onChange={e => setEditForm({...editForm, material_provided: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-stone-500 mb-1 block">Status</label>
+                    <select className="input w-full" value={editForm.status||'pendente'} onChange={e => setEditForm({...editForm, status: e.target.value})}>
+                      {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs text-stone-500 mb-1 block">Descrição</label>
+                    <input className="input w-full" value={editForm.description||''} onChange={e => setEditForm({...editForm, description: e.target.value})} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="text-xs text-stone-500 mb-1 block">Observações</label>
+                    <input className="input w-full" value={editForm.notes||''} onChange={e => setEditForm({...editForm, notes: e.target.value})} />
                   </div>
                 </div>
-                <p className="font-medium text-stone-800 mb-3">{q.question}</p>
-                {(answers[q.id]||[]).map(a=>(
-                  <div key={a.id} className="bg-stone-50 rounded-xl p-3 mb-2 group">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className={`badge text-xs ${WHO_COLORS[a.who]||'badge-stone'}`}>{a.who}</span>
-                      <button onClick={()=>removeAnswer(a.id)} className="opacity-0 group-hover:opacity-100 btn-icon w-6 h-6 transition-opacity"><Trash2 className="w-3 h-3"/></button>
+                <div className="flex gap-2">
+                  <button onClick={handleSave} className="btn-primary text-sm">Salvar</button>
+                  <button onClick={() => setEditId(null)} className="btn-secondary text-sm">Cancelar</button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-stone-800 text-sm">{order.client_name}</span>
+                      {statusBadge(order.status)}
                     </div>
-                    <p className="text-sm text-stone-600 leading-relaxed">{a.answer}</p>
+                    {order.description && <p className="text-xs text-stone-500 mt-0.5 truncate">{order.description}</p>}
                   </div>
-                ))}
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => handleEdit(order)} className="p-1.5 text-stone-400 hover:text-amber-500 rounded transition-colors">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => handleRemove(order.id, order.client_name)} className="p-1.5 text-stone-400 hover:text-red-400 rounded transition-colors">
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-stone-500">
+                  <div>
+                    <span className="block text-stone-400">Pedido em</span>
+                    <span className="font-medium text-stone-600">{order.order_date ? format(new Date(order.order_date + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-stone-400">Entrega</span>
+                    <span className="font-medium text-stone-600">{order.delivery_date ? format(new Date(order.delivery_date + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-stone-400">Valor Pago</span>
+                    <span className="font-medium text-green-600">{order.amount_paid ? `R$ ${Number(order.amount_paid).toFixed(2).replace('.',',')}` : '—'}</span>
+                  </div>
+                  <div>
+                    <span className="block text-stone-400">Material</span>
+                    <span className="font-medium text-stone-600 truncate block">{order.material_provided || '—'}</span>
+                  </div>
+                </div>
+                {order.notes && (
+                  <p className="text-xs text-stone-400 border-t border-stone-100 pt-2 mt-1">📝 {order.notes}</p>
+                )}
               </>
             )}
           </div>
         ))}
-
-      <Modal open={!!ansModal} onClose={()=>setAnsModal(null)} title="Adicionar resposta">
-        <div className="grid gap-3">
-          <div><label className="label">Quem responde?</label><select className="select" value={aForm.who} onChange={e=>setAForm(p=>({...p,who:e.target.value}))}><option>Bruno</option><option>Vianka</option></select></div>
-          <div><label className="label">Resposta</label><textarea className="textarea min-h-[100px]" value={aForm.answer} onChange={e=>setAForm(p=>({...p,answer:e.target.value}))}/></div>
-        </div>
-        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setAnsModal(null)}>Cancelar</button><button className="btn-primary" onClick={handleAddA}>Salvar</button></div>
-      </Modal>
-    </div>
-  )
-}
-
-// ─── Pending Page ─────────────────────────────────────────────────
-export function PendingPage() {
-  return(
-    <div className="p-4 md:p-6 max-w-xl mx-auto">
-      <PageHeader title="Pendências" subtitle="Em breve"/>
-      <div className="card text-center py-16">
-        <p className="text-stone-300 text-sm">Esta seção ainda será definida.</p>
       </div>
     </div>
   )
