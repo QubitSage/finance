@@ -678,7 +678,7 @@ function DesiresTab() {
                     </>}
                     {m.status!=='Entregue'&&<button onClick={()=>setStatus(m.id,'Entregue')} className="btn-icon w-7 h-7 text-blue-600" title="Marcar como entregue/realizado"><Check className="w-3.5 h-3.5"/></button>}
                     <button onClick={()=>setEditItem({...m})} className="btn-icon w-7 h-7" title="Editar"><Pencil className="w-3.5 h-3.5"/></button>
-                    <button onClick={()=>remove(m.id)} className="btn-icon w-7 h-7" title="Remover"><Trash2 className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>{if(window.confirm('Tem certeza que deseja excluir?'))remove(m.id)}} className="btn-icon w-7 h-7" title="Remover"><Trash2 className="w-3.5 h-3.5"/></button>
                   </div>
                 </div>
                 {m.why&&<p className="text-sm text-stone-400 mb-2">{m.why}</p>}
@@ -762,7 +762,7 @@ function MimosTab() {
                     <button onClick={()=>approve(m)} className="btn-icon w-7 h-7 text-sage-500" title="Aprovar"><ThumbsUp className="w-3.5 h-3.5"/></button>
                     <button onClick={()=>disapprove(m)} className="btn-icon w-7 h-7 text-blush-500" title="Recusar"><ThumbsDown className="w-3.5 h-3.5"/></button>
                     <button onClick={()=>setEditItem({...m})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button>
-                    <button onClick={()=>remove(m.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                    <button onClick={()=>{if(window.confirm('Tem certeza que deseja excluir?'))remove(m.id)}} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
                   </div>
                 </div>
                 <p className="font-medium text-stone-800 mb-1">{m.mimo}</p>
