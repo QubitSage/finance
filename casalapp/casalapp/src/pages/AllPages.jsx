@@ -1,4 +1,4 @@
-// ─── Wife Page ───────────────────────────────────────────────────
+ // ─── Wife Page ───────────────────────────────────────────────────
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDB } from '../hooks/useDB'
