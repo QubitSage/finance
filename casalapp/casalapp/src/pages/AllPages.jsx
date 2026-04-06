@@ -469,188 +469,287 @@ export function RulesPage() {
 // ─── Trips Page ───────────────────────────────────────────────────
 import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
 import Modal from '../components/Modal'
-import { useRef, useEffect as useEffectMap } from 'react'
+import { useRef, useEffect as useEff, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
+
+const PIN_TYPES = {
+  hotel:     { label: 'Hospedagem', emoji: '🏨' },
+  food:      { label: 'Restaurante', emoji: '🍽️' },
+  sight:     { label: 'Atração',    emoji: '🎭' },
+  transport: { label: 'Transporte', emoji: '✈️' },
+  other:     { label: 'Outro',      emoji: '📍' },
+}
+const PIN_COLORS = { hotel:'#3b82f6', food:'#ef4444', sight:'#8b5cf6', transport:'#06b6d4', other:'#d97706' }
+
+function buildIcon(L, type, num) {
+  const color = PIN_COLORS[type] || PIN_COLORS.other
+  return L.divIcon({
+    className: '',
+    html: `<div style="position:relative;width:32px;height:40px">
+      <div style="position:absolute;bottom:0;left:50%;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:translateX(-50%) rotate(-45deg);background:${color};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>
+      <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700">${num}</div>
+    </div>`,
+    iconSize: [32, 40], iconAnchor: [16, 40], popupAnchor: [0, -40]
+  })
+}
 
 function TripMapModal({ trip, onClose }) {
   const { user } = useAuth()
   const [pins, setPins] = useState([])
   const mapRef = useRef(null)
-  const mapInstance = useRef(null)
-  const markersRef = useRef({})
-  const [searchAddr, setSearchAddr] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [searching, setSearching] = useState(false)
-  const [pinForm, setPinForm] = useState(null)
-  const [activeTab, setActiveTab] = useState('map')
+  const mapInst = useRef(null)
+  const mkrs = useRef({})
+  const poly = useRef(null)
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [busy, setBusy] = useState(false)
+  const [form, setForm] = useState(null)
+  const [editing, setEditing] = useState(null)
+  const [view, setView] = useState('split')
+  const [loading, setLoading] = useState(true)
 
-  const loadPins = async () => {
-    if (!user || !trip?.id) return
+  const load = useCallback(async () => {
+    if (!user?.id || !trip?.id) return
+    setLoading(true)
     const { data } = await supabase.from('trip_pins').select('*').eq('trip_id', trip.id).order('created_at', { ascending: true })
     setPins(data || [])
-  }
+    setLoading(false)
+  }, [user?.id, trip?.id])
 
-  useEffectMap(() => { loadPins() }, [trip?.id, user?.id])
+  useEff(() => { load() }, [load])
 
-  useEffectMap(() => {
-    if (!window.L || !mapRef.current || mapInstance.current) return
+  useEff(() => {
+    if (!window.L || !mapRef.current || mapInst.current) return
     const L = window.L
-    const map = L.map(mapRef.current, { zoomControl: true }).setView([-15.78, -47.93], 4)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map)
-    mapInstance.current = map
-    map.on('click', (e) => {
-      setPinForm({ name: '', address: e.latlng.lat.toFixed(5) + ', ' + e.latlng.lng.toFixed(5), note: '', lat: e.latlng.lat, lng: e.latlng.lng })
+    const m = L.map(mapRef.current, { zoomControl: false }).setView([-15.78, -47.93], 4)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m)
+    L.control.zoom({ position: 'bottomright' }).addTo(m)
+    m.on('click', e => {
+      setResults([]); setQuery(''); setEditing(null)
+      setForm({ name: '', type: 'other', note: '', lat: e.latlng.lat, lng: e.latlng.lng })
     })
-    return () => { try { map.remove() } catch(e){} mapInstance.current = null }
+    mapInst.current = m
+    return () => { try { m.remove() } catch(_){} mapInst.current = null }
   }, [])
 
-  useEffectMap(() => {
+  useEff(() => {
     const L = window.L
-    if (!L || !mapInstance.current) return
-    const map = mapInstance.current
-    const pinIds = new Set(pins.map(p => String(p.id)))
-    Object.keys(markersRef.current).forEach(id => {
-      if (!pinIds.has(id)) { markersRef.current[id].remove(); delete markersRef.current[id] }
-    })
+    if (!L || !mapInst.current) return
+    const m = mapInst.current
+    const ids = new Set(pins.map(p => String(p.id)))
+    Object.keys(mkrs.current).forEach(id => { if (!ids.has(id)) { mkrs.current[id].remove(); delete mkrs.current[id] } })
     pins.forEach((p, i) => {
-      if (markersRef.current[String(p.id)]) return
-      const icon = L.divIcon({
-        className: '',
-        html: '<div style="background:#d97706;color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)">' + (i+1) + '</div>',
-        iconSize: [26, 26], iconAnchor: [13, 13]
-      })
-      const marker = L.marker([p.lat, p.lng], { icon }).addTo(map).bindPopup('<b>' + p.name + '</b>' + (p.note ? '<br>' + p.note : ''))
-      markersRef.current[String(p.id)] = marker
+      const icon = buildIcon(L, p.type || 'other', i + 1)
+      if (mkrs.current[String(p.id)]) {
+        mkrs.current[String(p.id)].setIcon(icon)
+      } else {
+        const mk = L.marker([p.lat, p.lng], { icon }).addTo(m)
+          .bindPopup(`<b>${p.name}</b>${p.note ? '<br><i style="color:#78716c">' + p.note + '</i>' : ''}`)
+        mkrs.current[String(p.id)] = mk
+      }
     })
+    if (poly.current) { poly.current.remove(); poly.current = null }
+    if (pins.length > 1) {
+      poly.current = L.polyline(pins.map(p => [p.lat, p.lng]), { color: '#d97706', weight: 2.5, dashArray: '6 8', opacity: 0.7 }).addTo(m)
+    }
     if (pins.length > 0) {
-      try { map.fitBounds(L.latLngBounds(pins.map(p => [p.lat, p.lng])), { padding: [40, 40], maxZoom: 15 }) } catch(e) {}
+      try { m.fitBounds(L.latLngBounds(pins.map(p => [p.lat, p.lng])), { padding: [50, 50], maxZoom: 14, animate: false }) } catch(_) {}
     }
   }, [pins])
 
-  const searchAddress = async () => {
-    if (!searchAddr.trim()) return
-    setSearching(true)
-    setSearchResults([])
+  const search = async () => {
+    if (!query.trim()) return
+    setBusy(true); setResults([])
     try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchAddr) + '&limit=5', { headers: { 'Accept-Language': 'pt-BR' } })
-      setSearchResults(await r.json())
-    } catch(e) {}
-    setSearching(false)
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=6', { headers: { 'Accept-Language': 'pt-BR' } })
+      setResults(await r.json())
+    } catch(_) {}
+    setBusy(false)
   }
 
-  const selectResult = (res) => {
-    const lat = parseFloat(res.lat), lng = parseFloat(res.lon)
-    setSearchResults([])
-    setSearchAddr(res.display_name.split(',').slice(0, 2).join(','))
-    setPinForm({ name: res.display_name.split(',')[0], address: res.display_name, note: '', lat, lng })
-    if (mapInstance.current) mapInstance.current.setView([lat, lng], 16)
-    setActiveTab('map')
+  const pickResult = (r) => {
+    const lat = parseFloat(r.lat), lng = parseFloat(r.lon)
+    setResults([]); setQuery(''); setEditing(null)
+    setForm({ name: r.display_name.split(',')[0].trim(), type: 'other', note: '', lat, lng })
+    if (mapInst.current) mapInst.current.setView([lat, lng], 16)
+    if (view === 'list') setView('split')
   }
 
   const savePin = async () => {
-    if (!pinForm?.lat || !pinForm.name.trim() || !user) return
-    const { data } = await supabase.from('trip_pins').insert([{ trip_id: trip.id, user_id: user.id, name: pinForm.name, address: pinForm.address, note: pinForm.note, lat: pinForm.lat, lng: pinForm.lng }]).select()
-    if (data?.[0]) { setPins(prev => [...prev, data[0]]); setPinForm(null) }
+    if (!form || !form.name.trim() || !user) return
+    if (editing) {
+      await supabase.from('trip_pins').update({ name: form.name, type: form.type, note: form.note }).eq('id', editing)
+      setPins(prev => prev.map(p => p.id === editing ? { ...p, ...form } : p))
+    } else {
+      const { data } = await supabase.from('trip_pins').insert([{ trip_id: trip.id, user_id: user.id, name: form.name, type: form.type || 'other', note: form.note, lat: form.lat, lng: form.lng }]).select()
+      if (data?.[0]) setPins(prev => [...prev, data[0]])
+    }
+    setForm(null); setEditing(null)
   }
 
-  const removePin = async (id) => {
+  const deletePin = async (id) => {
     await supabase.from('trip_pins').delete().eq('id', id)
     setPins(prev => prev.filter(p => p.id !== id))
-    if (markersRef.current[String(id)]) { markersRef.current[String(id)].remove(); delete markersRef.current[String(id)] }
+    if (mkrs.current[String(id)]) { mkrs.current[String(id)].remove(); delete mkrs.current[String(id)] }
+    if (editing === id) { setForm(null); setEditing(null) }
   }
 
-  const focusPin = (p) => {
-    if (mapInstance.current) { mapInstance.current.setView([p.lat, p.lng], 17); markersRef.current[String(p.id)]?.openPopup() }
-    setActiveTab('map')
+  const flyTo = (p) => {
+    if (mapInst.current) { mapInst.current.setView([p.lat, p.lng], 17); mkrs.current[String(p.id)]?.openPopup() }
+    if (view === 'list') setView('split')
+  }
+
+  const editPin = (p) => { setEditing(p.id); setForm({ name: p.name, type: p.type || 'other', note: p.note || '', lat: p.lat, lng: p.lng }) }
+
+  const fitAll = () => {
+    if (!mapInst.current || !window.L || pins.length === 0) return
+    try { mapInst.current.fitBounds(window.L.latLngBounds(pins.map(p => [p.lat, p.lng])), { padding: [50, 50], maxZoom: 14 }) } catch(_) {}
   }
 
   return (
-    <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(0,0,0,.5)',display:'flex',flexDirection:'column'}} onClick={onClose}>
-      <div style={{background:'#F9F7F4',height:'100%',display:'flex',flexDirection:'column'}} onClick={e=>e.stopPropagation()}>
-        <div style={{padding:'10px 14px',borderBottom:'1px solid #e7e5e4',display:'flex',alignItems:'center',gap:8,background:'#fff',flexShrink:0}}>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 6px'}}>←</button>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:700,fontSize:15,fontFamily:'Georgia,serif'}}>{trip.destination}</div>
-            <div style={{fontSize:11,color:'#78716c'}}>Planejamento de rota</div>
+    <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',flexDirection:'column',background:'#F9F7F4'}} onClick={onClose}>
+      <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderBottom:'1px solid #e7e5e4',background:'#fff',flexShrink:0,zIndex:3}}>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#44403c',lineHeight:1,padding:'0 6px 0 0'}}>←</button>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:15,fontFamily:'Georgia,serif',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trip.destination}</div>
+            <div style={{fontSize:11,color:'#a8a29e'}}>{loading ? 'Carregando...' : pins.length + ' pin' + (pins.length !== 1 ? 's' : '') + ' no roteiro'}</div>
           </div>
-          <button onClick={()=>setActiveTab('map')} style={{padding:'5px 14px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='map'?'#d97706':'#e7e5e4',color:activeTab==='map'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Mapa</button>
-          <button onClick={()=>setActiveTab('pins')} style={{padding:'5px 14px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='pins'?'#d97706':'#e7e5e4',color:activeTab==='pins'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Pins ({pins.length})</button>
+          <div style={{display:'flex',gap:2,background:'#f5f4f2',borderRadius:20,padding:2}}>
+            {[['split','⊞ Vista'],['map','🗺 Mapa'],['list','☰ Lista']].map(([v,label])=>(
+              <button key={v} onClick={()=>setView(v)} style={{padding:'4px 10px',borderRadius:18,border:'none',cursor:'pointer',background:view===v?'#fff':'transparent',color:view===v?'#d97706':'#78716c',fontSize:12,fontWeight:600,transition:'all .15s',boxShadow:view===v?'0 1px 3px rgba(0,0,0,.1)':'none',whiteSpace:'nowrap'}}>{label}</button>
+            ))}
+          </div>
         </div>
+
+        {/* Search */}
         <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2}}>
           <div style={{display:'flex',gap:8}}>
-            <input value={searchAddr} onChange={e=>setSearchAddr(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchAddress()}
-              placeholder="Buscar endereço ou local..." style={{flex:1,padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}} />
-            <button onClick={searchAddress} disabled={searching} style={{padding:'8px 14px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontWeight:600,fontSize:13,whiteSpace:'nowrap'}}>
-              {searching?'...':'Buscar'}
+            <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search()}
+              placeholder="🔍  Buscar local, endereço, cidade..."
+              style={{flex:1,padding:'9px 14px',borderRadius:10,border:'1.5px solid #e7e5e4',fontSize:14,outline:'none',background:'#fafaf9',transition:'border-color .2s'}}
+              onFocus={e=>e.target.style.borderColor='#d97706'} onBlur={e=>e.target.style.borderColor='#e7e5e4'} />
+            <button onClick={search} disabled={busy} style={{padding:'9px 18px',borderRadius:10,background:busy?'#e7e5e4':'#d97706',color:busy?'#78716c':'#fff',border:'none',cursor:busy?'default':'pointer',fontWeight:700,fontSize:13,transition:'all .15s',whiteSpace:'nowrap'}}>
+              {busy ? '...' : 'Buscar'}
             </button>
           </div>
-          {searchResults.length > 0 && (
-            <div style={{position:'absolute',top:'100%',left:12,right:12,background:'#fff',border:'1px solid #d6d3d1',borderRadius:8,boxShadow:'0 6px 20px rgba(0,0,0,.18)',zIndex:9999,maxHeight:220,overflowY:'auto'}}>
-              {searchResults.map((r,i)=>(
-                <div key={i} onClick={()=>selectResult(r)} style={{padding:'9px 14px',cursor:'pointer',borderBottom:i<searchResults.length-1?'1px solid #f5f4f2':'none',fontSize:13}}
+          {results.length > 0 && (
+            <div style={{position:'absolute',top:'calc(100% - 1px)',left:12,right:12,background:'#fff',border:'1.5px solid #d97706',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.15)',zIndex:9999,maxHeight:240,overflowY:'auto'}}>
+              {results.map((r,i)=>(
+                <div key={i} onClick={()=>pickResult(r)}
+                  style={{padding:'10px 14px',cursor:'pointer',borderBottom:i<results.length-1?'1px solid #f5f4f2':'none',display:'flex',alignItems:'center',gap:10}}
                   onMouseEnter={e=>e.currentTarget.style.background='#fef3c7'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                  <div style={{fontWeight:600,color:'#1c1917'}}>{r.display_name.split(',')[0]}</div>
-                  <div style={{color:'#78716c',fontSize:12,marginTop:2}}>{r.display_name.split(',').slice(1,3).join(',').trim()}</div>
+                  <span style={{fontSize:18,flexShrink:0}}>📍</span>
+                  <div style={{minWidth:0}}>
+                    <div style={{fontWeight:600,fontSize:13,color:'#1c1917',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.display_name.split(',')[0]}</div>
+                    <div style={{fontSize:11,color:'#78716c',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.display_name.split(',').slice(1,4).join(',').trim()}</div>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div style={{flex:1,position:'relative',display:activeTab==='map'?'flex':'none',flexDirection:'column',minHeight:0}}>
-          <div ref={mapRef} style={{flex:1,width:'100%'}} />
-        </div>
-        {activeTab==='pins' && (
-          <div style={{flex:1,overflowY:'auto',padding:'12px 14px',minHeight:0}}>
-            {pins.length===0 ? (
-              <div style={{textAlign:'center',padding:'40px 20px',color:'#78716c'}}>
-                <div style={{fontSize:36,marginBottom:10}}>📍</div>
-                <p>Nenhum pin ainda.</p>
-                <p style={{fontSize:13}}>Busque um endereço ou clique no mapa para adicionar pins.</p>
+
+        {/* Main area */}
+        <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
+
+          {/* Map panel */}
+          {(view === 'map' || view === 'split') && (
+            <div style={{flex: view==='split' ? '1 1 60%' : '1 1 100%', position:'relative', minWidth:0}}>
+              <div ref={mapRef} style={{width:'100%',height:'100%'}} />
+              {pins.length > 1 && (
+                <button onClick={fitAll}
+                  style={{position:'absolute',top:10,right:10,zIndex:500,background:'#fff',border:'1px solid #e7e5e4',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontSize:12,fontWeight:600,color:'#44403c',boxShadow:'0 2px 6px rgba(0,0,0,.12)'}}>
+                  ⛶ Ver todos
+                </button>
+              )}
+              {pins.length === 0 && !loading && (
+                <div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.95)',borderRadius:10,padding:'10px 18px',fontSize:12,color:'#78716c',boxShadow:'0 2px 8px rgba(0,0,0,.1)',whiteSpace:'nowrap',zIndex:400,textAlign:'center'}}>
+                  Clique no mapa ou busque um lugar para adicionar o primeiro pin 📍
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* List panel */}
+          {(view === 'list' || view === 'split') && (
+            <div style={{flex: view==='split' ? '0 0 38%' : '1 1 100%', minWidth: view==='split' ? 260 : 0, maxWidth: view==='split' ? 360 : undefined, display:'flex',flexDirection:'column',borderLeft: view==='split' ? '1px solid #e7e5e4' : 'none', background:'#fafaf9', overflow:'hidden'}}>
+              <div style={{padding:'10px 14px',borderBottom:'1px solid #e7e5e4',background:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+                <span style={{fontWeight:600,fontSize:13,color:'#44403c'}}>📋 Roteiro ({pins.length})</span>
+                {pins.length > 1 && <span style={{fontSize:11,color:'#a8a29e'}}>{pins.length} paradas</span>}
               </div>
-            ) : (
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {pins.map((p,i)=>(
-                  <div key={p.id} style={{background:'#fff',borderRadius:10,padding:'10px 12px',border:'1px solid #e7e5e4',display:'flex',alignItems:'flex-start',gap:10}}>
-                    <div style={{background:'#d97706',color:'#fff',borderRadius:'50%',width:24,height:24,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,flexShrink:0,marginTop:2}}>{i+1}</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:600,fontSize:14,color:'#1c1917'}}>{p.name}</div>
-                      {p.address && <div style={{fontSize:12,color:'#78716c',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.address}</div>}
-                      {p.note && <div style={{fontSize:12,color:'#57534e',marginTop:4,fontStyle:'italic'}}>{p.note}</div>}
-                    </div>
-                    <div style={{display:'flex',gap:4,flexShrink:0}}>
-                      <button onClick={()=>focusPin(p)} style={{background:'#fef3c7',border:'none',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontSize:12,fontWeight:500}}>Ver</button>
-                      <button onClick={()=>removePin(p.id)} style={{background:'#fee2e2',border:'none',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontSize:12,color:'#dc2626',fontWeight:500}}>✕</button>
-                    </div>
+              <div style={{flex:1,overflowY:'auto',padding:'8px 10px'}}>
+                {loading ? (
+                  <div style={{textAlign:'center',padding:30,color:'#a8a29e',fontSize:13}}>Carregando pins...</div>
+                ) : pins.length === 0 ? (
+                  <div style={{textAlign:'center',padding:'32px 16px',color:'#a8a29e'}}>
+                    <div style={{fontSize:40,marginBottom:8}}>🗺️</div>
+                    <div style={{fontWeight:600,fontSize:14,marginBottom:4,color:'#78716c'}}>Roteiro vazio</div>
+                    <div style={{fontSize:12}}>Busque um lugar ou clique no mapa para começar a planejar</div>
                   </div>
-                ))}
+                ) : (
+                  <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                    {pins.map((p, i) => (
+                      <div key={p.id} style={{background:'#fff',borderRadius:10,border:'1px solid #e7e5e4',overflow:'hidden'}}>
+                        <div style={{display:'flex',alignItems:'flex-start',padding:'9px 10px',gap:8}}>
+                          <div style={{width:26,height:26,borderRadius:'50%',background:PIN_COLORS[p.type||'other'],color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,flexShrink:0,marginTop:1}}>{i+1}</div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontWeight:600,fontSize:13,color:'#1c1917',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{PIN_TYPES[p.type||'other']?.emoji} {p.name}</div>
+                            <div style={{fontSize:11,color:'#a8a29e',marginTop:1}}>{PIN_TYPES[p.type||'other']?.label}</div>
+                            {p.note && <div style={{fontSize:11,color:'#78716c',marginTop:2,fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.note}</div>}
+                          </div>
+                          <div style={{display:'flex',gap:3,flexShrink:0}}>
+                            <button onClick={()=>flyTo(p)} title="Ver no mapa" style={{background:'#f0fdf4',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>🎯</button>
+                            <button onClick={()=>window.open('https://www.google.com/maps/search/?api=1&query='+p.lat+','+p.lng,'_blank')} title="Google Maps" style={{background:'#eff6ff',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>🗺</button>
+                            <button onClick={()=>editPin(p)} title="Editar" style={{background:'#fef3c7',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>✏️</button>
+                            <button onClick={()=>deletePin(p.id)} title="Remover" style={{background:'#fef2f2',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:12,color:'#dc2626',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        )}
-        {pinForm && (
-          <div style={{background:'#fff',borderTop:'2px solid #d97706',padding:'12px 14px',flexShrink:0}}>
-            <div style={{fontWeight:600,fontSize:13,marginBottom:8,color:'#d97706'}}>📍 Adicionar Pin</div>
-            <div style={{display:'grid',gap:7}}>
-              <input value={pinForm.name} onChange={e=>setPinForm(f=>({...f,name:e.target.value}))} placeholder="Nome do local *"
-                style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}} />
-              <input value={pinForm.address} onChange={e=>setPinForm(f=>({...f,address:e.target.value}))} placeholder="Endereço"
-                style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:13,outline:'none'}} />
-              <input value={pinForm.note} onChange={e=>setPinForm(f=>({...f,note:e.target.value}))} placeholder="Nota (opcional)"
-                style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}} />
-              {pinForm.lat && <div style={{fontSize:11,color:'#a8a29e'}}>📌 {pinForm.lat.toFixed(5)}, {pinForm.lng.toFixed(5)}</div>}
-              <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:2}}>
-                <button onClick={()=>setPinForm(null)} style={{padding:'8px 16px',borderRadius:8,background:'#e7e5e4',border:'none',cursor:'pointer',fontSize:14}}>Cancelar</button>
-                <button onClick={savePin} style={{padding:'8px 16px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontSize:14,fontWeight:600}}>Salvar Pin</button>
-              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Bottom sheet pin form */}
+        {form && (
+          <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:600,background:'#fff',borderTop:'2px solid #d97706',borderRadius:'16px 16px 0 0',padding:'14px 16px 20px',boxShadow:'0 -4px 20px rgba(0,0,0,.12)'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+              <span style={{fontWeight:700,fontSize:14,color:'#d97706'}}>{editing ? '✏️ Editar Pin' : '📍 Novo Pin'}</span>
+              <button onClick={()=>{setForm(null);setEditing(null)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#78716c',lineHeight:1}}>×</button>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
+              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&savePin()} placeholder="Nome do local *"
+                autoFocus style={{gridColumn:'1/-1',padding:'9px 12px',borderRadius:8,border:'1.5px solid #e7e5e4',fontSize:14,outline:'none',transition:'border-color .2s'}}
+                onFocus={e=>e.target.style.borderColor='#d97706'} onBlur={e=>e.target.style.borderColor='#e7e5e4'} />
+              <select value={form.type||'other'} onChange={e=>setForm(f=>({...f,type:e.target.value}))}
+                style={{padding:'9px 12px',borderRadius:8,border:'1.5px solid #e7e5e4',fontSize:13,outline:'none',background:'#fff',cursor:'pointer',appearance:'none'}}>
+                {Object.entries(PIN_TYPES).map(([k,v])=><option key={k} value={k}>{v.emoji} {v.label}</option>)}
+              </select>
+              <input value={form.note||''} onChange={e=>setForm(f=>({...f,note:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&savePin()} placeholder="Nota opcional"
+                style={{padding:'9px 12px',borderRadius:8,border:'1.5px solid #e7e5e4',fontSize:13,outline:'none',transition:'border-color .2s'}}
+                onFocus={e=>e.target.style.borderColor='#d97706'} onBlur={e=>e.target.style.borderColor='#e7e5e4'} />
+            </div>
+            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+              <button onClick={()=>{setForm(null);setEditing(null)}} style={{padding:'9px 18px',borderRadius:8,background:'#f5f4f2',border:'none',cursor:'pointer',fontSize:14,color:'#44403c'}}>Cancelar</button>
+              {editing && <button onClick={()=>deletePin(editing)} style={{padding:'9px 14px',borderRadius:8,background:'#fef2f2',border:'none',cursor:'pointer',fontSize:14,color:'#dc2626',fontWeight:600}}>Remover</button>}
+              <button onClick={savePin} disabled={!form.name?.trim()} style={{padding:'9px 22px',borderRadius:8,background:form.name?.trim()?'#d97706':'#e7e5e4',color:form.name?.trim()?'#fff':'#a8a29e',border:'none',cursor:form.name?.trim()?'pointer':'default',fontSize:14,fontWeight:700,transition:'all .15s'}}>
+                {editing ? 'Salvar' : 'Adicionar ✓'}
+              </button>
             </div>
           </div>
         )}
+
       </div>
     </div>
   )
 }
-
 
 export function TripsPage() {
   const { data: trips, insert, update, remove } = useDB('trips')
@@ -661,76 +760,93 @@ export function TripsPage() {
   const [mapTrip, setMapTrip] = useState(null)
   const [form, setForm] = useState({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''})
 
-  const filtered = filter==='todos'?trips:trips.filter(t=>t.status===filter)
-  const totalBudget = trips.reduce((s,t)=>s+(+t.budget),0)
-  const totalSpent  = trips.reduce((s,t)=>s+(+t.spent),0)
+  const filtered = filter==='todos' ? trips : trips.filter(t => t.status === filter)
+  const totalBudget = trips.reduce((s,t) => s + (+t.budget||0), 0)
+  const totalSpent  = trips.reduce((s,t) => s + (+t.spent||0), 0)
 
-  const openAdd = () => { setEditItem(null); setForm({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''}); setModal(true) }
+  const openAdd  = () => { setEditItem(null); setForm({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''}); setModal(true) }
   const openEdit = (t) => { setEditItem(t); setForm({destination:t.destination,category:t.category,status:t.status,start_date:t.start_date||'',end_date:t.end_date||'',budget:t.budget||'',spent:t.spent||'',notes:t.notes||''}); setModal(true) }
 
   const handleSave = async () => {
-    const data={...form,budget:parseFloat(form.budget)||0,spent:parseFloat(form.spent)||0,start_date:form.start_date||null,end_date:form.end_date||null}
-    if(editItem) await update(editItem.id,data)
-    else await insert(data)
+    const d = {...form, budget:parseFloat(form.budget)||0, spent:parseFloat(form.spent)||0, start_date:form.start_date||null, end_date:form.end_date||null}
+    if (editItem) await update(editItem.id, d)
+    else await insert(d)
     setModal(false)
   }
 
-  const dur = (s,e) => { if(!s||!e)return null; const d=Math.round((new Date(e)-new Date(s))/(864e5))+1; return d>0?d+' dia'+(d>1?'s':''):null }
+  const dur = (s,e) => { if(!s||!e) return null; const d=Math.round((new Date(e)-new Date(s))/864e5)+1; return d>0 ? d+'d' : null }
+  const pct = (s,b) => b>0 ? Math.min(100, Math.round((s/b)*100)) : 0
 
   return (
     <div className="page-wrapper">
-      <PageHeader title="Viagens" subtitle="Organize e acompanhe as viagens"
+      <PageHeader title="Viagens" subtitle="Planeje e acompanhe cada aventura"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={openAdd}><Plus className="w-4 h-4"/>Nova viagem</button>}/>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <div className="card"><p className="stat-label">Total</p><p className="text-xl font-display font-semibold">{trips.length}</p></div>
-        <div className="card"><p className="stat-label">Orçamento</p><p className="text-xl font-display font-semibold text-amber-600">{fmt(totalBudget)}</p></div>
-        <div className="card"><p className="stat-label">Gasto</p><p className="text-xl font-display font-semibold text-blush-500">{fmt(totalSpent)}</p></div>
+        <div className="card"><p className="stat-label">Viagens</p><p className="text-2xl font-display font-semibold">{trips.length}</p></div>
+        <div className="card"><p className="stat-label">Orçamento total</p><p className="text-xl font-display font-semibold text-amber-600">{fmt(totalBudget)}</p></div>
+        <div className="card"><p className="stat-label">Total gasto</p><p className="text-xl font-display font-semibold text-blush-500">{fmt(totalSpent)}</p></div>
         <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${(totalBudget-totalSpent)>=0?'text-sage-600':'text-blush-500'}`}>{fmt(totalBudget-totalSpent)}</p></div>
       </div>
 
-      <div className="flex gap-2 flex-wrap mb-5">
+      <div className="flex gap-2 flex-wrap mb-4">
         {['todos','interesse','planejando','concluido','cancelado'].map(f=>(
           <button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>
-            {f==='todos'?'Todas':TRIP_STATUS[f]?.label||f}
+            {f==='todos' ? 'Todas' : TRIP_STATUS[f]?.label||f}
+            {f!=='todos' && <span style={{marginLeft:4,opacity:.7,fontSize:10}}>({trips.filter(t=>t.status===f).length})</span>}
           </button>
         ))}
       </div>
 
-      {filtered.length===0?<div className="card text-center py-10 text-stone-400">Nenhuma viagem encontrada</div>:
+      {filtered.length === 0 ? (
+        <div className="card text-center py-12">
+          <div style={{fontSize:40,marginBottom:8}}>✈️</div>
+          <p className="text-stone-400 text-sm mb-4">Nenhuma viagem{filter!=='todos'?' com esse status':''}.</p>
+          {filter==='todos' && <button className="btn-primary" onClick={openAdd}>Criar primeira viagem</button>}
+        </div>
+      ) : (
         <div className="grid gap-3">
-          {filtered.map(t=>(
-            <div key={t.id} className="card">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-display font-semibold text-lg">{t.destination}</p>
-                  <div className="flex gap-1 flex-wrap mt-1">
-                    {t.status&&<span className="tag" style={{background:TRIP_STATUS[t.status]?.color+'22',color:TRIP_STATUS[t.status]?.color}}>{TRIP_STATUS[t.status]?.label||t.status}</span>}
-                    {t.category&&<span className="tag">{t.category}</span>}
+          {filtered.map(t => {
+            const status = TRIP_STATUS[t.status] || {}
+            const spent = +t.spent||0, budget = +t.budget||0
+            const p = pct(spent, budget)
+            return (
+              <div key={t.id} className="card" style={{borderLeft:`3px solid ${status.color||'#e7e5e4'}`,paddingLeft:14}}>
+                <div className="flex justify-between items-start mb-1">
+                  <div style={{flex:1,minWidth:0}}>
+                    <p className="font-display font-semibold text-lg leading-tight" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.destination}</p>
+                    <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                      <span className="tag" style={{background:(status.color||'#e7e5e4')+'22',color:status.color||'#78716c',fontWeight:600}}>{status.label||t.status}</span>
+                      {t.category && <span className="tag">{t.category}</span>}
+                      {t.start_date && <span className="tag">{fmtDate(t.start_date)}{t.end_date?' → '+fmtDate(t.end_date):''}{dur(t.start_date,t.end_date)?' · '+dur(t.start_date,t.end_date):''}</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 ml-2 flex-shrink-0">
+                    <button className="btn-ghost text-xs py-1 px-2.5" onClick={()=>setMapTrip(t)}>🗺 Mapa</button>
+                    <button className="btn-ghost text-xs py-1 px-2" onClick={()=>openEdit(t)}>Editar</button>
+                    <button onClick={()=>remove(t.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setMapTrip(t)}>🗺 Mapa</button>
-                  <button className="btn-ghost text-xs py-1 px-2" onClick={()=>openEdit(t)}>Editar</button>
-                  <button onClick={()=>remove(t.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
-                </div>
+
+                {budget > 0 && (
+                  <div className="mt-2 pt-2 border-t border-stone-50">
+                    <div className="flex justify-between text-xs text-stone-400 mb-1">
+                      <span>Orçamento: {fmt(budget)}</span>
+                      <span style={{color: p>90?'#f43f5e':'inherit'}}>Gasto: {fmt(spent)} ({p}%)</span>
+                    </div>
+                    <div className="progress mb-1">
+                      <div className="progress-fill" style={{width:p+'%',background:p>90?'#f43f5e':p>70?'#f59e0b':'#84cc16'}}/>
+                    </div>
+                    <p className={`text-xs font-medium ${(budget-spent)>=0?'text-sage-600':'text-blush-500'}`}>Saldo: {fmt(budget-spent)}</p>
+                  </div>
+                )}
+
+                {t.notes && <p className="text-xs text-stone-400 mt-2 pt-2 border-t border-stone-50" style={{overflow:'hidden',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical'}}>{t.notes}</p>}
               </div>
-              {(t.start_date||t.end_date)&&(
-                <p className="text-xs text-stone-400 mb-3">{fmtDate(t.start_date)} → {fmtDate(t.end_date)}{dur(t.start_date,t.end_date)?' · '+dur(t.start_date,t.end_date):''}</p>
-              )}
-              {(+t.budget>0)&&(
-                <div>
-                  <div className="flex justify-between text-xs text-stone-400 mb-1">
-                    <span>Orçamento: {fmt(t.budget)}</span><span>Gasto: {fmt(t.spent)}</span>
-                  </div>
-                  <div className="progress mb-1"><div className="progress-fill" style={{width:Math.min(100,(+t.spent/+t.budget)*100)+'%',background:((+t.spent/+t.budget)>.9)?'#f43f5e':'#84cc16'}}/></div>
-                  <p className={`text-xs font-medium ${(+t.budget-+t.spent)>=0?'text-sage-600':'text-blush-500'}`}>Saldo: {fmt(+t.budget-+t.spent)}</p>
-                </div>
-              )}
-              {t.notes&&<p className="text-xs text-stone-400 mt-2 border-t border-stone-50 pt-2">{t.notes}</p>}
-            </div>
-          ))}
-        </div>}
+            )
+          })}
+        </div>
+      )}
 
       {mapTrip && <TripMapModal trip={mapTrip} onClose={()=>setMapTrip(null)} />}
 
@@ -738,8 +854,16 @@ export function TripsPage() {
         <div className="grid gap-3">
           <div><label className="label">Destino</label><input className="input" value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))} placeholder="Ex: Paris, França"/></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}><option>Com o marido</option><option>Sozinha</option><option>Família</option><option>Amigos</option></select></div>
-            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>{Object.entries(TRIP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+            <div><label className="label">Categoria</label>
+              <select className="select" value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}>
+                <option>Com o marido</option><option>Sozinha</option><option>Família</option><option>Amigos</option>
+              </select>
+            </div>
+            <div><label className="label">Status</label>
+              <select className="select" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>
+                {Object.entries(TRIP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div><label className="label">Partida</label><input className="input" type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))}/></div>
@@ -749,7 +873,7 @@ export function TripsPage() {
             <div><label className="label">Orçamento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))}/></div>
             <div><label className="label">Já gasto (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.spent} onChange={e=>setForm(f=>({...f,spent:e.target.value}))}/></div>
           </div>
-          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3}/></div>
+          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3} placeholder="Dicas, observações, checklist..."/></div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
           <button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button>
