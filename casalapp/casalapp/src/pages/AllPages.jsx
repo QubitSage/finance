@@ -589,7 +589,7 @@ function TripMapModal({ trip, onClose }) {
             </button>
           </div>
           {searchResults.length > 0 && (
-            <div style={{position:'absolute',top:'100%',left:16,right:16,background:'#fff',border:'1px solid #d6d3d1',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.15)',zIndex:10,maxHeight:200,overflowY:'auto'}}>
+            <div style={{position:'absolute',top:'100%',left:16,right:16,background:'#fff',border:'1px solid #d6d3d1',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.15)',zIndex:2000,maxHeight:200,overflowY:'auto'}}>
               {searchResults.map((r,i) => (
                 <div key={i} onClick={()=>selectResult(r)} style={{padding:'8px 12px',cursor:'pointer',borderBottom:'1px solid #f5f5f4',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#fef3c7'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
                   <div style={{fontWeight:600}}>{r.display_name.split(',')[0]}</div>
