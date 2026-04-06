@@ -469,6 +469,186 @@ export function RulesPage() {
 // ─── Trips Page ───────────────────────────────────────────────────
 import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
 import Modal from '../components/Modal'
+import { useRef, useEffect as useEffectMap } from 'react'
+
+function TripMapModal({ trip, onClose }) {
+  const { data: pins, insert: insertPin, remove: removePin } = useDB('trip_pins', { filter: { trip_id: trip.id }, order: 'created_at', asc: true })
+  const mapRef = useRef(null)
+  const mapInstanceRef = useRef(null)
+  const markersRef = useRef({})
+  const [searchAddr, setSearchAddr] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [searching, setSearching] = useState(false)
+  const [pinForm, setPinForm] = useState({ name: '', address: '', note: '', lat: null, lng: null })
+  const [showPinForm, setShowPinForm] = useState(false)
+  const [activeTab, setActiveTab] = useState('map')
+
+  useEffectMap(() => {
+    if (!window.L) return
+    if (mapInstanceRef.current) return
+    const L = window.L
+    const map = L.map(mapRef.current, { zoomControl: true }).setView([-15.7801, -47.9292], 4)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map)
+    mapInstanceRef.current = map
+    map.on('click', (e) => {
+      setPinForm(f => ({ ...f, lat: e.latlng.lat, lng: e.latlng.lng, address: `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}` }))
+      setShowPinForm(true)
+    })
+    return () => { map.remove(); mapInstanceRef.current = null }
+  }, [])
+
+  useEffectMap(() => {
+    const L = window.L
+    if (!L || !mapInstanceRef.current) return
+    const map = mapInstanceRef.current
+    Object.keys(markersRef.current).forEach(id => {
+      if (!pins.find(p => String(p.id) === id)) {
+        markersRef.current[id].remove()
+        delete markersRef.current[id]
+      }
+    })
+    pins.forEach(p => {
+      if (!markersRef.current[p.id]) {
+        const icon = L.divIcon({ className: '', html: `<div style="background:#d97706;color:#fff;border-radius:50% 50% 50% 0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);transform:rotate(-45deg)"><span style="transform:rotate(45deg)">📍</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28] })
+        const marker = L.marker([p.lat, p.lng], { icon })
+          .addTo(map)
+          .bindPopup(`<b>${p.name}</b>${p.note ? '<br/>' + p.note : ''}`)
+        markersRef.current[p.id] = marker
+      }
+    })
+    if (pins.length > 0) {
+      const bounds = L.latLngBounds(pins.map(p => [p.lat, p.lng]))
+      map.fitBounds(bounds, { padding: [40, 40] })
+    }
+  }, [pins])
+
+  const searchAddress = async () => {
+    if (!searchAddr.trim()) return
+    setSearching(true)
+    setSearchResults([])
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddr)}&limit=5`, { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } })
+      const data = await r.json()
+      setSearchResults(data)
+    } catch(e) {}
+    setSearching(false)
+  }
+
+  const selectResult = (res) => {
+    setPinForm(f => ({ ...f, lat: parseFloat(res.lat), lng: parseFloat(res.lon), address: res.display_name, name: f.name || res.display_name.split(',')[0] }))
+    setSearchResults([])
+    setSearchAddr(res.display_name.split(',').slice(0,2).join(','))
+    setShowPinForm(true)
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.setView([parseFloat(res.lat), parseFloat(res.lon)], 15)
+    }
+  }
+
+  const savePin = async () => {
+    if (!pinForm.lat || !pinForm.name.trim()) return
+    await insertPin({ trip_id: trip.id, name: pinForm.name, address: pinForm.address, note: pinForm.note, lat: pinForm.lat, lng: pinForm.lng })
+    setPinForm({ name: '', address: '', note: '', lat: null, lng: null })
+    setShowPinForm(false)
+  }
+
+  const focusPin = (p) => {
+    if (mapInstanceRef.current && window.L) {
+      mapInstanceRef.current.setView([p.lat, p.lng], 16)
+      if (markersRef.current[p.id]) markersRef.current[p.id].openPopup()
+    }
+    setActiveTab('map')
+  }
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(0,0,0,.6)',display:'flex',flexDirection:'column'}} onClick={onClose}>
+      <div style={{background:'#F9F7F4',flex:1,display:'flex',flexDirection:'column',margin:'0',maxHeight:'100vh'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'12px 16px',borderBottom:'1px solid #e7e5e4',display:'flex',alignItems:'center',gap:8,background:'#fff'}}>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,lineHeight:1}}>←</button>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:16,fontFamily:'Georgia,serif'}}>{trip.destination}</div>
+            <div style={{fontSize:12,color:'#78716c'}}>Planejamento de rota</div>
+          </div>
+          <div style={{display:'flex',gap:4}}>
+            <button onClick={()=>setActiveTab('map')} style={{padding:'4px 12px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='map'?'#d97706':'#e7e5e4',color:activeTab==='map'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Mapa</button>
+            <button onClick={()=>setActiveTab('pins')} style={{padding:'4px 12px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='pins'?'#d97706':'#e7e5e4',color:activeTab==='pins'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Pins ({pins.length})</button>
+          </div>
+        </div>
+        <div style={{padding:'10px 16px',background:'#fff',borderBottom:'1px solid #e7e5e4',position:'relative'}}>
+          <div style={{display:'flex',gap:8}}>
+            <input
+              value={searchAddr}
+              onChange={e=>setSearchAddr(e.target.value)}
+              onKeyDown={e=>e.key==='Enter'&&searchAddress()}
+              placeholder="Buscar endereço ou local..."
+              style={{flex:1,padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}}
+            />
+            <button onClick={searchAddress} disabled={searching} style={{padding:'8px 16px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontSize:14,fontWeight:600,whiteSpace:'nowrap'}}>
+              {searching ? '...' : 'Buscar'}
+            </button>
+          </div>
+          {searchResults.length > 0 && (
+            <div style={{position:'absolute',top:'100%',left:16,right:16,background:'#fff',border:'1px solid #d6d3d1',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.15)',zIndex:10,maxHeight:200,overflowY:'auto'}}>
+              {searchResults.map((r,i) => (
+                <div key={i} onClick={()=>selectResult(r)} style={{padding:'8px 12px',cursor:'pointer',borderBottom:'1px solid #f5f5f4',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#fef3c7'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                  <div style={{fontWeight:600}}>{r.display_name.split(',')[0]}</div>
+                  <div style={{color:'#78716c',fontSize:12}}>{r.display_name.split(',').slice(1,3).join(',')}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{flex:1,position:'relative',display:activeTab==='map'?'block':'none'}}>
+          <div ref={mapRef} style={{width:'100%',height:'100%',minHeight:300}} />
+          {!window.L && <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'#f5f5f4',flexDirection:'column',gap:8}}><span style={{fontSize:32}}>🗺️</span><span style={{color:'#78716c',fontSize:14}}>Mapa carregando...</span></div>}
+        </div>
+        {activeTab === 'pins' && (
+          <div style={{flex:1,overflowY:'auto',padding:16}}>
+            {pins.length === 0 ? (
+              <div style={{textAlign:'center',padding:40,color:'#78716c'}}>
+                <div style={{fontSize:40,marginBottom:8}}>📍</div>
+                <div>Nenhum pin ainda. Clique no mapa ou busque um endereço para adicionar pins.</div>
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {pins.map((p,i) => (
+                  <div key={p.id} style={{background:'#fff',borderRadius:10,padding:'10px 14px',border:'1px solid #e7e5e4',display:'flex',alignItems:'flex-start',gap:10}}>
+                    <div style={{background:'#d97706',color:'#fff',borderRadius:'50%',width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,flexShrink:0}}>{i+1}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontWeight:600,fontSize:14}}>{p.name}</div>
+                      {p.address && <div style={{fontSize:12,color:'#78716c',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.address}</div>}
+                      {p.note && <div style={{fontSize:12,color:'#57534e',marginTop:4,fontStyle:'italic'}}>{p.note}</div>}
+                    </div>
+                    <div style={{display:'flex',gap:4}}>
+                      <button onClick={()=>focusPin(p)} style={{background:'#fef3c7',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:12}}>Ver</button>
+                      <button onClick={()=>removePin(p.id)} style={{background:'#fee2e2',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:12,color:'#dc2626'}}>✕</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {showPinForm && (
+          <div style={{background:'#fff',borderTop:'1px solid #e7e5e4',padding:16}}>
+            <div style={{fontWeight:600,fontSize:14,marginBottom:10}}>📍 Adicionar Pin</div>
+            <div style={{display:'grid',gap:8}}>
+              <input value={pinForm.name} onChange={e=>setPinForm(f=>({...f,name:e.target.value}))} placeholder="Nome do local *" style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14}} />
+              <input value={pinForm.address} onChange={e=>setPinForm(f=>({...f,address:e.target.value}))} placeholder="Endereço" style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14}} />
+              <input value={pinForm.note} onChange={e=>setPinForm(f=>({...f,note:e.target.value}))} placeholder="Nota (opcional)" style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14}} />
+              {pinForm.lat && <div style={{fontSize:12,color:'#78716c'}}>📌 {pinForm.lat.toFixed(5)}, {pinForm.lng.toFixed(5)}</div>}
+              <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+                <button onClick={()=>setShowPinForm(false)} style={{padding:'8px 16px',borderRadius:8,background:'#e7e5e4',border:'none',cursor:'pointer',fontSize:14}}>Cancelar</button>
+                <button onClick={savePin} style={{padding:'8px 16px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontSize:14,fontWeight:600}}>Salvar Pin</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export function TripsPage() {
   const { data: trips, insert, update, remove } = useDB('trips')
@@ -476,11 +656,12 @@ export function TripsPage() {
   const [filter, setFilter] = useState('todos')
   const [modal, setModal] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [mapTrip, setMapTrip] = useState(null)
   const [form, setForm] = useState({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''})
 
   const filtered = filter==='todos'?trips:trips.filter(t=>t.status===filter)
-  const totalBudget = trips.reduce((s,t)=>s+ +t.budget,0)
-  const totalSpent  = trips.reduce((s,t)=>s+ +t.spent,0)
+  const totalBudget = trips.reduce((s,t)=>s+(+t.budget),0)
+  const totalSpent  = trips.reduce((s,t)=>s+(+t.spent),0)
 
   const openAdd = () => { setEditItem(null); setForm({destination:'',category:'Com o marido',status:'interesse',start_date:'',end_date:'',budget:'',spent:'',notes:''}); setModal(true) }
   const openEdit = (t) => { setEditItem(t); setForm({destination:t.destination,category:t.category,status:t.status,start_date:t.start_date||'',end_date:t.end_date||'',budget:t.budget||'',spent:t.spent||'',notes:t.notes||''}); setModal(true) }
@@ -492,18 +673,18 @@ export function TripsPage() {
     setModal(false)
   }
 
-  const dur = (s,e) => { if(!s||!e)return null; const d=(new Date(e)-new Date(s))/(86400000); return d>0?d:null }
+  const dur = (s,e) => { if(!s||!e)return null; const d=Math.round((new Date(e)-new Date(s))/(864e5))+1; return d>0?d+' dia'+(d>1?'s':''):null }
 
-  return(
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
+  return (
+    <div className="page-wrapper">
       <PageHeader title="Viagens" subtitle="Organize e acompanhe as viagens"
         action={<button className="btn-primary flex items-center gap-1.5" onClick={openAdd}><Plus className="w-4 h-4"/>Nova viagem</button>}/>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <div className="card"><p className="stat-label">Total</p><p className="text-xl font-display font-semibold text-stone-700">{trips.length}</p></div>
+        <div className="card"><p className="stat-label">Total</p><p className="text-xl font-display font-semibold">{trips.length}</p></div>
         <div className="card"><p className="stat-label">Orçamento</p><p className="text-xl font-display font-semibold text-amber-600">{fmt(totalBudget)}</p></div>
         <div className="card"><p className="stat-label">Gasto</p><p className="text-xl font-display font-semibold text-blush-500">{fmt(totalSpent)}</p></div>
-        <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${totalBudget-totalSpent>=0?'text-sage-600':'text-blush-500'}`}>{fmt(totalBudget-totalSpent)}</p></div>
+        <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${(totalBudget-totalSpent)>=0?'text-sage-600':'text-blush-500'}`}>{fmt(totalBudget-totalSpent)}</p></div>
       </div>
 
       <div className="flex gap-2 flex-wrap mb-5">
@@ -514,61 +695,59 @@ export function TripsPage() {
         ))}
       </div>
 
-      {filtered.length===0?<div className="card text-center py-10 text-stone-300">Nenhuma viagem encontrada.</div>:
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map(t=>{
-            const st=TRIP_STATUS[t.status]||TRIP_STATUS.interesse
-            const d=dur(t.start_date,t.end_date)
-            const pct=+t.budget>0?Math.min((+t.spent/+t.budget)*100,100):0
-            return(
-              <div key={t.id} className="card">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <p className="font-semibold text-stone-800">{t.destination}</p>
-                    <div className="flex gap-1.5 mt-1 flex-wrap">
-                      <span className={`badge ${st.cls}`}>{st.label}</span>
-                      <span className="badge badge-stone">{t.category}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-1">
-                    <button className="btn-ghost text-xs py-1 px-2" onClick={()=>openEdit(t)}>Editar</button>
-                    <button onClick={()=>remove(t.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+      {filtered.length===0?<div className="card text-center py-10 text-stone-400">Nenhuma viagem encontrada</div>:
+        <div className="grid gap-3">
+          {filtered.map(t=>(
+            <div key={t.id} className="card">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <p className="font-display font-semibold text-lg">{t.destination}</p>
+                  <div className="flex gap-1 flex-wrap mt-1">
+                    {t.status&&<span className="tag" style={{background:TRIP_STATUS[t.status]?.color+'22',color:TRIP_STATUS[t.status]?.color}}>{TRIP_STATUS[t.status]?.label||t.status}</span>}
+                    {t.category&&<span className="tag">{t.category}</span>}
                   </div>
                 </div>
-                {(t.start_date||t.end_date)&&(
-                  <p className="text-xs text-stone-400 mb-3">{fmtDate(t.start_date)} → {fmtDate(t.end_date)} {d?`· ${d} dias`:''}</p>
-                )}
-                {+t.budget>0&&(
-                  <div>
-                    <div className="flex justify-between text-xs text-stone-400 mb-1">
-                      <span>Orçamento: {fmt(t.budget)}</span><span>Gasto: {fmt(t.spent)}</span>
-                    </div>
-                    <div className="progress mb-1"><div className="progress-fill" style={{width:`${pct}%`,background:pct>=90?'#C86060':'#537A44'}}/></div>
-                    <p className={`text-xs font-medium ${(+t.budget-+t.spent)>=0?'text-sage-600':'text-blush-500'}`}>Saldo: {fmt(+t.budget-+t.spent)}</p>
-                  </div>
-                )}
-                {t.notes&&<p className="text-xs text-stone-400 mt-2 border-t border-stone-50 pt-2">{t.notes}</p>}
+                <div className="flex gap-1">
+                  <button className="btn-ghost text-xs py-1 px-2" onClick={()=>setMapTrip(t)}>🗺 Mapa</button>
+                  <button className="btn-ghost text-xs py-1 px-2" onClick={()=>openEdit(t)}>Editar</button>
+                  <button onClick={()=>remove(t.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button>
+                </div>
               </div>
-            )
-          })}
+              {(t.start_date||t.end_date)&&(
+                <p className="text-xs text-stone-400 mb-3">{fmtDate(t.start_date)} → {fmtDate(t.end_date)}{dur(t.start_date,t.end_date)?' · '+dur(t.start_date,t.end_date):''}</p>
+              )}
+              {(+t.budget>0)&&(
+                <div>
+                  <div className="flex justify-between text-xs text-stone-400 mb-1">
+                    <span>Orçamento: {fmt(t.budget)}</span><span>Gasto: {fmt(t.spent)}</span>
+                  </div>
+                  <div className="progress mb-1"><div className="progress-fill" style={{width:Math.min(100,(+t.spent/+t.budget)*100)+'%',background:((+t.spent/+t.budget)>.9)?'#f43f5e':'#84cc16'}}/></div>
+                  <p className={`text-xs font-medium ${(+t.budget-+t.spent)>=0?'text-sage-600':'text-blush-500'}`}>Saldo: {fmt(+t.budget-+t.spent)}</p>
+                </div>
+              )}
+              {t.notes&&<p className="text-xs text-stone-400 mt-2 border-t border-stone-50 pt-2">{t.notes}</p>}
+            </div>
+          ))}
         </div>}
+
+      {mapTrip && <TripMapModal trip={mapTrip} onClose={()=>setMapTrip(null)} />}
 
       <Modal open={modal} onClose={()=>setModal(false)} title={editItem?'Editar viagem':'Nova viagem'}>
         <div className="grid gap-3">
-          <div><label className="label">Destino</label><input className="input" value={form.destination} onChange={e=>setForm(p=>({...p,destination:e.target.value}))} placeholder="Ex: Paris, França"/></div>
+          <div><label className="label">Destino</label><input className="input" value={form.destination} onChange={e=>setForm(f=>({...f,destination:e.target.value}))} placeholder="Ex: Paris, França"/></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{TRIP_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.entries(TRIP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
+            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))}><option>Com o marido</option><option>Sozinha</option><option>Família</option><option>Amigos</option></select></div>
+            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(f=>({...f,status:e.target.value}))}>{Object.entries(TRIP_STATUS).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Partida</label><input className="input" type="date" value={form.start_date} onChange={e=>setForm(p=>({...p,start_date:e.target.value}))}/></div>
-            <div><label className="label">Volta</label><input className="input" type="date" value={form.end_date} min={form.start_date} onChange={e=>setForm(p=>({...p,end_date:e.target.value}))}/></div>
+            <div><label className="label">Partida</label><input className="input" type="date" value={form.start_date} onChange={e=>setForm(f=>({...f,start_date:e.target.value}))}/></div>
+            <div><label className="label">Volta</label><input className="input" type="date" value={form.end_date} min={form.start_date} onChange={e=>setForm(f=>({...f,end_date:e.target.value}))}/></div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><label className="label">Orçamento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(p=>({...p,budget:e.target.value}))}/></div>
-            <div><label className="label">Já gasto (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.spent} onChange={e=>setForm(p=>({...p,spent:e.target.value}))}/></div>
+            <div><label className="label">Orçamento (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.budget} onChange={e=>setForm(f=>({...f,budget:e.target.value}))}/></div>
+            <div><label className="label">Já gasto (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.spent} onChange={e=>setForm(f=>({...f,spent:e.target.value}))}/></div>
           </div>
-          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} placeholder="Observações..."/></div>
+          <div><label className="label">Notas</label><textarea className="textarea" value={form.notes} onChange={e=>setForm(f=>({...f,notes:e.target.value}))} rows={3}/></div>
         </div>
         <div className="flex gap-2 justify-end mt-4">
           <button className="btn-secondary" onClick={()=>setModal(false)}>Cancelar</button>
