@@ -624,7 +624,7 @@ function TripMapModal({ trip, onClose }) {
         </div>
 
         {/* Search */}
-        <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2,overflow:'visible'}}>
+        <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2}}>
           <div style={{display:'flex',gap:8}}>
             <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search()}
               placeholder="🔍  Buscar local, endereço, cidade..."
@@ -635,7 +635,7 @@ function TripMapModal({ trip, onClose }) {
             </button>
           </div>
           {results.length > 0 && (
-            <div style={{position:'fixed',top:110,left:12,right:12,background:'#fff',border:'1.5px solid #d97706',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.15)',zIndex:9999,maxHeight:240,overflowY:'auto'}}>
+            <div style={{background:'#fff',border:'1.5px solid #d97706',borderTop:'none',borderRadius:'0 0 10px 10px',maxHeight:180,overflowY:'auto'}}>
               {results.map((r,i)=>(
                 <div key={i} onClick={()=>pickResult(r)}
                   style={{padding:'10px 14px',cursor:'pointer',borderBottom:i<results.length-1?'1px solid #f5f4f2':'none',display:'flex',alignItems:'center',gap:10}}
