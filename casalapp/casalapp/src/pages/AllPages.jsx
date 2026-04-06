@@ -624,7 +624,7 @@ function TripMapModal({ trip, onClose }) {
         </div>
 
         {/* Search */}
-        <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2}}>
+        <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2,overflow:'visible'}}>
           <div style={{display:'flex',gap:8}}>
             <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search()}
               placeholder="🔍  Buscar local, endereço, cidade..."
