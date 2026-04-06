@@ -635,7 +635,7 @@ function TripMapModal({ trip, onClose }) {
             </button>
           </div>
           {results.length > 0 && (
-            <div style={{position:'absolute',top:'calc(100% - 1px)',left:12,right:12,background:'#fff',border:'1.5px solid #d97706',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.15)',zIndex:9999,maxHeight:240,overflowY:'auto'}}>
+            <div style={{position:'fixed',top:110,left:12,right:12,background:'#fff',border:'1.5px solid #d97706',borderRadius:10,boxShadow:'0 8px 24px rgba(0,0,0,.15)',zIndex:9999,maxHeight:240,overflowY:'auto'}}>
               {results.map((r,i)=>(
                 <div key={i} onClick={()=>pickResult(r)}
                   style={{padding:'10px 14px',cursor:'pointer',borderBottom:i<results.length-1?'1px solid #f5f4f2':'none',display:'flex',alignItems:'center',gap:10}}
