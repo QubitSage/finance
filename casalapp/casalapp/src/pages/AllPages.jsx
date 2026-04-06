@@ -401,6 +401,7 @@ export function RulesPage() {
   const [form, setForm] = useState({category:'permitido',text:''})
   const [adding, setAdding] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [showLegendas, setShowLegendas] = useState(false)
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -640,7 +641,7 @@ function DesiresTab() {
             <div className="col-span-2"><label className="label">Desejo *</label><textarea className="textarea" value={form.desire} onChange={e=>setForm(p=>({...p,desire:e.target.value}))} placeholder="O que você deseja?"/></div>
             <div className="col-span-2"><label className="label">Por quê?</label><textarea className="textarea" value={form.why} onChange={e=>setForm(p=>({...p,why:e.target.value}))} placeholder="Motivo..."/></div>
             <div><label className="label">Tipo</label><select className="select" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))}><option>Não-Sexual</option><option>Sexual</option><option>Experiência</option><option>Item</option></select></div>
-            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}><option>Com o marido</option><option>Pessoal</option><option>Casal</option><option>Outro</option></select></div>
+            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}><option value="">A definir</option><option value="Sozinha">Sozinha</option><option value="Date">Date</option><option value="Marido">Marido</option></select></div>
             <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.cost} onChange={e=>setForm(p=>({...p,cost:e.target.value}))} placeholder="0,00"/></div>
             <div><label className="label">Data</label><input className="input" type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
           </div>
@@ -657,7 +658,7 @@ function DesiresTab() {
                 <div className="col-span-2"><label className="label">Desejo</label><textarea className="textarea" value={editItem.desire} onChange={e=>setEditItem(p=>({...p,desire:e.target.value}))}/></div>
                 <div className="col-span-2"><label className="label">Por quê?</label><textarea className="textarea" value={editItem.why} onChange={e=>setEditItem(p=>({...p,why:e.target.value}))}/></div>
                 <div><label className="label">Tipo</label><select className="select" value={editItem.tipo} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}><option>Não-Sexual</option><option>Sexual</option><option>Experiência</option><option>Item</option></select></div>
-                <div><label className="label">Categoria</label><select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}><option>Com o marido</option><option>Pessoal</option><option>Casal</option><option>Outro</option></select></div>
+                <div><label className="label">Categoria</label><select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}><option value="">A definir</option><option value="Sozinha">Sozinha</option><option value="Date">Date</option><option value="Marido">Marido</option></select></div>
                 <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.cost} onChange={e=>setEditItem(p=>({...p,cost:e.target.value}))}/></div>
                 <div><label className="label">Data</label><input className="input" type="date" value={editItem.date||''} onChange={e=>setEditItem(p=>({...p,date:e.target.value}))}/></div>
                 <div className="col-span-2 flex gap-2 justify-end mt-2"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
@@ -711,7 +712,8 @@ function MimosTab() {
   return(
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <PageHeader title="Mimos"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Novo mimo</button>}/>
+        action={<div className="flex gap-2"><button className="btn-secondary" onClick={()=>setShowLegendas(true)}>Legendas</button><button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Novo mimo</button></div>}/>
+      {showLegendas&&<div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={()=>setShowLegendas(false)}><div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl" onClick={e=>e.stopPropagation()}><h3 className="font-semibold text-stone-800 mb-4">Legendas de Categorias</h3><div className="space-y-3"><div><span className="font-medium text-stone-700">Sozinha:</span><p className="text-stone-500 text-sm">Quando você quiser sair sozinha, podendo flertar, ficar e conhecer alguem</p></div><div><span className="font-medium text-stone-700">Date:</span><p className="text-stone-500 text-sm">Quando você tiver ou pretender ter um date com outro</p></div><div><span className="font-medium text-stone-700">Marido:</span><p className="text-stone-500 text-sm">Quando for comigo</p></div></div><button className="mt-4 w-full btn-primary" onClick={()=>setShowLegendas(false)}>Fechar</button></div></div>}
       {adding&&(
         <form onSubmit={handleAdd} className="card mb-4">
           <p className="form-section-title">Novo mimo</p>
@@ -724,7 +726,7 @@ function MimosTab() {
             <div><label className="label">Objetivo</label><textarea className="textarea" value={form.objective} onChange={e=>setForm(p=>({...p,objective:e.target.value}))}/></div>
             <div className="grid grid-cols-3 gap-3">
               <div><label className="label">Tipo de mimo</label><input className="input" value={form.tipo} onChange={e=>setForm(p=>({...p,tipo:e.target.value}))} placeholder="A definir"/></div>
-              <div><label className="label">Categoria</label><input className="input" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))} placeholder="A definir"/></div>
+              <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}><option value="">A definir</option><option value="Sozinha">Sozinha</option><option value="Date">Date</option><option value="Marido">Marido</option></select></div>
               <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))}/></div>
             </div>
             <div><label className="label">Link (opcional)</label><input className="input" type="url" placeholder="https://..." value={form.link||''} onChange={e=>setForm(p=>({...p,link:e.target.value}))}/></div>
@@ -745,7 +747,7 @@ function MimosTab() {
                 <div><label className="label">Objetivo</label><textarea className="textarea" value={editItem.objective||''} onChange={e=>setEditItem(p=>({...p,objective:e.target.value}))}/></div>
                 <div className="grid grid-cols-3 gap-3">
                   <div><label className="label">Tipo</label><input className="input" value={editItem.tipo||''} onChange={e=>setEditItem(p=>({...p,tipo:e.target.value}))}/></div>
-                  <div><label className="label">Categoria</label><input className="input" value={editItem.category||''} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}/></div>
+                  <div><label className="label">Categoria</label><select className="select" value={editItem.category||''} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}><option value="">A definir</option><option value="Sozinha">Sozinha</option><option value="Date">Date</option><option value="Marido">Marido</option></select></div>
                   <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.value||''} onChange={e=>setEditItem(p=>({...p,value:e.target.value}))}/></div>
                 </div>
                 <div><label className="label">Link (opcional)</label><input className="input" type="url" placeholder="https://..." value={editItem.link||''} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/></div>
