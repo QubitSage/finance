@@ -401,7 +401,6 @@ export function RulesPage() {
   const [form, setForm] = useState({category:'permitido',text:''})
   const [adding, setAdding] = useState(false)
   const [editItem, setEditItem] = useState(null)
-  const [showLegendas, setShowLegendas] = useState(false)
 
   const handleAdd = async (e) => {
     e.preventDefault()
@@ -701,6 +700,7 @@ function MimosTab() {
   const { data, insert, remove, update } = useDB('mimos')
   const [adding, setAdding] = useState(false)
   const [editItem, setEditItem] = useState(null)
+  const [showLegendas, setShowLegendas] = useState(false)
   const [form, setForm] = useState({date:'',mimo:'',objective:'',tipo:'',category:'',obj_tipo:'',value:'',status:'Pendente',link:''})
   const MIMO_STATUS=['Pendente','Aprovado','Planejando','Concluído','Cancelado']
 
