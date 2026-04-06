@@ -470,8 +470,6 @@ export function RulesPage() {
 import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
 import Modal from '../components/Modal'
 import { useRef, useEffect as useEff, useCallback } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabase'
 
 const PIN_TYPES = {
   hotel:     { label: 'Hospedagem', emoji: '🏨' },
