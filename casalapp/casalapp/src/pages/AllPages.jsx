@@ -470,57 +470,61 @@ export function RulesPage() {
 import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
 import Modal from '../components/Modal'
 import { useRef, useEffect as useEffectMap } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 function TripMapModal({ trip, onClose }) {
-  const { data: pins, insert: insertPin, remove: removePin } = useDB('trip_pins', { filter: { trip_id: trip.id }, order: 'created_at', asc: true })
+  const { user } = useAuth()
+  const [pins, setPins] = useState([])
   const mapRef = useRef(null)
-  const mapInstanceRef = useRef(null)
+  const mapInstance = useRef(null)
   const markersRef = useRef({})
   const [searchAddr, setSearchAddr] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
-  const [pinForm, setPinForm] = useState({ name: '', address: '', note: '', lat: null, lng: null })
-  const [showPinForm, setShowPinForm] = useState(false)
+  const [pinForm, setPinForm] = useState(null)
   const [activeTab, setActiveTab] = useState('map')
 
+  const loadPins = async () => {
+    if (!user || !trip?.id) return
+    const { data } = await supabase.from('trip_pins').select('*').eq('trip_id', trip.id).order('created_at', { ascending: true })
+    setPins(data || [])
+  }
+
+  useEffectMap(() => { loadPins() }, [trip?.id, user?.id])
+
   useEffectMap(() => {
-    if (!window.L) return
-    if (mapInstanceRef.current) return
+    if (!window.L || !mapRef.current || mapInstance.current) return
     const L = window.L
-    const map = L.map(mapRef.current, { zoomControl: true }).setView([-15.7801, -47.9292], 4)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map)
-    mapInstanceRef.current = map
+    const map = L.map(mapRef.current, { zoomControl: true }).setView([-15.78, -47.93], 4)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map)
+    mapInstance.current = map
     map.on('click', (e) => {
-      setPinForm(f => ({ ...f, lat: e.latlng.lat, lng: e.latlng.lng, address: `${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}` }))
-      setShowPinForm(true)
+      setPinForm({ name: '', address: e.latlng.lat.toFixed(5) + ', ' + e.latlng.lng.toFixed(5), note: '', lat: e.latlng.lat, lng: e.latlng.lng })
     })
-    return () => { map.remove(); mapInstanceRef.current = null }
+    return () => { try { map.remove() } catch(e){} mapInstance.current = null }
   }, [])
 
   useEffectMap(() => {
     const L = window.L
-    if (!L || !mapInstanceRef.current) return
-    const map = mapInstanceRef.current
+    if (!L || !mapInstance.current) return
+    const map = mapInstance.current
+    const pinIds = new Set(pins.map(p => String(p.id)))
     Object.keys(markersRef.current).forEach(id => {
-      if (!pins.find(p => String(p.id) === id)) {
-        markersRef.current[id].remove()
-        delete markersRef.current[id]
-      }
+      if (!pinIds.has(id)) { markersRef.current[id].remove(); delete markersRef.current[id] }
     })
-    pins.forEach(p => {
-      if (!markersRef.current[p.id]) {
-        const icon = L.divIcon({ className: '', html: `<div style="background:#d97706;color:#fff;border-radius:50% 50% 50% 0;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;border:2px solid #fff;box-shadow:0 2px 4px rgba(0,0,0,.3);transform:rotate(-45deg)"><span style="transform:rotate(45deg)">📍</span></div>`, iconSize: [28, 28], iconAnchor: [14, 28] })
-        const marker = L.marker([p.lat, p.lng], { icon })
-          .addTo(map)
-          .bindPopup(`<b>${p.name}</b>${p.note ? '<br/>' + p.note : ''}`)
-        markersRef.current[p.id] = marker
-      }
+    pins.forEach((p, i) => {
+      if (markersRef.current[String(p.id)]) return
+      const icon = L.divIcon({
+        className: '',
+        html: '<div style="background:#d97706;color:#fff;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)">' + (i+1) + '</div>',
+        iconSize: [26, 26], iconAnchor: [13, 13]
+      })
+      const marker = L.marker([p.lat, p.lng], { icon }).addTo(map).bindPopup('<b>' + p.name + '</b>' + (p.note ? '<br>' + p.note : ''))
+      markersRef.current[String(p.id)] = marker
     })
     if (pins.length > 0) {
-      const bounds = L.latLngBounds(pins.map(p => [p.lat, p.lng]))
-      map.fitBounds(bounds, { padding: [40, 40] })
+      try { map.fitBounds(L.latLngBounds(pins.map(p => [p.lat, p.lng])), { padding: [40, 40], maxZoom: 15 }) } catch(e) {}
     }
   }, [pins])
 
@@ -529,100 +533,94 @@ function TripMapModal({ trip, onClose }) {
     setSearching(true)
     setSearchResults([])
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchAddr)}&limit=5`, { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } })
-      const data = await r.json()
-      setSearchResults(data)
+      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(searchAddr) + '&limit=5', { headers: { 'Accept-Language': 'pt-BR' } })
+      setSearchResults(await r.json())
     } catch(e) {}
     setSearching(false)
   }
 
   const selectResult = (res) => {
-    setPinForm(f => ({ ...f, lat: parseFloat(res.lat), lng: parseFloat(res.lon), address: res.display_name, name: f.name || res.display_name.split(',')[0] }))
+    const lat = parseFloat(res.lat), lng = parseFloat(res.lon)
     setSearchResults([])
-    setSearchAddr(res.display_name.split(',').slice(0,2).join(','))
-    setShowPinForm(true)
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.setView([parseFloat(res.lat), parseFloat(res.lon)], 15)
-    }
+    setSearchAddr(res.display_name.split(',').slice(0, 2).join(','))
+    setPinForm({ name: res.display_name.split(',')[0], address: res.display_name, note: '', lat, lng })
+    if (mapInstance.current) mapInstance.current.setView([lat, lng], 16)
+    setActiveTab('map')
   }
 
   const savePin = async () => {
-    if (!pinForm.lat || !pinForm.name.trim()) return
-    await insertPin({ trip_id: trip.id, name: pinForm.name, address: pinForm.address, note: pinForm.note, lat: pinForm.lat, lng: pinForm.lng })
-    setPinForm({ name: '', address: '', note: '', lat: null, lng: null })
-    setShowPinForm(false)
+    if (!pinForm?.lat || !pinForm.name.trim() || !user) return
+    const { data } = await supabase.from('trip_pins').insert([{ trip_id: trip.id, user_id: user.id, name: pinForm.name, address: pinForm.address, note: pinForm.note, lat: pinForm.lat, lng: pinForm.lng }]).select()
+    if (data?.[0]) { setPins(prev => [...prev, data[0]]); setPinForm(null) }
+  }
+
+  const removePin = async (id) => {
+    await supabase.from('trip_pins').delete().eq('id', id)
+    setPins(prev => prev.filter(p => p.id !== id))
+    if (markersRef.current[String(id)]) { markersRef.current[String(id)].remove(); delete markersRef.current[String(id)] }
   }
 
   const focusPin = (p) => {
-    if (mapInstanceRef.current && window.L) {
-      mapInstanceRef.current.setView([p.lat, p.lng], 16)
-      if (markersRef.current[p.id]) markersRef.current[p.id].openPopup()
-    }
+    if (mapInstance.current) { mapInstance.current.setView([p.lat, p.lng], 17); markersRef.current[String(p.id)]?.openPopup() }
     setActiveTab('map')
   }
 
   return (
-    <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(0,0,0,.6)',display:'flex',flexDirection:'column'}} onClick={onClose}>
-      <div style={{background:'#F9F7F4',flex:1,display:'flex',flexDirection:'column',margin:'0',maxHeight:'100vh'}} onClick={e=>e.stopPropagation()}>
-        <div style={{padding:'12px 16px',borderBottom:'1px solid #e7e5e4',display:'flex',alignItems:'center',gap:8,background:'#fff'}}>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,lineHeight:1}}>←</button>
+    <div style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(0,0,0,.5)',display:'flex',flexDirection:'column'}} onClick={onClose}>
+      <div style={{background:'#F9F7F4',height:'100%',display:'flex',flexDirection:'column'}} onClick={e=>e.stopPropagation()}>
+        <div style={{padding:'10px 14px',borderBottom:'1px solid #e7e5e4',display:'flex',alignItems:'center',gap:8,background:'#fff',flexShrink:0}}>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:18,padding:'2px 6px'}}>←</button>
           <div style={{flex:1}}>
-            <div style={{fontWeight:700,fontSize:16,fontFamily:'Georgia,serif'}}>{trip.destination}</div>
-            <div style={{fontSize:12,color:'#78716c'}}>Planejamento de rota</div>
+            <div style={{fontWeight:700,fontSize:15,fontFamily:'Georgia,serif'}}>{trip.destination}</div>
+            <div style={{fontSize:11,color:'#78716c'}}>Planejamento de rota</div>
           </div>
-          <div style={{display:'flex',gap:4}}>
-            <button onClick={()=>setActiveTab('map')} style={{padding:'4px 12px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='map'?'#d97706':'#e7e5e4',color:activeTab==='map'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Mapa</button>
-            <button onClick={()=>setActiveTab('pins')} style={{padding:'4px 12px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='pins'?'#d97706':'#e7e5e4',color:activeTab==='pins'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Pins ({pins.length})</button>
-          </div>
+          <button onClick={()=>setActiveTab('map')} style={{padding:'5px 14px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='map'?'#d97706':'#e7e5e4',color:activeTab==='map'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Mapa</button>
+          <button onClick={()=>setActiveTab('pins')} style={{padding:'5px 14px',borderRadius:20,border:'none',cursor:'pointer',background:activeTab==='pins'?'#d97706':'#e7e5e4',color:activeTab==='pins'?'#fff':'#44403c',fontSize:13,fontWeight:600}}>Pins ({pins.length})</button>
         </div>
-        <div style={{padding:'10px 16px',background:'#fff',borderBottom:'1px solid #e7e5e4',position:'relative'}}>
+        <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2}}>
           <div style={{display:'flex',gap:8}}>
-            <input
-              value={searchAddr}
-              onChange={e=>setSearchAddr(e.target.value)}
-              onKeyDown={e=>e.key==='Enter'&&searchAddress()}
-              placeholder="Buscar endereço ou local..."
-              style={{flex:1,padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}}
-            />
-            <button onClick={searchAddress} disabled={searching} style={{padding:'8px 16px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontSize:14,fontWeight:600,whiteSpace:'nowrap'}}>
-              {searching ? '...' : 'Buscar'}
+            <input value={searchAddr} onChange={e=>setSearchAddr(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchAddress()}
+              placeholder="Buscar endereço ou local..." style={{flex:1,padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}} />
+            <button onClick={searchAddress} disabled={searching} style={{padding:'8px 14px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontWeight:600,fontSize:13,whiteSpace:'nowrap'}}>
+              {searching?'...':'Buscar'}
             </button>
           </div>
           {searchResults.length > 0 && (
-            <div style={{position:'absolute',top:'100%',left:16,right:16,background:'#fff',border:'1px solid #d6d3d1',borderRadius:8,boxShadow:'0 4px 12px rgba(0,0,0,.15)',zIndex:2000,maxHeight:200,overflowY:'auto'}}>
-              {searchResults.map((r,i) => (
-                <div key={i} onClick={()=>selectResult(r)} style={{padding:'8px 12px',cursor:'pointer',borderBottom:'1px solid #f5f5f4',fontSize:13}} onMouseEnter={e=>e.currentTarget.style.background='#fef3c7'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                  <div style={{fontWeight:600}}>{r.display_name.split(',')[0]}</div>
-                  <div style={{color:'#78716c',fontSize:12}}>{r.display_name.split(',').slice(1,3).join(',')}</div>
+            <div style={{position:'absolute',top:'100%',left:12,right:12,background:'#fff',border:'1px solid #d6d3d1',borderRadius:8,boxShadow:'0 6px 20px rgba(0,0,0,.18)',zIndex:9999,maxHeight:220,overflowY:'auto'}}>
+              {searchResults.map((r,i)=>(
+                <div key={i} onClick={()=>selectResult(r)} style={{padding:'9px 14px',cursor:'pointer',borderBottom:i<searchResults.length-1?'1px solid #f5f4f2':'none',fontSize:13}}
+                  onMouseEnter={e=>e.currentTarget.style.background='#fef3c7'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                  <div style={{fontWeight:600,color:'#1c1917'}}>{r.display_name.split(',')[0]}</div>
+                  <div style={{color:'#78716c',fontSize:12,marginTop:2}}>{r.display_name.split(',').slice(1,3).join(',').trim()}</div>
                 </div>
               ))}
             </div>
           )}
         </div>
-        <div style={{flex:1,position:'relative',display:activeTab==='map'?'block':'none'}}>
-          <div ref={mapRef} style={{width:'100%',height:'100%',minHeight:300}} />
-          {!window.L && <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'#f5f5f4',flexDirection:'column',gap:8}}><span style={{fontSize:32}}>🗺️</span><span style={{color:'#78716c',fontSize:14}}>Mapa carregando...</span></div>}
+        <div style={{flex:1,position:'relative',display:activeTab==='map'?'flex':'none',flexDirection:'column',minHeight:0}}>
+          <div ref={mapRef} style={{flex:1,width:'100%'}} />
         </div>
-        {activeTab === 'pins' && (
-          <div style={{flex:1,overflowY:'auto',padding:16}}>
-            {pins.length === 0 ? (
-              <div style={{textAlign:'center',padding:40,color:'#78716c'}}>
-                <div style={{fontSize:40,marginBottom:8}}>📍</div>
-                <div>Nenhum pin ainda. Clique no mapa ou busque um endereço para adicionar pins.</div>
+        {activeTab==='pins' && (
+          <div style={{flex:1,overflowY:'auto',padding:'12px 14px',minHeight:0}}>
+            {pins.length===0 ? (
+              <div style={{textAlign:'center',padding:'40px 20px',color:'#78716c'}}>
+                <div style={{fontSize:36,marginBottom:10}}>📍</div>
+                <p>Nenhum pin ainda.</p>
+                <p style={{fontSize:13}}>Busque um endereço ou clique no mapa para adicionar pins.</p>
               </div>
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {pins.map((p,i) => (
-                  <div key={p.id} style={{background:'#fff',borderRadius:10,padding:'10px 14px',border:'1px solid #e7e5e4',display:'flex',alignItems:'flex-start',gap:10}}>
-                    <div style={{background:'#d97706',color:'#fff',borderRadius:'50%',width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:13,flexShrink:0}}>{i+1}</div>
+                {pins.map((p,i)=>(
+                  <div key={p.id} style={{background:'#fff',borderRadius:10,padding:'10px 12px',border:'1px solid #e7e5e4',display:'flex',alignItems:'flex-start',gap:10}}>
+                    <div style={{background:'#d97706',color:'#fff',borderRadius:'50%',width:24,height:24,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,flexShrink:0,marginTop:2}}>{i+1}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontWeight:600,fontSize:14}}>{p.name}</div>
+                      <div style={{fontWeight:600,fontSize:14,color:'#1c1917'}}>{p.name}</div>
                       {p.address && <div style={{fontSize:12,color:'#78716c',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.address}</div>}
                       {p.note && <div style={{fontSize:12,color:'#57534e',marginTop:4,fontStyle:'italic'}}>{p.note}</div>}
                     </div>
-                    <div style={{display:'flex',gap:4}}>
-                      <button onClick={()=>focusPin(p)} style={{background:'#fef3c7',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:12}}>Ver</button>
-                      <button onClick={()=>removePin(p.id)} style={{background:'#fee2e2',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:12,color:'#dc2626'}}>✕</button>
+                    <div style={{display:'flex',gap:4,flexShrink:0}}>
+                      <button onClick={()=>focusPin(p)} style={{background:'#fef3c7',border:'none',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontSize:12,fontWeight:500}}>Ver</button>
+                      <button onClick={()=>removePin(p.id)} style={{background:'#fee2e2',border:'none',borderRadius:6,padding:'4px 10px',cursor:'pointer',fontSize:12,color:'#dc2626',fontWeight:500}}>✕</button>
                     </div>
                   </div>
                 ))}
@@ -630,16 +628,19 @@ function TripMapModal({ trip, onClose }) {
             )}
           </div>
         )}
-        {showPinForm && (
-          <div style={{background:'#fff',borderTop:'1px solid #e7e5e4',padding:16}}>
-            <div style={{fontWeight:600,fontSize:14,marginBottom:10}}>📍 Adicionar Pin</div>
-            <div style={{display:'grid',gap:8}}>
-              <input value={pinForm.name} onChange={e=>setPinForm(f=>({...f,name:e.target.value}))} placeholder="Nome do local *" style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14}} />
-              <input value={pinForm.address} onChange={e=>setPinForm(f=>({...f,address:e.target.value}))} placeholder="Endereço" style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14}} />
-              <input value={pinForm.note} onChange={e=>setPinForm(f=>({...f,note:e.target.value}))} placeholder="Nota (opcional)" style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14}} />
-              {pinForm.lat && <div style={{fontSize:12,color:'#78716c'}}>📌 {pinForm.lat.toFixed(5)}, {pinForm.lng.toFixed(5)}</div>}
-              <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-                <button onClick={()=>setShowPinForm(false)} style={{padding:'8px 16px',borderRadius:8,background:'#e7e5e4',border:'none',cursor:'pointer',fontSize:14}}>Cancelar</button>
+        {pinForm && (
+          <div style={{background:'#fff',borderTop:'2px solid #d97706',padding:'12px 14px',flexShrink:0}}>
+            <div style={{fontWeight:600,fontSize:13,marginBottom:8,color:'#d97706'}}>📍 Adicionar Pin</div>
+            <div style={{display:'grid',gap:7}}>
+              <input value={pinForm.name} onChange={e=>setPinForm(f=>({...f,name:e.target.value}))} placeholder="Nome do local *"
+                style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}} />
+              <input value={pinForm.address} onChange={e=>setPinForm(f=>({...f,address:e.target.value}))} placeholder="Endereço"
+                style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:13,outline:'none'}} />
+              <input value={pinForm.note} onChange={e=>setPinForm(f=>({...f,note:e.target.value}))} placeholder="Nota (opcional)"
+                style={{padding:'8px 12px',borderRadius:8,border:'1px solid #d6d3d1',fontSize:14,outline:'none'}} />
+              {pinForm.lat && <div style={{fontSize:11,color:'#a8a29e'}}>📌 {pinForm.lat.toFixed(5)}, {pinForm.lng.toFixed(5)}</div>}
+              <div style={{display:'flex',gap:8,justifyContent:'flex-end',marginTop:2}}>
+                <button onClick={()=>setPinForm(null)} style={{padding:'8px 16px',borderRadius:8,background:'#e7e5e4',border:'none',cursor:'pointer',fontSize:14}}>Cancelar</button>
                 <button onClick={savePin} style={{padding:'8px 16px',borderRadius:8,background:'#d97706',color:'#fff',border:'none',cursor:'pointer',fontSize:14,fontWeight:600}}>Salvar Pin</button>
               </div>
             </div>
@@ -649,6 +650,7 @@ function TripMapModal({ trip, onClose }) {
     </div>
   )
 }
+
 
 export function TripsPage() {
   const { data: trips, insert, update, remove } = useDB('trips')
@@ -757,6 +759,7 @@ export function TripsPage() {
     </div>
   )
 }
+
 
 // ─── Desires Page (Desejos/Mimos/Planner) ─────────────────────────
 import { WHO_COLORS, PLANNER_COLS, PLANNER_COL_LABELS, PLANNER_COL_COLORS } from '../lib/utils'
