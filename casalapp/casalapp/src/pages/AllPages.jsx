@@ -1526,12 +1526,14 @@ import { APT_STATUS } from '../lib/utils'
 const APT_ROOMS=['Sala','Quarto','Cozinha','Banheiro','Área de serviço','Varanda','Escritório','Hall']
 
 export function ApartmentPage() {
-  const { data: items, insert, remove } = useDB('apartment_items')
+  const { data: items, insert, remove, update } = useDB('apartment_items')
   const { addLog } = useLogs()
   const [adding, setAdding] = useState(false)
   const [sort, setSort] = useState('desc')
+  const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})
-  const sorted=[...items].sort((a,b)=>sort==='desc'?(+b.value||0)-(+a.value||0):(+a.value||0)-(+b.value||0))
+  const sorted=
+  const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{room:editItem.room,item:editItem.item,size:editItem.size,value:editItem.value,brand:editItem.brand,model:editItem.model,link:editItem.link,status:editItem.status});setEditItem(null)}[...items].sort((a,b)=>sort==='desc'?(+b.value||0)-(+a.value||0):(+a.value||0)-(+b.value||0))
   const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})}
   return(
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -1573,12 +1575,38 @@ export function ApartmentPage() {
                   <td className="text-stone-400">{i.model||'—'}</td>
                   <td>{i.link?<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline text-xs">Ver link</a>:'—'}</td>
                   <td><span className={`badge text-xs ${APT_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
-                  <td><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
+                  <td className="whitespace-nowrap">
+                    <div className="flex gap-1 justify-end">
+                      <button onClick={()=>setEditItem({...i})} className="btn-icon w-7 h-7" title="Editar"><Pencil className="w-3.5 h-3.5"/></button>
+                      <button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7" title="Excluir"><Trash2 className="w-3.5 h-3.5"/></button>
+                    </div>
+                  </td>
                 </tr>
               ))}
           </tbody>
         </table>
       </div></div>
+      {editItem&&(
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <form onSubmit={handleEdit} className="card w-full max-w-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-stone-700">Editar Item</h3>
+              <button type="button" onClick={()=>setEditItem(null)} className="btn-icon"><X className="w-4 h-4"/></button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+              <div><label className="label">Cômodo</label><select className="select" value={editItem.room||''} onChange={e=>setEditItem(p=>({...p,room:e.target.value}))}>{APT_ROOMS.map(r=><option key={r}>{r}</option>)}</select></div>
+              <div><label className="label">Item</label><input className="input" value={editItem.item||''} onChange={e=>setEditItem(p=>({...p,item:e.target.value}))} required/></div>
+              <div><label className="label">Tamanho</label><input className="input" value={editItem.size||''} onChange={e=>setEditItem(p=>({...p,size:e.target.value}))}/></div>
+              <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.value||''} onChange={e=>setEditItem(p=>({...p,value:e.target.value}))}/></div>
+              <div><label className="label">Marca</label><input className="input" value={editItem.brand||''} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/></div>
+              <div><label className="label">Modelo</label><input className="input" value={editItem.model||''} onChange={e=>setEditItem(p=>({...p,model:e.target.value}))}/></div>
+              <div className="col-span-2"><label className="label">Link</label><input className="input" value={editItem.link||''} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/></div>
+              <div><label className="label">Status</label><select className="select" value={editItem.status||'Desejado'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}><option>Desejado</option><option>Comprado</option><option>Descartado</option></select></div>
+            </div>
+            <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+          </form>
+        </div>
+      )}
     </div>
   )
 }
