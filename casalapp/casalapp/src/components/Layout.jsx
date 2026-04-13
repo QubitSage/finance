@@ -4,7 +4,7 @@ import { useSettings } from '../hooks/useSettings'
 import {
   LayoutDashboard, ArrowLeftRight, Heart, PiggyBank, BarChart2,
   Globe, Sparkles, HelpCircle, User, ShoppingCart, Home,
-  Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, Table2,
+  Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, Table2, ListTodo,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -26,6 +26,7 @@ const NAV = [
   { to: '/metas',         icon: Target,          label: 'Metas',           group: 'Pessoal' },
   { to: '/compromissos',  icon: CalendarDays,    label: 'Compromissos',    group: 'Pessoal' },
   { to: '/pendencias',    icon: ClipboardList,   label: 'Pendências',      group: 'Pessoal' },
+  { to: '/todo',         icon: ListTodo,        label: 'To-Do List',    group: 'Casa' },
   { to: '/config',        icon: Settings,        label: 'Configurações',   group: '' },
 ]
 
