@@ -1533,7 +1533,7 @@ export function ApartmentPage() {
   const [editItem, setEditItem] = useState(null)
   const [form, setForm] = useState({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})
   const sorted=[...items].sort((a,b)=>sort==='desc'?b.value-a.value:a.value-b.value)
-  const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{room:editItem.room,item:editItem.item,size:editItem.size,value:editItem.value,brand:editItem.brand,model:editItem.model,link:editItem.link,status:editItem.status});setEditItem(null)}[...items].sort((a,b)=>sort==='desc'?(+b.value||0)-(+a.value||0):(+a.value||0)-(+b.value||0))
+  const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{room:editItem.room,item:editItem.item,size:editItem.size,value:editItem.value,brand:editItem.brand,model:editItem.model,link:editItem.link,status:editItem.status});setEditItem(null)}
   const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})}
   return(
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
