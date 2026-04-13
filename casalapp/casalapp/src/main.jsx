@@ -15,6 +15,7 @@ import {
   MarketPage, ApartmentPage, WeddingPage, GoalsPage,
   CommitmentsPage, PendingPage, SpreadsheetPage,
 } from './pages/AllPages'
+import { TodoPage } from './pages/TodoPage'
 
 function Guard({ children }) {
   const { user, loading } = useAuth()
@@ -58,6 +59,7 @@ function App() {
         <Route path="metas"       element={<GoalsPage />} />
         <Route path="compromissos" element={<CommitmentsPage />} />
         <Route path="pendencias"  element={<PendingPage />} />
+                    <Route path="todo"         element={<TodoPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
