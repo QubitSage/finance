@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import './styles/global.css'
+  import { registerSW } from './lib/notifications'
 
 import LoginPage    from './pages/LoginPage'
 import Layout       from './components/Layout'
@@ -16,6 +17,10 @@ import {
   CommitmentsPage, PendingPage, SpreadsheetPage,
 } from './pages/AllPages'
 import { TodoPage } from './pages/TodoPage'
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => registerSW())
+}
 
 function Guard({ children }) {
   const { user, loading } = useAuth()
