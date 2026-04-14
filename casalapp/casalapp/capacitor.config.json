@@ -1,0 +1,17 @@
+{
+  "appId": "com.casalapp.app",
+  "appName": "Casal App",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#f59e0b"
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
