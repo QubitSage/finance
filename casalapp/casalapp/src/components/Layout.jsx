@@ -116,12 +116,12 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 md:ml-56 pb-20 md:pb-0">
+      <main className="flex-1 md:ml-56 pb-24 md:pb-0">
         <Outlet />
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 flex items-center z-40">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 flex items-center z-40 pb-safe">
         {BOTTOM_NAV.map(({ to, icon: Icon, label, isMenu }) => {
           if (isMenu) return (
             <button key="menu" onClick={() => setMenuOpen(true)} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-stone-400">
@@ -131,7 +131,7 @@ export default function Layout() {
           )
           return (
             <NavLink key={to} to={to} end={to === '/'}
-              className={({ isActive }) => 'flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-colors ' + (isActive ? 'text-stone-900' : 'text-stone-400')}
+              className={({ isActive }) => 'flex-1 flex flex-col items-center gap-0.5 py-3 min-h-[56px] transition-colors ' + (isActive ? 'text-stone-900' : 'text-stone-400')}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px]">{label}</span>
