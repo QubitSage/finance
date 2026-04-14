@@ -3,21 +3,21 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import './styles/global.css'
-  import { registerSW } from './lib/notifications'
-
-import LoginPage    from './pages/LoginPage'
-import Layout       from './components/Layout'
-import Dashboard    from './pages/Dashboard'
+import { registerSW } from './lib/notifications'
+import LoginPage from './pages/LoginPage'
+import Layout from './components/Layout'
+import Dashboard from './pages/Dashboard'
 import Transactions from './pages/Transactions'
-
 import {
-  WifePage, SavingsPage, ReportsPage, ConfigPage,
-  RulesPage, TripsPage, DesiresPage, QuizPage, DataPage,
-  MarketPage, ApartmentPage, WeddingPage, GoalsPage,
-  CommitmentsPage, PendingPage, SpreadsheetPage,
+  WifePage, SavingsPage, ReportsPage, ConfigPage, RulesPage,
+  DesiresPage, QuizPage, DataPage, MarketPage, ApartmentPage,
+  GoalsPage, CommitmentsPage, PendingPage, SpreadsheetPage,
 } from './pages/AllPages'
 import { TodoPage } from './pages/TodoPage'
 import { VidaLivrePage } from './pages/VidaLivrePage'
+import { ViagensPage } from './pages/ViagensPage'
+import { CasamentoPage } from './pages/CasamentoPage'
+import { MetasPage } from './pages/MetasPage'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => registerSW())
@@ -47,26 +47,26 @@ function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/" element={<Guard><Layout /></Guard>}>
-        <Route index            element={<Dashboard />} />
-        <Route path="transacoes"  element={<Transactions />} />
-        <Route path="esposa"      element={<WifePage />} />
-        <Route path="poupanca"    element={<SavingsPage />} />
-        <Route path="relatorios"  element={<ReportsPage />} />
-                      <Route path="planilha"      element={<SpreadsheetPage />} />
-        <Route path="config"      element={<ConfigPage />} />
-        <Route path="regras"      element={<RulesPage />} />
-        <Route path="viagens"     element={<TripsPage />} />
-        <Route path="desejos"     element={<DesiresPage />} />
+        <Route index element={<Dashboard />} />
+        <Route path="transacoes" element={<Transactions />} />
+        <Route path="esposa" element={<WifePage />} />
+        <Route path="poupanca" element={<SavingsPage />} />
+        <Route path="relatorios" element={<ReportsPage />} />
+        <Route path="planilha" element={<SpreadsheetPage />} />
+        <Route path="config" element={<ConfigPage />} />
+        <Route path="regras" element={<RulesPage />} />
+        <Route path="viagens" element={<ViagensPage />} />
+        <Route path="desejos" element={<DesiresPage />} />
         <Route path="questionario" element={<QuizPage />} />
-        <Route path="dados"       element={<DataPage />} />
-        <Route path="mercado"     element={<MarketPage />} />
+        <Route path="dados" element={<DataPage />} />
+        <Route path="mercado" element={<MarketPage />} />
         <Route path="apartamento" element={<ApartmentPage />} />
-        <Route path="casamento"   element={<WeddingPage />} />
-        <Route path="metas"       element={<GoalsPage />} />
+        <Route path="casamento" element={<CasamentoPage />} />
+        <Route path="metas" element={<MetasPage />} />
         <Route path="compromissos" element={<CommitmentsPage />} />
-        <Route path="pendencias"  element={<PendingPage />} />
-                    <Route path="todo"         element={<TodoPage />} />
-        <Route path="vida-livre"  element={<VidaLivrePage />} />
+        <Route path="pendencias" element={<PendingPage />} />
+        <Route path="todo" element={<TodoPage />} />
+        <Route path="vida-livre" element={<VidaLivrePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
