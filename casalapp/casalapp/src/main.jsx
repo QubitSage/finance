@@ -17,6 +17,7 @@ import {
   CommitmentsPage, PendingPage, SpreadsheetPage,
 } from './pages/AllPages'
 import { TodoPage } from './pages/TodoPage'
+import { VidaLivrePage } from './pages/VidaLivrePage'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => registerSW())
@@ -65,6 +66,7 @@ function App() {
         <Route path="compromissos" element={<CommitmentsPage />} />
         <Route path="pendencias"  element={<PendingPage />} />
                     <Route path="todo"         element={<TodoPage />} />
+        <Route path="vida-livre"  element={<VidaLivrePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
