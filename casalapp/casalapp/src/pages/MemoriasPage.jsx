@@ -76,11 +76,11 @@ export function MemoriasPage() {
       {/* Stats bar */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-3 text-center">
-          <p className="text-xl font-bold text-stone-800">{memorias.length}</p>
+          <p className="text-lg font-bold text-stone-800">{memorias.length}</p>
           <p className="text-xs text-stone-400">Memórias</p>
         </Card>
         <Card className="p-3 text-center">
-          <p className="text-xl font-bold text-rose-500">{favCount}</p>
+          <p className="text-lg font-bold text-rose-500">{favCount}</p>
           <p className="text-xs text-stone-400">Favoritas ❤️</p>
         </Card>
         <Card className="p-3 text-center">
