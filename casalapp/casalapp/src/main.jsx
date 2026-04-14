@@ -7,11 +7,10 @@ import { registerSW } from './lib/notifications'
 import LoginPage from './pages/LoginPage'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
-import Transactions from './pages/Transactions'
 import {
-  WifePage, SavingsPage, ReportsPage, ConfigPage, RulesPage,
-  DesiresPage, QuizPage, DataPage, MarketPage, ApartmentPage,
-  GoalsPage, CommitmentsPage, PendingPage, SpreadsheetPage,
+  ReportsPage, ConfigPage,
+  DataPage, MarketPage, ApartmentPage,
+  SpreadsheetPage, WifePage, SavingsPage
 } from './pages/AllPages'
 import { TodoPage } from './pages/TodoPage'
 import { VidaLivrePage } from './pages/VidaLivrePage'
@@ -20,6 +19,8 @@ import { CasamentoPage } from './pages/CasamentoPage'
 import { MetasPage } from './pages/MetasPage'
 import { AgendaPage } from './pages/AgendaPage'
 import { MemoriasPage } from './pages/MemoriasPage'
+import { FinancePage } from './pages/FinancePage'
+import { CompromissosPage } from './pages/CompromissosPage'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => registerSW())
@@ -50,27 +51,28 @@ function App() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route path="/" element={<Guard><Layout /></Guard>}>
         <Route index element={<Dashboard />} />
-        <Route path="transacoes" element={<Transactions />} />
-        <Route path="esposa" element={<WifePage />} />
-        <Route path="poupanca" element={<SavingsPage />} />
+        <Route path="financas" element={<FinancePage />} />
         <Route path="relatorios" element={<ReportsPage />} />
         <Route path="planilha" element={<SpreadsheetPage />} />
         <Route path="config" element={<ConfigPage />} />
-        <Route path="regras" element={<RulesPage />} />
         <Route path="viagens" element={<ViagensPage />} />
-        <Route path="desejos" element={<DesiresPage />} />
-        <Route path="questionario" element={<QuizPage />} />
         <Route path="dados" element={<DataPage />} />
         <Route path="mercado" element={<MarketPage />} />
         <Route path="apartamento" element={<ApartmentPage />} />
         <Route path="casamento" element={<CasamentoPage />} />
         <Route path="metas" element={<MetasPage />} />
-        <Route path="compromissos" element={<CommitmentsPage />} />
-        <Route path="pendencias" element={<PendingPage />} />
+        <Route path="compromissos" element={<CompromissosPage />} />
         <Route path="todo" element={<TodoPage />} />
         <Route path="vida-livre" element={<VidaLivrePage />} />
         <Route path="agenda" element={<AgendaPage />} />
         <Route path="memorias" element={<MemoriasPage />} />
+        <Route path="transacoes" element={<Navigate to="/financas" replace />} />
+        <Route path="esposa" element={<Navigate to="/financas" replace />} />
+        <Route path="poupanca" element={<Navigate to="/financas" replace />} />
+        <Route path="regras" element={<Navigate to="/vida-livre" replace />} />
+        <Route path="desejos" element={<Navigate to="/vida-livre" replace />} />
+        <Route path="questionario" element={<Navigate to="/vida-livre" replace />} />
+        <Route path="pendencias" element={<Navigate to="/compromissos" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
