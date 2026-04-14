@@ -5,6 +5,7 @@ import {
   LayoutDashboard, ArrowLeftRight, Heart, PiggyBank, BarChart2,
   Globe, Sparkles, HelpCircle, User, ShoppingCart, Home,
   Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, Table2, ListTodo, Flame as FlameIcon,
+  Camera,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -28,6 +29,8 @@ const NAV = [
   { to: '/pendencias',    icon: ClipboardList,   label: 'Pendências',      group: 'Pessoal' },
   { to: '/todo',         icon: ListTodo,        label: 'To-Do List',    group: 'Casa' },
   { to: '/vida-livre',   icon: FlameIcon,       label: 'Vida Livre',     group: 'Casal' },
+  { to: '/agenda', icon: CalendarDays, label: 'Agenda', group: 'Casal' },
+  { to: '/memorias', icon: Camera, label: 'Memórias', group: 'Casal' },
   { to: '/config',        icon: Settings,        label: 'Configurações',   group: '' },
 ]
 
