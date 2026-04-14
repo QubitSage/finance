@@ -820,7 +820,7 @@ function TabMimos() {
 
   return (
     <div className="p-4 space-y-4">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 text-center">
         <div className="card text-center">
           <p className="text-2xl font-display font-bold text-pink-500">{pending}</p>
           <p className="text-xs text-stone-400">Pendentes</p>
@@ -1094,12 +1094,12 @@ export function VidaLivrePage() {
             </span>
           }
         />
-        <div className="flex gap-1 overflow-x-auto pb-1">
+        <div className="flex gap-1 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4">
           {TABS_LIST.map((t, i) => (
             <button
               key={t.label}
               onClick={() => setTab(i)}
-              className={'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ' + (tab === i ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200')}
+              className={'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ' + (tab === i ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200')}
             >
               {t.label}
             </button>
