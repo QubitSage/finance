@@ -18,6 +18,8 @@ import { VidaLivrePage } from './pages/VidaLivrePage'
 import { ViagensPage } from './pages/ViagensPage'
 import { CasamentoPage } from './pages/CasamentoPage'
 import { MetasPage } from './pages/MetasPage'
+import { AgendaPage } from './pages/AgendaPage'
+import { MemoriasPage } from './pages/MemoriasPage'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => registerSW())
@@ -67,6 +69,8 @@ function App() {
         <Route path="pendencias" element={<PendingPage />} />
         <Route path="todo" element={<TodoPage />} />
         <Route path="vida-livre" element={<VidaLivrePage />} />
+        <Route path="agenda" element={<AgendaPage />} />
+        <Route path="memorias" element={<MemoriasPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
