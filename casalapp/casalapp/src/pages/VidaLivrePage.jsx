@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 // ─── Constantes ─────────────────────────────────────────────────────────────
-const TABS = ['Agenda', 'Registros', 'Combinados', 'Fantasias', 'Ela']
+const TABS = ['Agenda', 'Registros', 'Combinados', 'Fantasias', 'Mimos', 'Questionário', 'Ela']
 
 const STATUS_SAIDA = {
   planejado: { label: 'Planejado', color: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -768,6 +768,307 @@ function TabEla() {
   )
 }
 
+// ─── Tab: Mimos da Vianka ──────────────────────────────────────────────────
+function TabMimos() {
+  const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [filterStatus, setFilterStatus] = useState('todos')
+  const [form, setForm] = useState({
+    title: '', description: '', category: 'pessoal', estimated_cost: '',
+    status: 'pendente', priority: 'média'
+  })
+  const { data: wishes, insert, update, remove } = useDB('wishes')
+
+  const CATEGORIES = ['pessoal', 'beleza', 'roupa', 'viagem', 'experiência', 'tecnologia', 'casa', 'outro']
+  const PRIORITY_COLORS = {
+    baixa: 'bg-stone-100 text-stone-500',
+    média: 'bg-amber-100 text-amber-700',
+    alta: 'bg-orange-100 text-orange-700',
+    urgente: 'bg-rose-100 text-rose-600'
+  }
+
+  const filtered = filterStatus === 'todos'
+    ? wishes
+    : wishes.filter(w => w.status === filterStatus)
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    const payload = {
+      ...form,
+      estimated_cost: form.estimated_cost ? parseFloat(form.estimated_cost) : null
+    }
+    if (editing) {
+      await update(editing.id, payload)
+      setEditing(null)
+    } else {
+      await insert(payload)
+      setAdding(false)
+    }
+    setForm({ title: '', description: '', category: 'pessoal', estimated_cost: '', status: 'pendente', priority: 'média' })
+  }
+
+  const handleApprove = async (w) => {
+    await update(w.id, { status: 'aprovado' })
+  }
+
+  const handleDeny = async (w) => {
+    await update(w.id, { status: 'negado' })
+  }
+
+  const pending = wishes.filter(w => w.status === 'pendente').length
+  const approved = wishes.filter(w => w.status === 'aprovado').length
+
+  return (
+    <div className="p-4 space-y-4">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="card text-center">
+          <p className="text-2xl font-display font-bold text-pink-500">{pending}</p>
+          <p className="text-xs text-stone-400">Pendentes</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-2xl font-display font-bold text-teal-500">{approved}</p>
+          <p className="text-xs text-stone-400">Aprovados</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-2xl font-display font-bold text-stone-500">{wishes.length}</p>
+          <p className="text-xs text-stone-400">Total</p>
+        </div>
+      </div>
+
+      {(adding || editing) && (
+        <form onSubmit={handleSave} className="card space-y-3 border-2 border-pink-200">
+          <input className="input" placeholder="Desejo / Mimo *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+          <textarea className="input" placeholder="Descrição..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
+          <div className="grid grid-cols-2 gap-2">
+            <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+            </select>
+            <input className="input" type="number" step="0.01" placeholder="Valor estimado" value={form.estimated_cost} onChange={e => setForm(f => ({ ...f, estimated_cost: e.target.value }))} />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <select className="input" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}>
+              {['baixa', 'média', 'alta', 'urgente'].map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+            </select>
+            <select className="input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              {['pendente', 'aprovado', 'negado', 'realizado'].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            </select>
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" className="flex-1 py-2 rounded-lg bg-pink-500 text-white text-sm font-medium">Salvar</button>
+            <button type="button" onClick={() => { setAdding(false); setEditing(null) }} className="w-10 h-10 rounded-lg border border-stone-200 flex items-center justify-center text-stone-400">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!adding && !editing && (
+        <button onClick={() => setAdding(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 text-white text-sm font-semibold flex items-center justify-center gap-2">
+          <Plus className="w-4 h-4" /> Adicionar Desejo
+        </button>
+      )}
+
+      <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        {['todos', 'pendente', 'aprovado', 'negado', 'realizado'].map(s => (
+          <button key={s} onClick={() => setFilterStatus(s)}
+            className={'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ' + (filterStatus === s ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-500')}>
+            {s.charAt(0).toUpperCase() + s.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {filtered.length === 0 && (
+          <div className="text-center py-10">
+            <Heart className="w-10 h-10 text-stone-200 mx-auto mb-2" />
+            <p className="text-stone-400 text-sm">Nenhum desejo aqui ainda 💝</p>
+          </div>
+        )}
+        {filtered.map(w => (
+          <div key={w.id} className="card">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-stone-700">{w.title}</span>
+                  <span className={'text-xs px-2 py-0.5 rounded-full ' + (PRIORITY_COLORS[w.priority] || 'bg-stone-100 text-stone-500')}>{w.priority}</span>
+                </div>
+                {w.description && <p className="text-xs text-stone-400 mt-0.5">{w.description}</p>}
+                <div className="flex items-center gap-3 mt-1.5">
+                  <span className="text-xs text-stone-400">{w.category}</span>
+                  {w.estimated_cost && <span className="text-xs text-stone-500 font-medium">R$ {parseFloat(w.estimated_cost).toFixed(2)}</span>}
+                  <span className={'text-xs px-2 py-0.5 rounded-full ' + (w.status === 'aprovado' ? 'bg-teal-100 text-teal-700' : w.status === 'negado' ? 'bg-rose-100 text-rose-600' : w.status === 'realizado' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700')}>{w.status}</span>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                {w.status === 'pendente' && (
+                  <>
+                    <button onClick={() => handleApprove(w)} className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 hover:bg-teal-200 transition-colors">
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDeny(w)} className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center text-rose-500 hover:bg-rose-200 transition-colors">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+                <button onClick={() => { setEditing(w); setForm({ title: w.title || '', description: w.description || '', category: w.category || 'pessoal', estimated_cost: w.estimated_cost || '', status: w.status || 'pendente', priority: w.priority || 'média' }); setAdding(false) }} className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 transition-colors">
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => remove(w.id)} className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center text-stone-400 hover:bg-rose-100 hover:text-rose-400 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ─── Tab: Questionário / Diálogos Íntimos ──────────────────────────────────
+function TabQuestionario() {
+  const [activeQ, setActiveQ] = useState(null)
+  const [myAnswer, setMyAnswer] = useState('')
+  const [view2, setView2] = useState('list') // 'list' | 'dialog'
+  const { data: questions, insert: insertQ, update: updateQ, remove: removeQ } = useDB('vl_questionario')
+  const [addingQ, setAddingQ] = useState(false)
+  const [newQ, setNewQ] = useState({ pergunta: '', categoria: 'desejo', anonimo: false })
+
+  const CATS = ['desejo', 'limite', 'fantasia', 'sentimento', 'combinado', 'outro']
+  const CAT_COLORS = {
+    desejo: 'bg-pink-100 text-pink-700',
+    limite: 'bg-red-100 text-red-700',
+    fantasia: 'bg-purple-100 text-purple-700',
+    sentimento: 'bg-blue-100 text-blue-700',
+    combinado: 'bg-teal-100 text-teal-700',
+    outro: 'bg-stone-100 text-stone-600'
+  }
+
+  const handleSubmitAnswer = async (q) => {
+    if (!myAnswer.trim()) return
+    const answers = q.respostas ? [...q.respostas, { texto: myAnswer, data: new Date().toISOString() }] : [{ texto: myAnswer, data: new Date().toISOString() }]
+    await updateQ(q.id, { respostas: answers })
+    setMyAnswer('')
+    setActiveQ(null)
+    setView2('list')
+  }
+
+  const handleAddQ = async (e) => {
+    e.preventDefault()
+    await insertQ({ ...newQ, respostas: [] })
+    setNewQ({ pergunta: '', categoria: 'desejo', anonimo: false })
+    setAddingQ(false)
+  }
+
+  const openDialog = (q) => {
+    setActiveQ(q)
+    setView2('dialog')
+    setMyAnswer('')
+  }
+
+  if (view2 === 'dialog' && activeQ) {
+    return (
+      <div className="p-4">
+        <button onClick={() => setView2('list')} className="flex items-center gap-2 text-stone-500 text-sm mb-4 hover:text-stone-700">
+          <ChevronDown className="w-4 h-4 rotate-90" /> Voltar
+        </button>
+        <div className={'inline-block text-xs px-2 py-0.5 rounded-full mb-3 ' + (CAT_COLORS[activeQ.categoria] || 'bg-stone-100 text-stone-500')}>{activeQ.categoria}</div>
+        <h3 className="text-lg font-semibold text-stone-800 mb-4">{activeQ.pergunta}</h3>
+
+        {activeQ.respostas && activeQ.respostas.length > 0 && (
+          <div className="space-y-3 mb-4">
+            <p className="text-xs text-stone-400 font-medium uppercase tracking-wide">Respostas anteriores</p>
+            {activeQ.respostas.map((r, i) => (
+              <div key={i} className="card bg-stone-50 border-0">
+                <p className="text-sm text-stone-700">{r.texto}</p>
+                <p className="text-xs text-stone-400 mt-1">{r.data ? new Date(r.data).toLocaleDateString('pt-BR') : ''}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="card border-2 border-purple-200">
+          <p className="text-xs text-stone-400 mb-2">Sua resposta</p>
+          <textarea
+            className="w-full text-sm text-stone-700 bg-transparent outline-none resize-none"
+            placeholder="Escreva sua resposta com honestidade..."
+            rows={4}
+            value={myAnswer}
+            onChange={e => setMyAnswer(e.target.value)}
+          />
+          <button onClick={() => handleSubmitAnswer(activeQ)}
+            className="mt-3 w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold">
+            Enviar Resposta
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="card bg-gradient-to-br from-purple-50 to-pink-50 border-0 mb-4">
+        <p className="text-sm text-stone-600">
+          Espaço seguro para perguntas íntimas, desejos, limites e conversas honestas entre vocês dois.
+        </p>
+      </div>
+
+      {addingQ && (
+        <form onSubmit={handleAddQ} className="card space-y-3 border-2 border-purple-200">
+          <textarea className="input" placeholder="Escreva a pergunta..." value={newQ.pergunta} onChange={e => setNewQ(p => ({ ...p, pergunta: e.target.value }))} rows={3} required />
+          <div className="flex gap-2">
+            <select className="input flex-1" value={newQ.categoria} onChange={e => setNewQ(p => ({ ...p, categoria: e.target.value }))}>
+              {CATS.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+            </select>
+            <label className="flex items-center gap-2 text-xs text-stone-500 cursor-pointer">
+              <input type="checkbox" checked={newQ.anonimo} onChange={e => setNewQ(p => ({ ...p, anonimo: e.target.checked }))} className="w-4 h-4 rounded" />
+              Anônimo
+            </label>
+          </div>
+          <div className="flex gap-2">
+            <button type="submit" className="flex-1 py-2 rounded-lg bg-purple-500 text-white text-sm font-medium">Adicionar</button>
+            <button type="button" onClick={() => setAddingQ(false)} className="w-10 h-10 rounded-lg border border-stone-200 flex items-center justify-center text-stone-400">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!addingQ && (
+        <button onClick={() => setAddingQ(true)} className="w-full py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-semibold flex items-center justify-center gap-2">
+          <Plus className="w-4 h-4" /> Nova Pergunta
+        </button>
+      )}
+
+      <div className="space-y-2">
+        {questions.length === 0 && (
+          <div className="text-center py-10">
+            <MessageCircle className="w-10 h-10 text-stone-200 mx-auto mb-2" />
+            <p className="text-stone-400 text-sm">Nenhuma pergunta ainda</p>
+            <p className="text-stone-300 text-xs mt-1">Comece com uma pergunta honesta 💜</p>
+          </div>
+        )}
+        {questions.map(q => (
+          <div key={q.id} className="card cursor-pointer hover:shadow-md transition-shadow" onClick={() => openDialog(q)}>
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={'text-xs px-2 py-0.5 rounded-full ' + (CAT_COLORS[q.categoria] || 'bg-stone-100 text-stone-500')}>{q.categoria}</span>
+                  {q.respostas && q.respostas.length > 0 && (
+                    <span className="text-xs text-stone-400">{q.respostas.length} resp.</span>
+                  )}
+                </div>
+                <p className="text-sm text-stone-700 line-clamp-2">{q.pergunta}</p>
+              </div>
+              <ChevronUp className="w-4 h-4 text-stone-300 flex-shrink-0 rotate-90" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function VidaLivrePage() {
   const [tab, setTab] = useState(0)
   const TABS_LIST = [
@@ -775,6 +1076,8 @@ export function VidaLivrePage() {
     { label: 'Registros', component: TabRegistros },
     { label: 'Combinados', component: TabCombinados },
     { label: 'Fantasias', component: TabFantasias },
+    { label: 'Mimos 💝', component: TabMimos },
+    { label: 'Diálogos 💬', component: TabQuestionario },
     { label: 'Ela 💃', component: TabEla },
   ]
   const ActiveTab = TABS_LIST[tab]?.component || TabAgenda
