@@ -5,7 +5,7 @@ import { useDB } from '../hooks/useDB'
 import { useSettings, useLogs } from '../hooks/useSettings'
 import { fmt, monthLabel, monthKey } from '../lib/utils'
 import { subMonths, addMonths, format } from 'date-fns'
-import { ChevronLeft, ChevronRight, Plus, Trash2, Heart, Sparkles, Pencil, Check, X, Copy, ThumbsUp, ThumbsDown, Settings, ClipboardList, Globe, Home, Gem, Target, ShoppingCart, ArrowLeftRight, ExternalLink } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, Heart, Sparkles, Pencil, Check, X, Copy, ThumbsUp, ThumbsDown, Settings, ClipboardList, Globe, Home, Gem, Target, ShoppingCart, ArrowLeftRight, ExternalLink, Search, AlertCircle, ListTodo, DollarSign, Filter, Edit3 } from 'lucide-react'
 import PageHeader from '../components/PageHeader'
 
 export function WifePage() {
@@ -394,360 +394,6 @@ export function ConfigPage() {
   )
 }
 
-import { RULE_CATEGORIES } from '../lib/utils'
-export function RulesPage() {
-  const { data: rules, insert, remove, update } = useDB('rules')
-  const { addLog } = useLogs()
-  const [form, setForm] = useState({category:'permitido',text:''})
-  const [adding, setAdding] = useState(false)
-  const [editItem, setEditItem] = useState(null)
-
-  const handleAdd = async (e) => {
-    e.preventDefault()
-    if(!form.text.trim()) return
-    await insert(form)
-    setForm({category:'permitido',text:''}); setAdding(false)
-  }
-  const handleEdit = async (e) => {
-    e.preventDefault()
-    await update(editItem.id, {category: editItem.category, text: editItem.text})
-    setEditItem(null)
-  }
-
-  return(
-    <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <PageHeader title="Regras" subtitle="Regras do casal por categoria"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Adicionar</button>}/>
-      {adding&&(
-        <form onSubmit={handleAdd} className="card mb-5">
-          <p className="form-section-title">Nova regra</p>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{Object.entries(RULE_CATEGORIES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select></div>
-            <div><label className="label">Regra</label><input className="input" value={form.text} onChange={e=>setForm(p=>({...p,text:e.target.value}))} placeholder="Descreva a regra..."/></div>
-          </div>
-          <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-        </form>
-      )}
-      {Object.entries(RULE_CATEGORIES).map(([key,cat])=>{
-        const catRules=rules.filter(r=>r.category===key)
-        return(
-          <div key={key} className="card mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`badge ${cat.dot}`}>{cat.icon}</span>
-              <h3 className="font-medium text-stone-700">{cat.label}</h3>
-              <span className="text-xs text-stone-400">({catRules.length})</span>
-            </div>
-            {catRules.length===0&&<p className="text-sm text-stone-400 italic py-2">Nenhuma regra nesta categoria.</p>}
-            {catRules.map(r=>(
-              <div key={r.id} className="flex items-start gap-2 py-2 group border-b border-stone-50 last:border-0">
-                <span className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 bg-stone-300"></span>
-                {editItem?.id===r.id ? (
-                  <form onSubmit={handleEdit} className="flex-1 flex gap-2 flex-wrap">
-                    <input className="input flex-1 min-w-40" value={editItem.text} onChange={e=>setEditItem(p=>({...p,text:e.target.value}))} autoFocus/>
-                    <select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}>{Object.entries(RULE_CATEGORIES).map(([k,v])=><option key={k} value={k}>{v.label}</option>)}</select>
-                    <button type="submit" className="btn-primary text-xs px-3">Salvar</button>
-                    <button type="button" className="btn-secondary text-xs px-3" onClick={()=>setEditItem(null)}>Cancelar</button>
-                  </form>
-                ) : (
-                  <>
-                    <p className="text-sm text-stone-600 flex-1">{r.text}</p>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={()=>setEditItem({...r})} className="btn-icon w-6 h-6 flex-shrink-0" title="Editar"><Pencil className="w-3 h-3"/></button>
-                      <button onClick={()=>remove(r.id)} className="btn-icon w-6 h-6 flex-shrink-0" title="Remover"><Trash2 className="w-3 h-3"/></button>
-                    </div>
-                  </>
-                )}
-              </div>
-            ))}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ─── Trips Page ───────────────────────────────────────────────────
-import { TRIP_STATUS, TRIP_CATS, fmtDate } from '../lib/utils'
-import Modal from '../components/Modal'
-import { useRef, useEffect as useEff, useCallback } from 'react'
-
-const PIN_TYPES = {
-  hotel:     { label: 'Hospedagem', emoji: '🏨' },
-  food:      { label: 'Restaurante', emoji: '🍽️' },
-  sight:     { label: 'Atração',    emoji: '🎭' },
-  transport: { label: 'Transporte', emoji: '✈️' },
-  other:     { label: 'Outro',      emoji: '📍' },
-}
-const PIN_COLORS = { hotel:'#3b82f6', food:'#ef4444', sight:'#8b5cf6', transport:'#06b6d4', other:'#d97706' }
-
-function buildIcon(L, type, num) {
-  const color = PIN_COLORS[type] || PIN_COLORS.other
-  return L.divIcon({
-    className: '',
-    html: `<div style="position:relative;width:32px;height:40px">
-      <div style="position:absolute;bottom:0;left:50%;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:translateX(-50%) rotate(-45deg);background:${color};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)"></div>
-      <div style="position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:22px;height:22px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700">${num}</div>
-    </div>`,
-    iconSize: [32, 40], iconAnchor: [16, 40], popupAnchor: [0, -40]
-  })
-}
-
-function TripMapModal({ trip, onClose }) {
-  const { user } = useAuth()
-  const [pins, setPins] = useState([])
-  const mapRef = useRef(null)
-  const mapInst = useRef(null)
-  const mkrs = useRef({})
-  const poly = useRef(null)
-  const [query, setQuery] = useState('')
-  const [results, setResults] = useState([])
-  const [busy, setBusy] = useState(false)
-  const [form, setForm] = useState(null)
-  const [editing, setEditing] = useState(null)
-  const [view, setView] = useState('split')
-  const [loading, setLoading] = useState(true)
-
-  const load = useCallback(async () => {
-    if (!user?.id || !trip?.id) return
-    setLoading(true)
-    const { data } = await supabase.from('trip_pins').select('*').eq('trip_id', trip.id).order('created_at', { ascending: true })
-    setPins(data || [])
-    setLoading(false)
-  }, [user?.id, trip?.id])
-
-  useEff(() => { load() }, [load])
-
-  useEff(() => {
-    if (!window.L || !mapRef.current || mapInst.current) return
-    const L = window.L
-    const m = L.map(mapRef.current, { zoomControl: false }).setView([-15.78, -47.93], 4)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m)
-    L.control.zoom({ position: 'bottomright' }).addTo(m)
-    m.on('click', e => {
-      setResults([]); setQuery(''); setEditing(null)
-      setForm({ name: '', type: 'other', note: '', lat: e.latlng.lat, lng: e.latlng.lng })
-    })
-    mapInst.current = m
-    return () => { try { m.remove() } catch(_){} mapInst.current = null }
-  }, [])
-
-  useEff(() => {
-    const L = window.L
-    if (!L || !mapInst.current) return
-    const m = mapInst.current
-    const ids = new Set(pins.map(p => String(p.id)))
-    Object.keys(mkrs.current).forEach(id => { if (!ids.has(id)) { mkrs.current[id].remove(); delete mkrs.current[id] } })
-    pins.forEach((p, i) => {
-      const icon = buildIcon(L, p.type || 'other', i + 1)
-      if (mkrs.current[String(p.id)]) {
-        mkrs.current[String(p.id)].setIcon(icon)
-      } else {
-        const mk = L.marker([p.lat, p.lng], { icon }).addTo(m)
-          .bindPopup(`<b>${p.name}</b>${p.note ? '<br><i style="color:#78716c">' + p.note + '</i>' : ''}`)
-        mkrs.current[String(p.id)] = mk
-      }
-    })
-    if (poly.current) { poly.current.remove(); poly.current = null }
-    if (pins.length > 1) {
-      poly.current = L.polyline(pins.map(p => [p.lat, p.lng]), { color: '#d97706', weight: 2.5, dashArray: '6 8', opacity: 0.7 }).addTo(m)
-    }
-    if (pins.length > 0) {
-      try { m.fitBounds(L.latLngBounds(pins.map(p => [p.lat, p.lng])), { padding: [50, 50], maxZoom: 14, animate: false }) } catch(_) {}
-    }
-  }, [pins])
-
-  const search = async () => {
-    if (!query.trim()) return
-    setBusy(true); setResults([])
-    try {
-      const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=6', { headers: { 'Accept-Language': 'pt-BR' } })
-      setResults(await r.json())
-    } catch(_) {}
-    setBusy(false)
-  }
-
-  const pickResult = (r) => {
-    const lat = parseFloat(r.lat), lng = parseFloat(r.lon)
-    setResults([]); setQuery(''); setEditing(null)
-    setForm({ name: r.display_name.split(',')[0].trim(), type: 'other', note: '', lat, lng })
-    if (mapInst.current) mapInst.current.setView([lat, lng], 16)
-    if (view === 'list') setView('split')
-  }
-
-  const savePin = async () => {
-    if (!form || !form.name.trim() || !user) return
-    if (editing) {
-      await supabase.from('trip_pins').update({ name: form.name, type: form.type, note: form.note }).eq('id', editing)
-      setPins(prev => prev.map(p => p.id === editing ? { ...p, ...form } : p))
-    } else {
-      const { data } = await supabase.from('trip_pins').insert([{ trip_id: trip.id, user_id: user.id, name: form.name, type: form.type || 'other', note: form.note, lat: form.lat, lng: form.lng }]).select()
-      if (data?.[0]) setPins(prev => [...prev, data[0]])
-    }
-    setForm(null); setEditing(null)
-  }
-
-  const deletePin = async (id) => {
-    await supabase.from('trip_pins').delete().eq('id', id)
-    setPins(prev => prev.filter(p => p.id !== id))
-    if (mkrs.current[String(id)]) { mkrs.current[String(id)].remove(); delete mkrs.current[String(id)] }
-    if (editing === id) { setForm(null); setEditing(null) }
-  }
-
-  const flyTo = (p) => {
-    if (mapInst.current) { mapInst.current.setView([p.lat, p.lng], 17); mkrs.current[String(p.id)]?.openPopup() }
-    if (view === 'list') setView('split')
-  }
-
-  const editPin = (p) => { setEditing(p.id); setForm({ name: p.name, type: p.type || 'other', note: p.note || '', lat: p.lat, lng: p.lng }) }
-
-  const fitAll = () => {
-    if (!mapInst.current || !window.L || pins.length === 0) return
-    try { mapInst.current.fitBounds(window.L.latLngBounds(pins.map(p => [p.lat, p.lng])), { padding: [50, 50], maxZoom: 14 }) } catch(_) {}
-  }
-
-  return (
-    <div style={{position:'fixed',inset:0,zIndex:1000,display:'flex',flexDirection:'column',background:'#F9F7F4'}} onClick={onClose}>
-      <div style={{flex:1,display:'flex',flexDirection:'column',minHeight:0}} onClick={e=>e.stopPropagation()}>
-
-        {/* Header */}
-        <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderBottom:'1px solid #e7e5e4',background:'#fff',flexShrink:0,zIndex:3}}>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#44403c',lineHeight:1,padding:'0 6px 0 0'}}>←</button>
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:15,fontFamily:'Georgia,serif',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{trip.destination}</div>
-            <div style={{fontSize:11,color:'#a8a29e'}}>{loading ? 'Carregando...' : pins.length + ' pin' + (pins.length !== 1 ? 's' : '') + ' no roteiro'}</div>
-          </div>
-          <div style={{display:'flex',gap:2,background:'#f5f4f2',borderRadius:20,padding:2}}>
-            {[['split','⊞ Vista'],['map','🗺 Mapa'],['list','☰ Lista']].map(([v,label])=>(
-              <button key={v} onClick={()=>setView(v)} style={{padding:'4px 10px',borderRadius:18,border:'none',cursor:'pointer',background:view===v?'#fff':'transparent',color:view===v?'#d97706':'#78716c',fontSize:12,fontWeight:600,transition:'all .15s',boxShadow:view===v?'0 1px 3px rgba(0,0,0,.1)':'none',whiteSpace:'nowrap'}}>{label}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* Search */}
-        <div style={{padding:'8px 12px',background:'#fff',borderBottom:'1px solid #e7e5e4',flexShrink:0,position:'relative',zIndex:2}}>
-          <div style={{display:'flex',gap:8}}>
-            <input value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&search()}
-              placeholder="🔍  Buscar local, endereço, cidade..."
-              style={{flex:1,padding:'9px 14px',borderRadius:10,border:'1.5px solid #e7e5e4',fontSize:14,outline:'none',background:'#fafaf9',transition:'border-color .2s'}}
-              onFocus={e=>e.target.style.borderColor='#d97706'} onBlur={e=>e.target.style.borderColor='#e7e5e4'} />
-            <button onClick={search} disabled={busy} style={{padding:'9px 18px',borderRadius:10,background:busy?'#e7e5e4':'#d97706',color:busy?'#78716c':'#fff',border:'none',cursor:busy?'default':'pointer',fontWeight:700,fontSize:13,transition:'all .15s',whiteSpace:'nowrap'}}>
-              {busy ? '...' : 'Buscar'}
-            </button>
-          </div>
-          {results.length > 0 && (
-            <div style={{background:'#fff',border:'1.5px solid #d97706',borderTop:'none',borderRadius:'0 0 10px 10px',maxHeight:180,overflowY:'auto'}}>
-              {results.map((r,i)=>(
-                <div key={i} onClick={()=>pickResult(r)}
-                  style={{padding:'10px 14px',cursor:'pointer',borderBottom:i<results.length-1?'1px solid #f5f4f2':'none',display:'flex',alignItems:'center',gap:10}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#fef3c7'} onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
-                  <span style={{fontSize:18,flexShrink:0}}>📍</span>
-                  <div style={{minWidth:0}}>
-                    <div style={{fontWeight:600,fontSize:13,color:'#1c1917',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.display_name.split(',')[0]}</div>
-                    <div style={{fontSize:11,color:'#78716c',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.display_name.split(',').slice(1,4).join(',').trim()}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Main area */}
-        <div style={{flex:1,display:'flex',minHeight:0,overflow:'hidden'}}>
-
-          {/* Map panel */}
-          {(view === 'map' || view === 'split') && (
-            <div style={{flex: view==='split' ? '1 1 60%' : '1 1 100%', position:'relative', minWidth:0}}>
-              <div ref={mapRef} style={{width:'100%',height:'100%'}} />
-              {pins.length > 1 && (
-                <button onClick={fitAll}
-                  style={{position:'absolute',top:10,right:10,zIndex:500,background:'#fff',border:'1px solid #e7e5e4',borderRadius:8,padding:'6px 12px',cursor:'pointer',fontSize:12,fontWeight:600,color:'#44403c',boxShadow:'0 2px 6px rgba(0,0,0,.12)'}}>
-                  ⛶ Ver todos
-                </button>
-              )}
-              {pins.length === 0 && !loading && (
-                <div style={{position:'absolute',bottom:80,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,.95)',borderRadius:10,padding:'10px 18px',fontSize:12,color:'#78716c',boxShadow:'0 2px 8px rgba(0,0,0,.1)',whiteSpace:'nowrap',zIndex:400,textAlign:'center'}}>
-                  Clique no mapa ou busque um lugar para adicionar o primeiro pin 📍
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* List panel */}
-          {(view === 'list' || view === 'split') && (
-            <div style={{flex: view==='split' ? '0 0 38%' : '1 1 100%', minWidth: view==='split' ? 260 : 0, maxWidth: view==='split' ? 360 : undefined, display:'flex',flexDirection:'column',borderLeft: view==='split' ? '1px solid #e7e5e4' : 'none', background:'#fafaf9', overflow:'hidden'}}>
-              <div style={{padding:'10px 14px',borderBottom:'1px solid #e7e5e4',background:'#fff',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
-                <span style={{fontWeight:600,fontSize:13,color:'#44403c'}}>📋 Roteiro ({pins.length})</span>
-                {pins.length > 1 && <span style={{fontSize:11,color:'#a8a29e'}}>{pins.length} paradas</span>}
-              </div>
-              <div style={{flex:1,overflowY:'auto',padding:'8px 10px'}}>
-                {loading ? (
-                  <div style={{textAlign:'center',padding:30,color:'#a8a29e',fontSize:13}}>Carregando pins...</div>
-                ) : pins.length === 0 ? (
-                  <div style={{textAlign:'center',padding:'32px 16px',color:'#a8a29e'}}>
-                    <div style={{fontSize:40,marginBottom:8}}>🗺️</div>
-                    <div style={{fontWeight:600,fontSize:14,marginBottom:4,color:'#78716c'}}>Roteiro vazio</div>
-                    <div style={{fontSize:12}}>Busque um lugar ou clique no mapa para começar a planejar</div>
-                  </div>
-                ) : (
-                  <div style={{display:'flex',flexDirection:'column',gap:6}}>
-                    {pins.map((p, i) => (
-                      <div key={p.id} style={{background:'#fff',borderRadius:10,border:'1px solid #e7e5e4',overflow:'hidden'}}>
-                        <div style={{display:'flex',alignItems:'flex-start',padding:'9px 10px',gap:8}}>
-                          <div style={{width:26,height:26,borderRadius:'50%',background:PIN_COLORS[p.type||'other'],color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:700,fontSize:12,flexShrink:0,marginTop:1}}>{i+1}</div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:600,fontSize:13,color:'#1c1917',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{PIN_TYPES[p.type||'other']?.emoji} {p.name}</div>
-                            <div style={{fontSize:11,color:'#a8a29e',marginTop:1}}>{PIN_TYPES[p.type||'other']?.label}</div>
-                            {p.note && <div style={{fontSize:11,color:'#78716c',marginTop:2,fontStyle:'italic',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.note}</div>}
-                          </div>
-                          <div style={{display:'flex',gap:3,flexShrink:0}}>
-                            <button onClick={()=>flyTo(p)} title="Ver no mapa" style={{background:'#f0fdf4',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>🎯</button>
-                            <button onClick={()=>window.open('https://www.google.com/maps/search/?api=1&query='+p.lat+','+p.lng,'_blank')} title="Google Maps" style={{background:'#eff6ff',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>🗺</button>
-                            <button onClick={()=>editPin(p)} title="Editar" style={{background:'#fef3c7',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}}>✏️</button>
-                            <button onClick={()=>deletePin(p.id)} title="Remover" style={{background:'#fef2f2',border:'none',borderRadius:6,width:26,height:26,cursor:'pointer',fontSize:12,color:'#dc2626',fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center'}}>×</button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Bottom sheet pin form */}
-        {form && (
-          <div style={{position:'absolute',bottom:0,left:0,right:0,zIndex:600,background:'#fff',borderTop:'2px solid #d97706',borderRadius:'16px 16px 0 0',padding:'14px 16px 20px',boxShadow:'0 -4px 20px rgba(0,0,0,.12)'}}>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-              <span style={{fontWeight:700,fontSize:14,color:'#d97706'}}>{editing ? '✏️ Editar Pin' : '📍 Novo Pin'}</span>
-              <button onClick={()=>{setForm(null);setEditing(null)}} style={{background:'none',border:'none',cursor:'pointer',fontSize:20,color:'#78716c',lineHeight:1}}>×</button>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:10}}>
-              <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&savePin()} placeholder="Nome do local *"
-                autoFocus style={{gridColumn:'1/-1',padding:'9px 12px',borderRadius:8,border:'1.5px solid #e7e5e4',fontSize:14,outline:'none',transition:'border-color .2s'}}
-                onFocus={e=>e.target.style.borderColor='#d97706'} onBlur={e=>e.target.style.borderColor='#e7e5e4'} />
-              <select value={form.type||'other'} onChange={e=>setForm(f=>({...f,type:e.target.value}))}
-                style={{padding:'9px 12px',borderRadius:8,border:'1.5px solid #e7e5e4',fontSize:13,outline:'none',background:'#fff',cursor:'pointer',appearance:'none'}}>
-                {Object.entries(PIN_TYPES).map(([k,v])=><option key={k} value={k}>{v.emoji} {v.label}</option>)}
-              </select>
-              <input value={form.note||''} onChange={e=>setForm(f=>({...f,note:e.target.value}))} onKeyDown={e=>e.key==='Enter'&&savePin()} placeholder="Nota opcional"
-                style={{padding:'9px 12px',borderRadius:8,border:'1.5px solid #e7e5e4',fontSize:13,outline:'none',transition:'border-color .2s'}}
-                onFocus={e=>e.target.style.borderColor='#d97706'} onBlur={e=>e.target.style.borderColor='#e7e5e4'} />
-            </div>
-            <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-              <button onClick={()=>{setForm(null);setEditing(null)}} style={{padding:'9px 18px',borderRadius:8,background:'#f5f4f2',border:'none',cursor:'pointer',fontSize:14,color:'#44403c'}}>Cancelar</button>
-              {editing && <button onClick={()=>deletePin(editing)} style={{padding:'9px 14px',borderRadius:8,background:'#fef2f2',border:'none',cursor:'pointer',fontSize:14,color:'#dc2626',fontWeight:600}}>Remover</button>}
-              <button onClick={savePin} disabled={!form.name?.trim()} style={{padding:'9px 22px',borderRadius:8,background:form.name?.trim()?'#d97706':'#e7e5e4',color:form.name?.trim()?'#fff':'#a8a29e',border:'none',cursor:form.name?.trim()?'pointer':'default',fontSize:14,fontWeight:700,transition:'all .15s'}}>
-                {editing ? 'Salvar' : 'Adicionar ✓'}
-              </button>
-            </div>
-          </div>
-        )}
-
-      </div>
-    </div>
-  )
-}
 
 export function TripsPage() {
   const { data: trips, insert, update, remove } = useDB('trips')
@@ -1416,195 +1062,447 @@ export function DataPage() {
   )
 }
 
-// ─── Market Page ──────────────────────────────────────────────────
-import { MARKET_PRIORITY, MARKET_STATUS } from '../lib/utils'
-const MKT_CATS=['Hortifruti','Laticínios','Carnes','Mercearia','Higiene','Limpeza','Bebidas','Congelados','Outros']
-const MKT_FREQ=['Diário','Semanal','Quinzenal','Mensal','Eventual']
+// ─── Market Page (Reformulado) ─────────────────────────────────────────────
+const MARKET_CATS = ['Hortifruti', 'Laticínios', 'Carnes', 'Mercearia', 'Higiene', 'Limpeza', 'Bebidas', 'Congelados', 'Outros']
+const MARKET_STORES = ['Mercadão', 'Supermercado', 'Feira', 'Atacado', 'Online', 'Farmácia']
 
 export function MarketPage() {
   const { data: items, insert, remove, update } = useDB('market_items')
-  const { data: stock, insert: insertStock, remove: removeStock } = useDB('home_stock')
+  const { data: lists, insert: insertList, remove: removeList } = useDB('market_lists')
   const [adding, setAdding] = useState(false)
-  const [stockModal, setStockModal] = useState(false)
-  const [newStock, setNewStock] = useState('')
-  const [filter, setFilter] = useState('todos')
-  const [editItem, setEditItem] = useState(null)
-  const [form, setForm] = useState({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})
-  const filtered=filter==='todos'?items:items.filter(i=>i.status===filter)
-  const handleAdd=async(e)=>{e.preventDefault();if(!form.item.trim())return;await insert({...form,quantity:parseFloat(form.quantity)||null});setAdding(false);setForm({category:'Mercearia',item:'',brand:'',unit:'',quantity:'',frequency:'Semanal',priority:'Essencial',responsible:'Bruno',status:'Comprar',notes:''})}
-  const handleEdit=async(e)=>{e.preventDefault();if(!editItem?.item?.trim())return;await update(editItem.id,{category:editItem.category,item:editItem.item,brand:editItem.brand,unit:editItem.unit,quantity:parseFloat(editItem.quantity)||null,frequency:editItem.frequency,priority:editItem.priority,responsible:editItem.responsible,status:editItem.status,notes:editItem.notes});setEditItem(null)}
-  return(
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <PageHeader title="Mercado"
-        action={<div className="flex gap-2">
-          <button className="btn-secondary text-sm" onClick={()=>setStockModal(true)}>ð  Em casa</button>
-          <button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Item</button>
-        </div>}/>
-      <div className="flex gap-2 flex-wrap mb-4">
-        {['todos',...Object.keys(MARKET_STATUS)].map(f=><button key={f} onClick={()=>setFilter(f)} className={`chip ${filter===f?'active':''}`}>{f==='todos'?'Todos':f}</button>)}
+  const [editing, setEditing] = useState(null)
+  const [tab, setTab] = useState('lista') // 'lista' | 'estoque' | 'historico'
+  const [catFilter, setCatFilter] = useState('Todas')
+  const [search, setSearch] = useState('')
+  const [form, setForm] = useState({ name: '', quantity: '', unit: 'un', category: 'Mercearia', price: '', store: '', in_stock: false, low_stock: false, notes: '' })
+
+  const allCats = ['Todas', ...MARKET_CATS]
+
+  const shoppingList = items.filter(i => !i.in_stock || i.low_stock)
+  const inStock = items.filter(i => i.in_stock && !i.low_stock)
+  const lowStock = items.filter(i => i.low_stock)
+  const checked = items.filter(i => i.checked)
+
+  const filteredItems = items.filter(i => {
+    const matchCat = catFilter === 'Todas' || i.category === catFilter
+    const matchSearch = !search || i.name?.toLowerCase().includes(search.toLowerCase())
+    const matchTab = tab === 'lista' ? (!i.in_stock || i.low_stock) : tab === 'estoque' ? i.in_stock : true
+    return matchCat && matchSearch && matchTab
+  })
+
+  const totalPrice = shoppingList.reduce((s, i) => s + (i.price ? +i.price * (i.quantity || 1) : 0), 0)
+
+  const handleSave = async (e) => {
+    e.preventDefault()
+    const payload = { ...form, price: form.price ? parseFloat(form.price) : null }
+    if (editing) {
+      await update(editing.id, payload)
+      setEditing(null)
+    } else {
+      await insert(payload)
+      setAdding(false)
+    }
+    setForm({ name: '', quantity: '', unit: 'un', category: 'Mercearia', price: '', store: '', in_stock: false, low_stock: false, notes: '' })
+  }
+
+  const toggleCheck = async (item) => {
+    await update(item.id, { checked: !item.checked })
+  }
+
+  const toggleStock = async (item) => {
+    await update(item.id, { in_stock: !item.in_stock, low_stock: false })
+  }
+
+  const markLowStock = async (item) => {
+    await update(item.id, { low_stock: !item.low_stock })
+  }
+
+  const units = ['un', 'kg', 'g', 'L', 'mL', 'cx', 'pct', 'dz']
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <PageHeader
+        title="Mercado"
+        subtitle={totalPrice > 0 ? 'Lista estimada: R$ ' + totalPrice.toFixed(2) : 'Gerencie suas compras'}
+        action={
+          <button className="btn-primary flex items-center gap-1.5" onClick={() => setAdding(true)}>
+            <Plus className="w-4 h-4" /> Adicionar
+          </button>
+        }
+      />
+
+      {lowStock.length > 0 && (
+        <div className="card border-l-4 border-amber-400 bg-amber-50 mb-4">
+          <p className="text-sm text-amber-700 font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" /> {lowStock.length} item(s) com estoque baixo
+          </p>
+        </div>
+      )}
+
+      <div className="flex gap-1 bg-stone-100 rounded-xl p-1 mb-4">
+        {[['lista', 'Lista', ShoppingCart], ['estoque', 'Estoque', Home], ['historico', 'Todos', ClipboardList]].map(([key, label, Icon]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={'flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ' + (tab === key ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400')}>
+            <Icon className="w-3.5 h-3.5" /> {label}
+          </button>
+        ))}
       </div>
-      {adding&&(
-        <form onSubmit={handleAdd} className="card mb-4">
-          <p className="form-section-title">Novo item</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-            <div><label className="label">Categoria</label><select className="select" value={form.category} onChange={e=>setForm(p=>({...p,category:e.target.value}))}>{MKT_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-            <div><label className="label">Item</label><input className="input" value={form.item} onChange={e=>setForm(p=>({...p,item:e.target.value}))} required/></div>
-            <div><label className="label">Marca</label><input className="input" value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))}/></div>
-            <div><label className="label">Unidade</label><input className="input" value={form.unit} onChange={e=>setForm(p=>({...p,unit:e.target.value}))} placeholder="kg, g, L..."/></div>
-            <div><label className="label">Qtd</label><input className="input" type="number" min="0" step="0.1" value={form.quantity} onChange={e=>setForm(p=>({...p,quantity:e.target.value}))}/></div>
-            <div><label className="label">Frequência</label><select className="select" value={form.frequency} onChange={e=>setForm(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
-            <div><label className="label">Prioridade</label><select className="select" value={form.priority} onChange={e=>setForm(p=>({...p,priority:e.target.value}))}>{Object.keys(MARKET_PRIORITY).map(p=><option key={p}>{p}</option>)}</select></div>
-            <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(MARKET_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+
+      {(adding || editing) && (
+        <form onSubmit={handleSave} className="card space-y-3 border-2 border-stone-200 mb-4">
+          <div className="grid grid-cols-2 gap-2">
+            <input className="input col-span-2" placeholder="Nome do produto *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+            <div className="flex gap-1">
+              <input className="input flex-1" type="number" step="0.1" placeholder="Qtd" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
+              <select className="input w-16" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
+                {units.map(u => <option key={u}>{u}</option>)}
+              </select>
+            </div>
+            <input className="input" type="number" step="0.01" placeholder="Preço unit." value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+            <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+              {MARKET_CATS.map(c => <option key={c}>{c}</option>)}
+            </select>
+            <select className="input" value={form.store} onChange={e => setForm(f => ({ ...f, store: e.target.value }))}>
+              <option value="">Loja (opcional)</option>
+              {MARKET_STORES.map(s => <option key={s}>{s}</option>)}
+            </select>
+            <input className="input col-span-2" placeholder="Observações" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            <div className="col-span-2 flex gap-4">
+              <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+                <input type="checkbox" checked={form.in_stock} onChange={e => setForm(f => ({ ...f, in_stock: e.target.checked }))} className="w-4 h-4 rounded" />
+                Tenho em casa
+              </label>
+              <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
+                <input type="checkbox" checked={form.low_stock} onChange={e => setForm(f => ({ ...f, low_stock: e.target.checked }))} className="w-4 h-4 rounded" />
+                Estoque baixo
+              </label>
+            </div>
           </div>
-          <div><label className="label">OBS</label><input className="input" value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/></div>
-          <div className="flex gap-2 justify-end mt-3"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
+          <div className="flex gap-2">
+            <button type="submit" className="btn-primary flex-1">Salvar</button>
+            <button type="button" onClick={() => { setAdding(false); setEditing(null) }} className="btn-icon"><X className="w-4 h-4" /></button>
+          </div>
         </form>
       )}
-      <div className="tbl-wrap"><div className="overflow-x-auto">
-        <table className="tbl">
-          <thead><tr><th>Cat.</th><th>Item</th><th>Marca</th><th>Un.</th><th>Qtd</th><th>Freq.</th><th>Prior.</th><th>Resp.</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {filtered.length===0?<tr><td colSpan={10} className="text-center py-8 text-stone-300">Nenhum item</td></tr>:
-              filtered.map(i=>(
-                <tr key={i.id}>
-                  <td><span className="badge badge-stone text-xs">{i.category}</span></td>
-                  <td className="font-medium">{i.item}</td>
-                  <td className="text-stone-400">{i.brand||'—'}</td>
-                  <td className="text-stone-400">{i.unit||'—'}</td>
-                  <td className="text-stone-400">{i.quantity||'—'}</td>
-                  <td className="text-stone-400">{i.frequency||'—'}</td>
-                  <td><span className={`badge text-xs ${MARKET_PRIORITY[i.priority]||'badge-stone'}`}>{i.priority}</span></td>
-                  <td className="text-stone-400">{i.responsible}</td>
-                  <td><span className={`badge text-xs ${MARKET_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
-                  <td className="flex gap-1"><button onClick={()=>setEditItem({...i,quantity:i.quantity??''})} className="btn-icon w-7 h-7"><Pencil className="w-3.5 h-3.5"/></button><button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7"><Trash2 className="w-3.5 h-3.5"/></button></td>
-                </tr>
-              ))}
-          </tbody>
-        </table>
-      </div></div>
 
-      <Modal open={!!editItem} onClose={()=>setEditItem(null)} title="Editar item">
-        {editItem&&<form onSubmit={handleEdit}>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-            <div><label className="label">Categoria</label><select className="select" value={editItem.category} onChange={e=>setEditItem(p=>({...p,category:e.target.value}))}>{MKT_CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-            <div><label className="label">Item</label><input className="input" value={editItem.item} onChange={e=>setEditItem(p=>({...p,item:e.target.value}))} required/></div>
-            <div><label className="label">Marca</label><input className="input" value={editItem.brand||''} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/></div>
-            <div><label className="label">Unidade</label><input className="input" value={editItem.unit||''} onChange={e=>setEditItem(p=>({...p,unit:e.target.value}))}/></div>
-            <div><label className="label">Qtd</label><input className="input" type="number" min="0" step="0.1" value={editItem.quantity||''} onChange={e=>setEditItem(p=>({...p,quantity:e.target.value}))}/></div>
-            <div><label className="label">Frequência</label><select className="select" value={editItem.frequency||'Semanal'} onChange={e=>setEditItem(p=>({...p,frequency:e.target.value}))}>{MKT_FREQ.map(f=><option key={f}>{f}</option>)}</select></div>
-            <div><label className="label">Prioridade</label><select className="select" value={editItem.priority||'Essencial'} onChange={e=>setEditItem(p=>({...p,priority:e.target.value}))}>{Object.keys(MARKET_PRIORITY).map(p=><option key={p}>{p}</option>)}</select></div>
-            <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-            <div><label className="label">Status</label><select className="select" value={editItem.status||'Comprar'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}>{Object.keys(MARKET_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+        <input className="input pl-9" placeholder="Buscar produtos..." value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+
+      <div className="flex gap-1.5 overflow-x-auto pb-1 mb-3 no-scrollbar">
+        {allCats.map(c => (
+          <button key={c} onClick={() => setCatFilter(c)}
+            className={'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ' + (catFilter === c ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-500')}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-2">
+        {filteredItems.length === 0 && (
+          <div className="text-center py-10">
+            <ShoppingCart className="w-10 h-10 text-stone-200 mx-auto mb-2" />
+            <p className="text-stone-400 text-sm">{tab === 'lista' ? 'Lista vazia! Adicione itens para comprar.' : 'Nenhum item encontrado.'}</p>
           </div>
-          <div className="mb-3"><label className="label">OBS</label><input className="input" value={editItem.notes||''} onChange={e=>setEditItem(p=>({...p,notes:e.target.value}))}/></div>
-          <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-        </form>}
-      </Modal>
-
-      <Modal open={stockModal} onClose={()=>setStockModal(false)} title="O que tem em casa">
-        <div className="flex flex-col gap-2 mb-3 max-h-60 overflow-y-auto">
-          {stock.length===0?<p className="text-sm text-stone-300">Nenhum item.</p>:
-            stock.map(s=>(
-              <div key={s.id} className="flex items-center justify-between py-1.5 px-3 bg-stone-50 rounded-lg">
-                <span className="text-sm">{s.name}</span>
-                <button onClick={()=>removeStock(s.id)} className="text-stone-300 hover:text-blush-500 text-xs">✕</button>
+        )}
+        {filteredItems.map(item => (
+          <div key={item.id} className={'card flex items-center gap-3 transition-all ' + (item.checked ? 'opacity-60' : '') + (item.low_stock ? ' border-l-4 border-amber-400' : '')}>
+            <button onClick={() => toggleCheck(item)}
+              className={'w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ' + (item.checked ? 'bg-teal-500 border-teal-500' : 'border-stone-300 hover:border-teal-400')}>
+              {item.checked && <Check className="w-3 h-3 text-white" />}
+            </button>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className={'text-sm font-medium ' + (item.checked ? 'line-through text-stone-400' : 'text-stone-700')}>{item.name}</span>
+                <span className="text-xs text-stone-400">{item.quantity && item.unit ? item.quantity + ' ' + item.unit : ''}</span>
+                {item.low_stock && <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700">baixo</span>}
               </div>
-            ))}
-        </div>
-        <div className="flex gap-2">
-          <input className="input flex-1" value={newStock} onChange={e=>setNewStock(e.target.value)} placeholder="Ex: Arroz, macarrão..."/>
-          <button className="btn-primary text-sm" onClick={async()=>{if(!newStock.trim())return;await insertStock({name:newStock.trim()});setNewStock('')}}>+</button>
-        </div>
-      </Modal>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-stone-400">{item.category}</span>
+                {item.store && <span className="text-xs text-stone-400">· {item.store}</span>}
+                {item.price && <span className="text-xs text-stone-500 font-medium">R$ {(item.price * (item.quantity || 1)).toFixed(2)}</span>}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => markLowStock(item)} title="Estoque baixo"
+                className={'w-7 h-7 rounded-lg flex items-center justify-center transition-colors ' + (item.low_stock ? 'bg-amber-100 text-amber-600' : 'bg-stone-100 text-stone-400 hover:bg-amber-100')}>
+                <AlertCircle className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => toggleStock(item)} title={item.in_stock ? 'Tirar do estoque' : 'Marcar como no estoque'}
+                className={'w-7 h-7 rounded-lg flex items-center justify-center transition-colors ' + (item.in_stock ? 'bg-teal-100 text-teal-600' : 'bg-stone-100 text-stone-400 hover:bg-teal-100')}>
+                <Check className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => { setEditing(item); setForm({ name: item.name || '', quantity: item.quantity || '', unit: item.unit || 'un', category: item.category || 'Mercearia', price: item.price || '', store: item.store || '', in_stock: item.in_stock || false, low_stock: item.low_stock || false, notes: item.notes || '' }); setAdding(false) }}
+                className="w-7 h-7 rounded-lg bg-stone-100 text-stone-400 hover:bg-stone-200 flex items-center justify-center">
+                <Pencil className="w-3.5 h-3.5" />
+              </button>
+              <button onClick={() => remove(item.id)} className="w-7 h-7 rounded-lg bg-stone-100 text-stone-300 hover:bg-rose-100 hover:text-rose-400 flex items-center justify-center">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
 
-// ─── Apartment Page ───────────────────────────────────────────────
-import { APT_STATUS } from '../lib/utils'
-const APT_ROOMS=['Sala','Quarto','Cozinha','Banheiro','Área de serviço','Varanda','Escritório','Hall']
+// ─── Apartment Page (Reformulado) ──────────────────────────────────────────
+const APT_ROOMS = ['Sala', 'Cozinha', 'Quarto', 'Banheiro', 'Área', 'Varanda', 'Escritório', 'Geral']
+const APT_TASK_CATS = ['Manutenção', 'Limpeza', 'Compra', 'Melhoria', 'Urgente']
+const APT_EXPENSE_CATS = ['Aluguel', 'Condomínio', 'Internet', 'Energia', 'Água', 'Gás', 'Streaming', 'Seguro', 'IPTU', 'Outros']
 
 export function ApartmentPage() {
-  const { data: items, insert, remove, update } = useDB('apartment_items')
-  const { addLog } = useLogs()
+  const [tab, setTab] = useState('tarefas') // 'tarefas' | 'gastos' | 'inventario'
   const [adding, setAdding] = useState(false)
-  const [sort, setSort] = useState('desc')
-  const [editItem, setEditItem] = useState(null)
-  const [form, setForm] = useState({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})
-  const sorted=[...items].sort((a,b)=>sort==='desc'?b.value-a.value:a.value-b.value)
-  const handleEdit=async(e)=>{e.preventDefault();if(!editItem)return;await update(editItem.id,{room:editItem.room,item:editItem.item,size:editItem.size,value:editItem.value,brand:editItem.brand,model:editItem.model,link:editItem.link,status:editItem.status});setEditItem(null)}
-  const handleAdd=async(e)=>{e.preventDefault();await insert({...form,value:parseFloat(form.value)||0});setAdding(false);setForm({room:'Sala',item:'',size:'',value:'',brand:'',model:'',link:'',status:'Desejado'})}
-  return(
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <PageHeader title="Apartamento"
-        action={<div className="flex gap-2">
-          <select className="select w-auto text-sm py-2" value={sort} onChange={e=>setSort(e.target.value)}>
-            <option value="desc">Maior valor</option><option value="asc">Menor valor</option>
-          </select>
-          <button className="btn-primary flex items-center gap-1.5" onClick={()=>setAdding(!adding)}><Plus className="w-4 h-4"/>Item</button>
-        </div>}/>
-      {adding&&(
-        <form onSubmit={handleAdd} className="card mb-4">
-          <p className="form-section-title">Novo item</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-            <div><label className="label">Cômodo</label><select className="select" value={form.room} onChange={e=>setForm(p=>({...p,room:e.target.value}))}>{APT_ROOMS.map(r=><option key={r}>{r}</option>)}</select></div>
-            <div><label className="label">Item</label><input className="input" value={form.item} onChange={e=>setForm(p=>({...p,item:e.target.value}))} required/></div>
-            <div><label className="label">Tamanho</label><input className="input" value={form.size} onChange={e=>setForm(p=>({...p,size:e.target.value}))} placeholder="Ex: 2.10m"/></div>
-            <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={form.value} onChange={e=>setForm(p=>({...p,value:e.target.value}))}/></div>
-            <div><label className="label">Marca</label><input className="input" value={form.brand} onChange={e=>setForm(p=>({...p,brand:e.target.value}))}/></div>
-            <div><label className="label">Modelo</label><input className="input" value={form.model} onChange={e=>setForm(p=>({...p,model:e.target.value}))}/></div>
-            <div className="col-span-2"><label className="label">Link</label><input className="input" type="url" value={form.link} onChange={e=>setForm(p=>({...p,link:e.target.value}))} placeholder="https://..."/></div>
-            <div><label className="label">Status</label><select className="select" value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))}>{Object.keys(APT_STATUS).map(s=><option key={s}>{s}</option>)}</select></div>
-          </div>
-          <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setAdding(false)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-        </form>
+  const [editing, setEditing] = useState(null)
+  const [roomFilter, setRoomFilter] = useState('Todos')
+  const [catFilter, setCatFilter] = useState('Todas')
+
+  const { data: tasks, insert: insertTask, update: updateTask, remove: removeTask } = useDB('apt_tasks')
+  const { data: expenses, insert: insertExpense, remove: removeExpense } = useDB('apt_expenses')
+  const { data: inventory, insert: insertItem, update: updateItem, remove: removeItem } = useDB('apt_inventory')
+
+  const [taskForm, setTaskForm] = useState({ title: '', room: 'Geral', category: 'Manutenção', priority: 'média', status: 'pendente', due_date: '', notes: '' })
+  const [expenseForm, setExpenseForm] = useState({ description: '', category: 'Aluguel', amount: '', recurrent: true, due_day: '', notes: '' })
+  const [invForm, setInvForm] = useState({ name: '', room: 'Sala', quantity: 1, condition: 'bom', notes: '' })
+
+  const monthlyTotal = expenses.filter(e => e.recurrent).reduce((s, e) => s + (+e.amount || 0), 0)
+  const pendingTasks = tasks.filter(t => t.status !== 'concluído').length
+  const urgentTasks = tasks.filter(t => t.priority === 'urgente' && t.status !== 'concluído').length
+
+  const filteredTasks = tasks.filter(t => {
+    const matchRoom = roomFilter === 'Todos' || t.room === roomFilter
+    const matchCat = catFilter === 'Todas' || t.category === catFilter
+    return matchRoom && matchCat
+  })
+
+  const handleSaveTask = async (e) => {
+    e.preventDefault()
+    const payload = { ...taskForm, due_date: taskForm.due_date || null }
+    if (editing) { await updateTask(editing.id, payload); setEditing(null) }
+    else { await insertTask(payload); setAdding(false) }
+    setTaskForm({ title: '', room: 'Geral', category: 'Manutenção', priority: 'média', status: 'pendente', due_date: '', notes: '' })
+  }
+
+  const handleSaveExpense = async (e) => {
+    e.preventDefault()
+    await insertExpense({ ...expenseForm, amount: parseFloat(expenseForm.amount) })
+    setExpenseForm({ description: '', category: 'Aluguel', amount: '', recurrent: true, due_day: '', notes: '' })
+    setAdding(false)
+  }
+
+  const handleSaveInv = async (e) => {
+    e.preventDefault()
+    await insertItem(invForm)
+    setInvForm({ name: '', room: 'Sala', quantity: 1, condition: 'bom', notes: '' })
+    setAdding(false)
+  }
+
+  const PRIORITY_COLORS = { baixa: 'text-teal-600 bg-teal-50', média: 'text-amber-600 bg-amber-50', alta: 'text-orange-600 bg-orange-50', urgente: 'text-rose-600 bg-rose-50' }
+
+  return (
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
+      <PageHeader title="Apartamento" subtitle="Tarefas, gastos e inventário" action={
+        <button className="btn-primary flex items-center gap-1.5" onClick={() => setAdding(true)}>
+          <Plus className="w-4 h-4" /> Adicionar
+        </button>
+      } />
+
+      {(urgentTasks > 0) && (
+        <div className="card border-l-4 border-rose-400 bg-rose-50 mb-4">
+          <p className="text-sm font-semibold text-rose-600 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" /> {urgentTasks} tarefa(s) urgente(s)
+          </p>
+        </div>
       )}
-      <div className="tbl-wrap"><div className="overflow-x-auto">
-        <table className="tbl">
-          <thead><tr><th>Cômodo</th><th>Item</th><th>Tamanho</th><th>Valor</th><th>Marca</th><th>Modelo</th><th>Link</th><th>Status</th><th></th></tr></thead>
-          <tbody>
-            {sorted.length===0?<tr><td colSpan={9} className="text-center py-8 text-stone-300">Nenhum item</td></tr>:
-              sorted.map(i=>(
-                <tr key={i.id}>
-                  <td><span className="badge badge-stone">{i.room}</span></td>
-                  <td className="font-medium">{i.item}</td>
-                  <td className="text-stone-400">{i.size||'—'}</td>
-                  <td className="font-medium text-sage-600">{+i.value>0?fmt(i.value):'—'}</td>
-                  <td className="text-stone-400">{i.brand||'—'}</td>
-                  <td className="text-stone-400">{i.model||'—'}</td>
-                  <td>{i.link?<a href={i.link} target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline text-xs">Ver link</a>:'—'}</td>
-                  <td><span className={`badge text-xs ${APT_STATUS[i.status]||'badge-stone'}`}>{i.status}</span></td>
-                  <td className="whitespace-nowrap">
-                    <div className="flex gap-1 justify-end">
-                      <button onClick={()=>setEditItem({...i})} className="btn-icon w-7 h-7" title="Editar"><Pencil className="w-3.5 h-3.5"/></button>
-                      <button onClick={()=>remove(i.id)} className="btn-icon w-7 h-7" title="Excluir"><Trash2 className="w-3.5 h-3.5"/></button>
-                    </div>
-                  </td>
-                </tr>
+
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="card text-center">
+          <p className="text-xl font-display font-bold text-stone-700">{pendingTasks}</p>
+          <p className="text-xs text-stone-400">Tarefas</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-xl font-display font-bold text-rose-600">R$ {monthlyTotal.toFixed(0)}</p>
+          <p className="text-xs text-stone-400">Mensal</p>
+        </div>
+        <div className="card text-center">
+          <p className="text-xl font-display font-bold text-teal-600">{inventory.length}</p>
+          <p className="text-xs text-stone-400">Itens</p>
+        </div>
+      </div>
+
+      <div className="flex gap-1 bg-stone-100 rounded-xl p-1 mb-4">
+        {[['tarefas', 'Tarefas', ListTodo], ['gastos', 'Gastos', DollarSign], ['inventario', 'Inventário', Home]].map(([key, label, Icon]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={'flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 ' + (tab === key ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400')}>
+            <Icon className="w-3.5 h-3.5" /> {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'tarefas' && (
+        <div>
+          {(adding || editing) && (
+            <form onSubmit={handleSaveTask} className="card space-y-3 border-2 border-stone-200 mb-4">
+              <input className="input" placeholder="Título da tarefa *" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} required />
+              <div className="grid grid-cols-2 gap-2">
+                <select className="input" value={taskForm.room} onChange={e => setTaskForm(f => ({ ...f, room: e.target.value }))}>
+                  {APT_ROOMS.map(r => <option key={r}>{r}</option>)}
+                </select>
+                <select className="input" value={taskForm.category} onChange={e => setTaskForm(f => ({ ...f, category: e.target.value }))}>
+                  {APT_TASK_CATS.map(c => <option key={c}>{c}</option>)}
+                </select>
+                <select className="input" value={taskForm.priority} onChange={e => setTaskForm(f => ({ ...f, priority: e.target.value }))}>
+                  {['baixa', 'média', 'alta', 'urgente'].map(p => <option key={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
+                </select>
+                <input className="input" type="date" placeholder="Prazo" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} />
+              </div>
+              <textarea className="input" placeholder="Notas (opcional)" value={taskForm.notes} onChange={e => setTaskForm(f => ({ ...f, notes: e.target.value }))} rows={2} />
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary flex-1">Salvar</button>
+                <button type="button" onClick={() => { setAdding(false); setEditing(null) }} className="btn-icon"><X className="w-4 h-4" /></button>
+              </div>
+            </form>
+          )}
+          {!adding && !editing && (
+            <div className="flex gap-1.5 overflow-x-auto pb-1 mb-3 no-scrollbar">
+              {['Todos', ...APT_ROOMS].map(r => (
+                <button key={r} onClick={() => setRoomFilter(r)}
+                  className={'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ' + (roomFilter === r ? 'bg-stone-800 text-white' : 'bg-stone-100 text-stone-500')}>
+                  {r}
+                </button>
               ))}
-          </tbody>
-        </table>
-      </div></div>
-      {editItem&&(
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <form onSubmit={handleEdit} className="card w-full max-w-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-stone-700">Editar Item</h3>
-              <button type="button" onClick={()=>setEditItem(null)} className="btn-icon"><X className="w-4 h-4"/></button>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
-              <div><label className="label">Cômodo</label><select className="select" value={editItem.room||''} onChange={e=>setEditItem(p=>({...p,room:e.target.value}))}>{APT_ROOMS.map(r=><option key={r}>{r}</option>)}</select></div>
-              <div><label className="label">Item</label><input className="input" value={editItem.item||''} onChange={e=>setEditItem(p=>({...p,item:e.target.value}))} required/></div>
-              <div><label className="label">Tamanho</label><input className="input" value={editItem.size||''} onChange={e=>setEditItem(p=>({...p,size:e.target.value}))}/></div>
-              <div><label className="label">Valor (R$)</label><input className="input" type="number" step="0.01" min="0" value={editItem.value||''} onChange={e=>setEditItem(p=>({...p,value:e.target.value}))}/></div>
-              <div><label className="label">Marca</label><input className="input" value={editItem.brand||''} onChange={e=>setEditItem(p=>({...p,brand:e.target.value}))}/></div>
-              <div><label className="label">Modelo</label><input className="input" value={editItem.model||''} onChange={e=>setEditItem(p=>({...p,model:e.target.value}))}/></div>
-              <div className="col-span-2"><label className="label">Link</label><input className="input" value={editItem.link||''} onChange={e=>setEditItem(p=>({...p,link:e.target.value}))}/></div>
-              <div><label className="label">Status</label><select className="select" value={editItem.status||'Desejado'} onChange={e=>setEditItem(p=>({...p,status:e.target.value}))}><option>Desejado</option><option>Comprado</option><option>Descartado</option></select></div>
-            </div>
-            <div className="flex gap-2 justify-end"><button type="button" className="btn-secondary" onClick={()=>setEditItem(null)}>Cancelar</button><button type="submit" className="btn-primary">Salvar</button></div>
-          </form>
+          )}
+          <div className="space-y-2">
+            {filteredTasks.length === 0 && (
+              <div className="text-center py-10">
+                <Home className="w-10 h-10 text-stone-200 mx-auto mb-2" />
+                <p className="text-stone-400 text-sm">Nenhuma tarefa aqui 🏠</p>
+              </div>
+            )}
+            {filteredTasks.map(task => (
+              <div key={task.id} className={'card flex items-start gap-3 ' + (task.priority === 'urgente' ? 'border-l-4 border-rose-400' : task.priority === 'alta' ? 'border-l-4 border-orange-400' : '')}>
+                <button onClick={() => updateTask(task.id, { status: task.status === 'concluído' ? 'pendente' : 'concluído' })}
+                  className={'mt-0.5 w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ' + (task.status === 'concluído' ? 'bg-teal-500 border-teal-500' : 'border-stone-300 hover:border-teal-400')}>
+                  {task.status === 'concluído' && <Check className="w-3 h-3 text-white" />}
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={'text-sm font-medium ' + (task.status === 'concluído' ? 'line-through text-stone-400' : 'text-stone-700')}>{task.title}</span>
+                    <span className={'text-xs px-1.5 py-0.5 rounded ' + (PRIORITY_COLORS[task.priority] || '')}>{task.priority}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-stone-400">{task.room}</span>
+                    <span className="text-xs text-stone-400">· {task.category}</span>
+                    {task.due_date && <span className="text-xs text-stone-400">· {task.due_date}</span>}
+                  </div>
+                  {task.notes && <p className="text-xs text-stone-400 mt-0.5">{task.notes}</p>}
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => { setEditing(task); setTaskForm({ title: task.title || '', room: task.room || 'Geral', category: task.category || 'Manutenção', priority: task.priority || 'média', status: task.status || 'pendente', due_date: task.due_date || '', notes: task.notes || '' }) }}
+                    className="w-7 h-7 rounded-lg bg-stone-100 text-stone-400 hover:bg-stone-200 flex items-center justify-center">
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                  <button onClick={() => removeTask(task.id)} className="w-7 h-7 rounded-lg bg-stone-100 text-stone-300 hover:bg-rose-100 hover:text-rose-400 flex items-center justify-center">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'gastos' && (
+        <div>
+          {adding && (
+            <form onSubmit={handleSaveExpense} className="card space-y-3 border-2 border-stone-200 mb-4">
+              <input className="input" placeholder="Descrição *" value={expenseForm.description} onChange={e => setExpenseForm(f => ({ ...f, description: e.target.value }))} required />
+              <div className="grid grid-cols-2 gap-2">
+                <select className="input" value={expenseForm.category} onChange={e => setExpenseForm(f => ({ ...f, category: e.target.value }))}>
+                  {APT_EXPENSE_CATS.map(c => <option key={c}>{c}</option>)}
+                </select>
+                <input className="input" type="number" step="0.01" placeholder="Valor" value={expenseForm.amount} onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))} required />
+                <input className="input" type="number" min="1" max="31" placeholder="Vence dia..." value={expenseForm.due_day} onChange={e => setExpenseForm(f => ({ ...f, due_day: e.target.value }))} />
+                <label className="flex items-center gap-2 text-sm text-stone-600">
+                  <input type="checkbox" checked={expenseForm.recurrent} onChange={e => setExpenseForm(f => ({ ...f, recurrent: e.target.checked }))} className="w-4 h-4 rounded" />
+                  Recorrente
+                </label>
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary flex-1">Salvar</button>
+                <button type="button" onClick={() => setAdding(false)} className="btn-icon"><X className="w-4 h-4" /></button>
+              </div>
+            </form>
+          )}
+          <div className="card mb-4 bg-gradient-to-br from-stone-50 to-stone-100 border-0">
+            <p className="text-xs text-stone-400 mb-1">Total mensal estimado</p>
+            <p className="text-3xl font-display font-bold text-stone-800">R$ {monthlyTotal.toFixed(2)}</p>
+          </div>
+          <div className="space-y-2">
+            {expenses.length === 0 && <p className="text-center text-stone-400 text-sm py-8">Nenhum gasto registrado</p>}
+            {expenses.map(exp => (
+              <div key={exp.id} className="card flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-stone-700">{exp.description}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-stone-400">{exp.category}</span>
+                    {exp.recurrent && <span className="text-xs px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-600">recorrente</span>}
+                    {exp.due_day && <span className="text-xs text-stone-400">Vence dia {exp.due_day}</span>}
+                  </div>
+                </div>
+                <span className="text-sm font-semibold text-stone-700">R$ {(+exp.amount).toFixed(2)}</span>
+                <button onClick={() => removeExpense(exp.id)} className="text-stone-300 hover:text-rose-400">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {tab === 'inventario' && (
+        <div>
+          {adding && (
+            <form onSubmit={handleSaveInv} className="card space-y-3 border-2 border-stone-200 mb-4">
+              <input className="input" placeholder="Nome do item *" value={invForm.name} onChange={e => setInvForm(f => ({ ...f, name: e.target.value }))} required />
+              <div className="grid grid-cols-2 gap-2">
+                <select className="input" value={invForm.room} onChange={e => setInvForm(f => ({ ...f, room: e.target.value }))}>
+                  {APT_ROOMS.map(r => <option key={r}>{r}</option>)}
+                </select>
+                <input className="input" type="number" min="1" placeholder="Quantidade" value={invForm.quantity} onChange={e => setInvForm(f => ({ ...f, quantity: parseInt(e.target.value) }))} />
+                <select className="input" value={invForm.condition} onChange={e => setInvForm(f => ({ ...f, condition: e.target.value }))}>
+                  {['novo', 'bom', 'regular', 'ruim'].map(c => <option key={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
+                </select>
+                <input className="input" placeholder="Notas" value={invForm.notes} onChange={e => setInvForm(f => ({ ...f, notes: e.target.value }))} />
+              </div>
+              <div className="flex gap-2">
+                <button type="submit" className="btn-primary flex-1">Salvar</button>
+                <button type="button" onClick={() => setAdding(false)} className="btn-icon"><X className="w-4 h-4" /></button>
+              </div>
+            </form>
+          )}
+          <div className="space-y-2">
+            {inventory.length === 0 && <p className="text-center text-stone-400 text-sm py-8">Inventário vazio. Adicione itens do seu apartamento!</p>}
+            {inventory.map(item => (
+              <div key={item.id} className="card flex items-center gap-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-stone-700">{item.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-stone-400">{item.room}</span>
+                    <span className="text-xs text-stone-400">· Qtd: {item.quantity}</span>
+                    <span className={'text-xs px-1.5 py-0.5 rounded-full ' + (item.condition === 'novo' ? 'bg-teal-100 text-teal-600' : item.condition === 'bom' ? 'bg-blue-100 text-blue-600' : item.condition === 'regular' ? 'bg-amber-100 text-amber-600' : 'bg-rose-100 text-rose-600')}>{item.condition}</span>
+                  </div>
+                </div>
+                <button onClick={() => removeItem(item.id)} className="text-stone-300 hover:text-rose-400">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -1772,353 +1670,6 @@ export function GoalsPage() {
     </div>
   )
 }
-
-// ─── Commitments (Calendar) Page ─────────────────────────────────────
-import { DAYS_OF_WEEK, DAYS_SHORT, genTimeSlots } from '../lib/utils'
-const TIME_SLOTS = genTimeSlots()
-
-export function CommitmentsPage() {
-  const { data: events, insert, remove, update } = useDB('commitments')
-  const [modal, setModal] = useState(false)
-  const [editModal, setEditModal] = useState(false)
-  const [editItem, setEditItem] = useState(null)
-  const [copyModal, setCopyModal] = useState(false)
-  const [copyItem, setCopyItem] = useState(null)
-  const [copyDays, setCopyDays] = useState([])
-  const [form, setForm] = useState({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]})
-  const [dragging, setDragging] = useState(null)
-  const [dragOver, setDragOver] = useState(null)
-  const [selecting, setSelecting] = useState(false)
-  const [selCells, setSelCells] = useState([])
-
-  const openEdit=(ev,e)=>{e.stopPropagation();setEditItem({...ev});setEditModal(true)}
-  const openCopy=(ev,e)=>{e.stopPropagation();setCopyItem(ev);setCopyDays([ev.day_of_week]);setCopyModal(true)}
-  const handleAdd=async()=>{if(!form.title.trim())return;const days=(form.recurrence&&form.recurrence.length>0)?form.recurrence:[form.day_of_week];for(const d of days){await insert({day_of_week:d,time_slot:form.time_slot,title:form.title,responsible:form.responsible})};setModal(false)}
-  const handleEdit=async()=>{if(!editItem?.title?.trim())return;await update(editItem.id,{day_of_week:editItem.day_of_week,time_slot:editItem.time_slot,title:editItem.title,responsible:editItem.responsible});setEditModal(false)}
-  const handleCopy=async()=>{if(!copyItem||copyDays.length===0)return;for(const d of copyDays){await insert({day_of_week:d,time_slot:copyItem.time_slot,title:copyItem.title,responsible:copyItem.responsible})};setCopyModal(false)}
-  const handleMultiCreate=async()=>{if(!form.title.trim()||selCells.length===0)return;for(const c of selCells){await insert({day_of_week:c.day,time_slot:c.time,title:form.title,responsible:form.responsible})};setModal(false);setSelCells([])}
-  const toggleRec=(day)=>setForm(p=>({...p,recurrence:(p.recurrence||[]).includes(day)?(p.recurrence||[]).filter(d=>d!==day):[...(p.recurrence||[]),day]}))
-  const onDragStart=(ev,e)=>{e.dataTransfer.effectAllowed='move';setDragging({ev})}
-  const onDrop=async(day,time,e)=>{e.preventDefault();if(!dragging)return;if(day!==dragging.ev.day_of_week||time!==dragging.ev.time_slot){await update(dragging.ev.id,{day_of_week:day,time_slot:time,title:dragging.ev.title,responsible:dragging.ev.responsible})};setDragging(null);setDragOver(null)}
-  const onCellMouseDown=(day,time,e)=>{e.preventDefault();setSelecting(true);setSelCells([{day,time}])}
-  const onCellMouseEnter=(day,time)=>{if(!selecting)return;setSelCells(prev=>{const exists=prev.some(c=>c.day===day&&c.time===time);if(exists)return prev;return [...prev,{day,time}]})}
-  const finishSelect=()=>{if(!selecting)return;setSelecting(false);if(selCells.length>0){setForm(p=>({...p,recurrence:[]}));setModal(true)}}
-  const isSelected=(day,time)=>selCells.some(c=>c.day===day&&c.time===time)
-
-  return(
-    <div className="p-4 md:p-6" onMouseUp={finishSelect} onDragOver={e=>e.preventDefault()}>
-      <PageHeader title="Compromissos" subtitle="Calendário semanal"
-        action={<button className="btn-primary flex items-center gap-1.5" onClick={()=>{setSelCells([]);setForm({day_of_week:'Segunda',time_slot:'07:00',title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}><Plus className="w-4 h-4"/> Compromisso</button>} />
-      <div className="overflow-x-auto rounded-2xl border border-stone-100 shadow-warm bg-white" style={{userSelect:'none'}}>
-        <table style={{minWidth:640,width:'100%',borderCollapse:'collapse'}}>
-          <thead><tr>
-            <th style={{width:60,background:'#F9F7F4',padding:'8px 10px',fontSize:11,color:'#9A8A78',borderBottom:'1px solid #F0ECE6',textAlign:'center'}}>Hora</th>
-            {DAYS_SHORT.map(d=><th key={d} style={{background:'#F9F7F4',padding:'8px 10px',fontSize:12,fontWeight:500,color:'#3E3530',borderBottom:'1px solid #F0ECE6',borderLeft:'1px solid #F0ECE6',textAlign:'center'}}>{d}</th>)}
-          </tr></thead>
-          <tbody>
-            {TIME_SLOTS.map(t=>(
-              <tr key={t}>
-                <td style={{background:'#F9F7F4',padding:'3px 8px',fontSize:11,color:'#B5A796',textAlign:'right',borderBottom:'1px solid #F9F7F4',whiteSpace:'nowrap'}}>{t}</td>
-                {DAYS_OF_WEEK.map(d=>{
-                  const cellEvents=events.filter(ev=>ev.day_of_week===d&&ev.time_slot===t)
-                  const sel=isSelected(d,t)
-                  const over=dragOver&&dragOver.day===d&&dragOver.time===t
-                  return(
-                    <td key={d}
-                      onMouseDown={(e)=>{if(cellEvents.length===0&&!dragging){onCellMouseDown(d,t,e)}}}
-                      onMouseEnter={()=>{onCellMouseEnter(d,t);if(dragging)setDragOver({day:d,time:t})}}
-                      onMouseUp={()=>{if(dragging)onDrop(d,t,{preventDefault:()=>{}})}}
-                      onDragOver={(e)=>{e.preventDefault();if(dragging)setDragOver({day:d,time:t})}}
-                      onDrop={(e)=>onDrop(d,t,e)}
-                      onClick={()=>{if(cellEvents.length===0&&!dragging&&selCells.length===0){setSelCells([]);setForm({day_of_week:d,time_slot:t,title:'',responsible:'Bruno',recurrence:[]});setModal(true)}}}
-                      style={{
-                        borderLeft:'1px solid #F0ECE6',borderBottom:'1px solid #F0ECE6',
-                        padding:'2px 3px',minHeight:28,verticalAlign:'top',
-                        cursor:dragging?'copy':'pointer',
-                        background:over?'#FFF3CD':sel?'#E8F5E9':'',
-                        transition:'background 0.1s'
-                      }}>
-                      {cellEvents.map(ev=>(
-                        <div key={ev.id}
-                          draggable
-                          onDragStart={(e)=>onDragStart(ev,e)}
-                          onDragEnd={()=>{setDragging(null);setDragOver(null)}}
-                          style={{
-                            background:dragging?.ev?.id===ev.id?'#FEF3C7':'#FFFBF0',
-                            borderLeft:`2px solid ${dragging?.ev?.id===ev.id?'#F59E0B':'#F5A800'}`,
-                            borderRadius:4,padding:'2px 5px 2px 4px',fontSize:11,lineHeight:1.3,
-                            marginBottom:2,cursor:'grab',color:'#6D4800',
-                            display:'flex',alignItems:'center',gap:2,
-                            opacity:dragging?.ev?.id===ev.id?0.5:1,
-                          }}
-                          onClick={e=>{e.stopPropagation();openEdit(ev,e)}}>
-                          <span style={{flex:1}}>{ev.title}</span>
-                          <button onClick={e=>{e.stopPropagation();openCopy(ev,e)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}}><Copy style={{width:10,height:10}}/></button>
-                          <button onClick={e=>{e.stopPropagation();remove(ev.id)}} style={{background:'none',border:'none',cursor:'pointer',padding:'1px',color:'#B5A796',lineHeight:1}}><Trash2 style={{width:10,height:10}}/></button>
-                        </div>
-                      ))}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="text-xs text-stone-300 mt-2 text-center">Clique para adicionar · Arraste um evento para mover · Clique e arraste em células vazias para criar em lote</p>
-
-      <Modal open={modal} onClose={()=>{setModal(false);setSelCells([])}} title={selCells.length>1?"Novo compromisso em "+selCells.length+" horários":"Novo compromisso"}>
-        <div className="grid gap-3">
-          {selCells.length===0&&<>
-            <div><label className="label">Dia</label><select className="select" value={form.day_of_week} onChange={e=>setForm(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
-            <div><label className="label">Horário</label><select className="select" value={form.time_slot} onChange={e=>setForm(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
-          </>}
-          {selCells.length>0&&(
-            <div className="bg-sage-50 rounded-lg p-3 text-sm text-stone-600">
-              <p className="font-medium mb-1">Horários selecionados ({selCells.length}):</p>
-              <div className="flex flex-wrap gap-1">{selCells.map((c,i)=><span key={i} className="badge badge-sage text-xs">{c.day} {c.time}</span>)}</div>
-            </div>
-          )}
-          <div><label className="label">Compromisso</label><input className="input" value={form.title} onChange={e=>setForm(p=>({...p,title:e.target.value}))} placeholder="Ex: Academia, Reunião..." autoFocus/></div>
-          <div><label className="label">Responsável</label><select className="select" value={form.responsible} onChange={e=>setForm(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-          {selCells.length===0&&<div><label className="label mb-1">Repetir também em</label><div className="flex flex-wrap gap-1 mt-1">{DAYS_OF_WEEK.filter(d=>d!==form.day_of_week).map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${(form.recurrence||[]).includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>toggleRec(d)}>{d}</button>))}</div></div>}
-        </div>
-        <div className="flex gap-2 justify-end mt-4">
-          <button className="btn-secondary" onClick={()=>{setModal(false);setSelCells([])}}>Cancelar</button>
-          <button className="btn-primary" onClick={selCells.length>1?handleMultiCreate:handleAdd}>Salvar</button>
-        </div>
-      </Modal>
-
-      <Modal open={editModal} onClose={()=>setEditModal(false)} title="Editar compromisso">
-        {editItem&&<div className="grid gap-3">
-          <div><label className="label">Dia</label><select className="select" value={editItem.day_of_week} onChange={e=>setEditItem(p=>({...p,day_of_week:e.target.value}))}>{DAYS_OF_WEEK.map(d=><option key={d}>{d}</option>)}</select></div>
-          <div><label className="label">Horário</label><select className="select" value={editItem.time_slot} onChange={e=>setEditItem(p=>({...p,time_slot:e.target.value}))}>{TIME_SLOTS.map(t=><option key={t}>{t}</option>)}</select></div>
-          <div><label className="label">Compromisso</label><input className="input" value={editItem.title||''} onChange={e=>setEditItem(p=>({...p,title:e.target.value}))}/></div>
-          <div><label className="label">Responsável</label><select className="select" value={editItem.responsible||'Bruno'} onChange={e=>setEditItem(p=>({...p,responsible:e.target.value}))}><option>Bruno</option><option>Vianka</option><option>Ambos</option></select></div>
-        </div>}
-        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setEditModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleEdit}>Salvar</button></div>
-      </Modal>
-
-      <Modal open={copyModal} onClose={()=>setCopyModal(false)} title="Copiar para outros dias">
-        <p className="text-sm text-stone-500 mb-3">Selecione os dias para copiar "{copyItem?.title}":</p>
-        <div className="flex flex-wrap gap-2">{DAYS_OF_WEEK.map(d=>(<button key={d} type="button" className={`badge cursor-pointer ${copyDays.includes(d)?'badge-sage':'badge-stone'}`} onClick={()=>setCopyDays(p=>p.includes(d)?p.filter(x=>x!==d):[...p,d])}>{d}</button>))}</div>
-        <div className="flex gap-2 justify-end mt-4"><button className="btn-secondary" onClick={()=>setCopyModal(false)}>Cancelar</button><button className="btn-primary" onClick={handleCopy} disabled={copyDays.length===0}>Copiar</button></div>
-      </Modal>
-    </div>
-  )
-}
-export function PendingPage() {
-  const { data: orders, insert, remove, update } = useDB('client_orders')
-  const { addLog } = useLogs()
-  const [adding, setAdding] = useState(false)
-  const [editId, setEditId] = useState(null)
-  const [editForm, setEditForm] = useState({})
-  const [form, setForm] = useState({
-    client_name: '',
-    order_date: format(new Date(), 'yyyy-MM-dd'),
-    delivery_date: '',
-    amount_paid: '',
-    material_provided: '',
-    description: '',
-    status: 'pendente',
-    notes: '',
-  })
-
-  const STATUS_OPTIONS = [
-    { value: 'pendente',     label: 'Pendente',     color: 'bg-amber-100 text-amber-700' },
-    { value: 'em_andamento', label: 'Em andamento', color: 'bg-blue-100 text-blue-700' },
-    { value: 'concluido',    label: 'Concluído',    color: 'bg-green-100 text-green-700' },
-    { value: 'cancelado',    label: 'Cancelado',    color: 'bg-red-100 text-red-700' },
-  ]
-
-  const statusBadge = (val) => {
-    const opt = STATUS_OPTIONS.find(s => s.value === val) || STATUS_OPTIONS[0]
-    return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${opt.color}`}>{opt.label}</span>
-  }
-
-  const handleAdd = async () => {
-    if (!form.client_name.trim()) return
-    await insert({ ...form, amount_paid: parseFloat(form.amount_paid) || 0, order_date: form.order_date || null, delivery_date: form.delivery_date || null })
-    await addLog('pedido_adicionado', 'Pedidos', '/pendencias', `Pedido de ${form.client_name} adicionado`)
-    setForm({ client_name: '', order_date: format(new Date(), 'yyyy-MM-dd'), delivery_date: '', amount_paid: '', material_provided: '', description: '', status: 'pendente', notes: '' })
-    setAdding(false)
-  }
-
-  const handleEdit = (order) => {
-    setEditId(order.id)
-    setEditForm({ ...order })
-  }
-
-  const handleSave = async () => {
-    await update(editId, { ...editForm, amount_paid: parseFloat(editForm.amount_paid) || 0, order_date: editForm.order_date || null, delivery_date: editForm.delivery_date || null })
-    setEditId(null)
-  }
-
-  const handleRemove = async (id, name) => {
-    await remove(id)
-    await addLog('pedido_removido', 'Pedidos', '/pendencias', `Pedido de ${name} removido`)
-  }
-
-  const sortedOrders = [...(orders || [])].sort((a, b) => new Date(a.delivery_date || '9999') - new Date(b.delivery_date || '9999'))
-
-  return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
-      <div className="flex items-center justify-between">
-        <PageHeader title="Pedidos de Clientes" subtitle={`${(orders||[]).length} pedido(s) registrado(s)`} />
-        <button onClick={() => setAdding(!adding)} className="btn-primary flex items-center gap-1.5 text-sm">
-          <Plus size={15} /> Novo Pedido
-        </button>
-      </div>
-
-      {adding && (
-        <div className="card space-y-3">
-          <p className="text-sm font-semibold text-stone-700">Novo Pedido</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-stone-500 mb-1 block">Cliente *</label>
-              <input className="input w-full" placeholder="Nome do cliente" value={form.client_name} onChange={e => setForm({...form, client_name: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-xs text-stone-500 mb-1 block">Valor Pago (R$)</label>
-              <input className="input w-full" type="number" placeholder="0,00" value={form.amount_paid} onChange={e => setForm({...form, amount_paid: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-xs text-stone-500 mb-1 block">Data do Pedido</label>
-              <input className="input w-full" type="date" value={form.order_date} onChange={e => setForm({...form, order_date: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-xs text-stone-500 mb-1 block">Data de Entrega</label>
-              <input className="input w-full" type="date" value={form.delivery_date} onChange={e => setForm({...form, delivery_date: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-xs text-stone-500 mb-1 block">Material Fornecido</label>
-              <input className="input w-full" placeholder="Ex: Tecido, linha..." value={form.material_provided} onChange={e => setForm({...form, material_provided: e.target.value})} />
-            </div>
-            <div>
-              <label className="text-xs text-stone-500 mb-1 block">Status</label>
-              <select className="input w-full" value={form.status} onChange={e => setForm({...form, status: e.target.value})}>
-                {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-              </select>
-            </div>
-            <div className="sm:col-span-2">
-              <label className="text-xs text-stone-500 mb-1 block">Descrição do Pedido</label>
-              <input className="input w-full" placeholder="O que foi pedido..." value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="text-xs text-stone-500 mb-1 block">Observações</label>
-              <input className="input w-full" placeholder="Notas adicionais..." value={form.notes} onChange={e => setForm({...form, notes: e.target.value})} />
-            </div>
-          </div>
-          <div className="flex gap-2 pt-1">
-            <button onClick={handleAdd} className="btn-primary text-sm">Salvar</button>
-            <button onClick={() => setAdding(false)} className="btn-secondary text-sm">Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {sortedOrders.length === 0 && !adding && (
-        <div className="card text-center py-12">
-          <ClipboardList size={32} className="mx-auto text-stone-300 mb-2" />
-          <p className="text-stone-400 text-sm">Nenhum pedido registrado.</p>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        {sortedOrders.map(order => (
-          <div key={order.id} className="card space-y-2">
-            {editId === order.id ? (
-              <div className="space-y-3">
-                <p className="text-sm font-semibold text-stone-700">Editando Pedido</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-stone-500 mb-1 block">Cliente</label>
-                    <input className="input w-full" value={editForm.client_name||''} onChange={e => setEditForm({...editForm, client_name: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-stone-500 mb-1 block">Valor Pago (R$)</label>
-                    <input className="input w-full" type="number" value={editForm.amount_paid||''} onChange={e => setEditForm({...editForm, amount_paid: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-stone-500 mb-1 block">Data do Pedido</label>
-                    <input className="input w-full" type="date" value={editForm.order_date||''} onChange={e => setEditForm({...editForm, order_date: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-stone-500 mb-1 block">Data de Entrega</label>
-                    <input className="input w-full" type="date" value={editForm.delivery_date||''} onChange={e => setEditForm({...editForm, delivery_date: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-stone-500 mb-1 block">Material Fornecido</label>
-                    <input className="input w-full" value={editForm.material_provided||''} onChange={e => setEditForm({...editForm, material_provided: e.target.value})} />
-                  </div>
-                  <div>
-                    <label className="text-xs text-stone-500 mb-1 block">Status</label>
-                    <select className="input w-full" value={editForm.status||'pendente'} onChange={e => setEditForm({...editForm, status: e.target.value})}>
-                      {STATUS_OPTIONS.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                    </select>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-xs text-stone-500 mb-1 block">Descrição</label>
-                    <input className="input w-full" value={editForm.description||''} onChange={e => setEditForm({...editForm, description: e.target.value})} />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="text-xs text-stone-500 mb-1 block">Observações</label>
-                    <input className="input w-full" value={editForm.notes||''} onChange={e => setEditForm({...editForm, notes: e.target.value})} />
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={handleSave} className="btn-primary text-sm">Salvar</button>
-                  <button onClick={() => setEditId(null)} className="btn-secondary text-sm">Cancelar</button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-semibold text-stone-800 text-sm">{order.client_name}</span>
-                      {statusBadge(order.status)}
-                    </div>
-                    {order.description && <p className="text-xs text-stone-500 mt-0.5 truncate">{order.description}</p>}
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => handleEdit(order)} className="p-1.5 text-stone-400 hover:text-amber-500 rounded transition-colors">
-                      <Pencil size={14} />
-                    </button>
-                    <button onClick={() => handleRemove(order.id, order.client_name)} className="p-1.5 text-stone-400 hover:text-red-400 rounded transition-colors">
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs text-stone-500">
-                  <div>
-                    <span className="block text-stone-400">Pedido em</span>
-                    <span className="font-medium text-stone-600">{order.order_date ? format(new Date(order.order_date + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-stone-400">Entrega</span>
-                    <span className="font-medium text-stone-600">{order.delivery_date ? format(new Date(order.delivery_date + 'T12:00:00'), 'dd/MM/yyyy') : '—'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-stone-400">Valor Pago</span>
-                    <span className="font-medium text-green-600">{order.amount_paid ? `R$ ${Number(order.amount_paid).toFixed(2).replace('.',',')}` : '—'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-stone-400">Material</span>
-                    <span className="font-medium text-stone-600 truncate block">{order.material_provided || '—'}</span>
-                  </div>
-                </div>
-                {order.notes && (
-                  <p className="text-xs text-stone-400 border-t border-stone-100 pt-2 mt-1">📝 {order.notes}</p>
-                )}
-              </>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 
 // --- Spreadsheet Page ---
 export function SpreadsheetPage() {
