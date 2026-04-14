@@ -111,7 +111,7 @@ export function MetasPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3">
         <Card className="p-4 text-center">
-          <p className="text-2xl font-bold text-stone-800">{metas.length}</p>
+          <p className="text-xl font-bold text-stone-800">{metas.length}</p>
           <p className="text-xs text-stone-400 mt-0.5">Total</p>
         </Card>
         <Card className="p-4 text-center">
