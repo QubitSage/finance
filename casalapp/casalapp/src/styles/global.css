@@ -8,18 +8,32 @@
   * { @apply border-stone-200; }
 }
 
+@layer utilities {
+  /* Hide scrollbar but keep scroll */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Safe area padding for notched phones */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+  /* Line clamp */
+  .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; }
+  .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+}
+
 @layer components {
   /* Cards */
-  .card { @apply bg-white rounded-2xl border border-stone-100 shadow-warm p-5; }
-  .card-sm { @apply bg-white rounded-xl border border-stone-100 shadow-warm p-4; }
+  .card { @apply bg-white rounded-2xl border border-stone-100 shadow-warm p-4 md:p-5; }
+  .card-sm { @apply bg-white rounded-xl border border-stone-100 shadow-warm p-3 md:p-4; }
 
   /* Buttons */
   .btn-primary {
-    @apply bg-amber-500 text-white px-5 py-2.5 rounded-xl font-medium text-sm
+    @apply bg-amber-500 text-white px-4 py-2.5 rounded-xl font-medium text-sm
            hover:bg-amber-600 active:scale-95 transition-all duration-150;
   }
   .btn-secondary {
-    @apply bg-stone-100 text-stone-700 px-5 py-2.5 rounded-xl font-medium text-sm
+    @apply bg-stone-100 text-stone-700 px-4 py-2.5 rounded-xl font-medium text-sm
            hover:bg-stone-200 active:scale-95 transition-all duration-150 border border-stone-200;
   }
   .btn-ghost {
@@ -37,17 +51,17 @@
 
   /* Inputs */
   .input {
-    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm
+    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 text-sm
            text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2
            focus:ring-amber-300 focus:border-amber-400 transition-all;
   }
   .select {
-    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm
+    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 text-sm
            text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-300
            focus:border-amber-400 appearance-none cursor-pointer;
   }
   .textarea {
-    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-4 py-2.5 text-sm
+    @apply w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5 text-sm
            text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2
            focus:ring-amber-300 focus:border-amber-400 resize-none transition-all;
   }
@@ -77,19 +91,19 @@
 
   /* Stat cards */
   .stat-card { @apply card flex flex-col gap-1; }
-  .stat-label { @apply text-xs text-stone-400 font-medium uppercase tracking-wide; }
-  .stat-value { @apply text-2xl font-semibold text-stone-800 font-display; }
+  .stat-label { @apply text-xs text-stone-400 font-medium; }
+  .stat-value { @apply text-xl md:text-2xl font-semibold text-stone-800 font-display; }
 
   /* Table */
   .tbl-wrap { @apply bg-white border border-stone-100 rounded-2xl overflow-hidden shadow-warm; }
   .tbl { @apply w-full text-sm border-collapse; }
-  .tbl thead th { @apply bg-stone-50 text-stone-400 font-medium text-xs uppercase tracking-wide px-4 py-3 text-left border-b border-stone-100 whitespace-nowrap; }
-  .tbl tbody td { @apply px-4 py-3 border-b border-stone-50 text-stone-700; }
+  .tbl thead th { @apply bg-stone-50 text-stone-400 font-medium text-xs uppercase tracking-wide px-3 py-3 text-left border-b border-stone-100 whitespace-nowrap; }
+  .tbl tbody td { @apply px-3 py-3 border-b border-stone-50 text-stone-700; }
   .tbl tbody tr:last-child td { @apply border-b-0; }
   .tbl tbody tr:hover td { @apply bg-stone-25; }
 
   /* Page header */
-  .page-title { @apply font-display text-2xl font-semibold text-stone-800 italic; }
+  .page-title { @apply font-display text-xl md:text-2xl font-semibold text-stone-800 italic; }
   .page-subtitle { @apply text-sm text-stone-400 mt-0.5; }
 
   /* Progress bar */
@@ -102,4 +116,14 @@
 
   /* Status dots */
   .status-dot { @apply w-2 h-2 rounded-full flex-shrink-0; }
+
+  /* Mobile scroll pill tabs */
+  .tab-scroll {
+    @apply flex gap-1.5 overflow-x-auto pb-1 no-scrollbar;
+  }
+  .tab-pill {
+    @apply flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors;
+  }
+  .tab-pill-active { @apply bg-stone-800 text-white; }
+  .tab-pill-inactive { @apply bg-stone-100 text-stone-500 hover:bg-stone-200; }
 }
