@@ -50,15 +50,15 @@ function TabTransactions({ month, setMonth }) {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="card text-center">
           <p className="stat-label flex items-center justify-center gap-1"><TrendingUp className="w-3 h-3 text-teal-500" /> Entradas</p>
-          <p className="text-xl font-display font-semibold text-teal-600">{fmt(income)}</p>
+          <p className="text-lg font-display font-semibold text-teal-600 truncate">{fmt(income)}</p>
         </div>
         <div className="card text-center">
           <p className="stat-label flex items-center justify-center gap-1"><TrendingDown className="w-3 h-3 text-rose-500" /> Saídas</p>
-          <p className="text-xl font-display font-semibold text-rose-600">{fmt(expense)}</p>
+          <p className="text-lg font-display font-semibold text-rose-600 truncate">{fmt(expense)}</p>
         </div>
         <div className="card text-center">
           <p className="stat-label flex items-center justify-center gap-1"><Wallet className="w-3 h-3" /> Saldo</p>
-          <p className={'text-xl font-display font-semibold ' + (balance >= 0 ? 'text-teal-600' : 'text-rose-600')}>{fmt(balance)}</p>
+          <p className={'text-lg font-display font-semibold truncate ' + (balance >= 0 ? 'text-teal-600' : 'text-rose-600')}>{fmt(balance)}</p>
         </div>
       </div>
 
@@ -163,11 +163,11 @@ function TabMimos() {
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="card text-center">
           <p className="stat-label">Direito ({settings?.wife_percentage || 30}%)</p>
-          <p className="text-xl font-display font-semibold text-pink-500">{fmt(share)}</p>
+          <p className="text-lg font-display font-semibold text-pink-500 truncate">{fmt(share)}</p>
         </div>
         <div className="card text-center">
           <p className="stat-label">Gasto</p>
-          <p className="text-xl font-display font-semibold text-stone-700">{fmt(spent)}</p>
+          <p className="text-lg font-display font-semibold text-stone-700 truncate">{fmt(spent)}</p>
         </div>
         <div className="card text-center">
           <p className="stat-label">Saldo</p>
@@ -276,7 +276,7 @@ function TabPoupanca() {
     <div>
       <div className="card mb-4 text-center bg-gradient-to-br from-teal-50 to-emerald-50 border-teal-200">
         <PiggyBank className="w-10 h-10 text-teal-500 mx-auto mb-2" />
-        <p className="text-3xl font-display font-bold text-teal-700">{fmt(total)}</p>
+        <p className="text-2xl font-display font-bold text-teal-700">{fmt(total)}</p>
         <p className="text-sm text-teal-500 mt-1">Total poupado</p>
       </div>
 
@@ -367,7 +367,7 @@ export function FinancePage() {
               className={'flex-1 py-2 px-2 rounded-lg text-xs font-medium transition-all flex flex-col items-center gap-0.5 ' + (tab === i ? 'bg-white shadow-sm text-stone-800' : 'text-stone-400 hover:text-stone-600')}
             >
               <Icon className={'w-4 h-4 ' + (tab === i ? TAB_COLORS[i] : '')} />
-              <span className="hidden sm:inline">{t}</span>
+              <span className="hidden xs:inline truncate max-w-[60px]">{t}</span>
             </button>
           )
         })}
