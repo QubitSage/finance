@@ -264,7 +264,7 @@ export function CompromissosPage() {
         />
       </div>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 mb-3 no-scrollbar">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1 mb-3 no-scrollbar">
         {FILTER_TABS.map(t => (
           <button
             key={t.key}
