@@ -770,53 +770,42 @@ function TabEla() {
 
 export function VidaLivrePage() {
   const [tab, setTab] = useState(0)
-  const ActiveTab = tab === 'Agenda' ? TabAgenda : tab === 'Registros' ? TabRegistros : tab === 'Combinados' ? TabCombinados : tab === 'Fantasias' ? TabFantasias : TabEla
+  const TABS_LIST = [
+    { label: 'Agenda', component: TabAgenda },
+    { label: 'Registros', component: TabRegistros },
+    { label: 'Combinados', component: TabCombinados },
+    { label: 'Fantasias', component: TabFantasias },
+    { label: 'Ela 💃', component: TabEla },
+  ]
+  const ActiveTab = TABS_LIST[tab]?.component || TabAgenda
 
   return (
-    <div className="min-h-full">
-      <style>{`
-        .input-base {
-          width: 100%;
-          padding: 0.5rem 0.75rem;
-          border-radius: 0.75rem;
-          border: 1px solid #e7e5e4;
-          background: #fafaf9;
-          font-size: 0.875rem;
-          color: #292524;
-          outline: none;
-          transition: border-color 0.15s;
-        }
-        .input-base:focus {
-          border-color: #fb7185;
-          background: white;
-        }
-      `}</style>
-
-      <PageHeader
-        title="Vida Livre"
-        subtitle="Espaço privado do casal"
-        action={
-          <div className="flex items-center gap-2 text-rose-400">
-            <Lock size={14} />
-            <span className="text-xs font-medium">Privado</span>
-          </div>
-        }
-      />
-
-      <div className="max-w-3xl mx-auto px-4 pb-8">
-        <div className="flex gap-1 p-1 bg-stone-100 rounded-2xl mb-6 overflow-x-auto">
-          {TABS.map((t, i) => (
-            <button key={t} onClick={() => setTab(i)}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${tab === t ? 'bg-white text-rose-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}
+    <div className="relative">
+      <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+        <PageHeader
+          title="Vida Livre"
+          subtitle="Espaco privado do casal"
+          action={
+            <span className="flex items-center gap-1.5 text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full">
+              <span>Privado</span>
+            </span>
+          }
+        />
+        <div className="flex gap-1 overflow-x-auto pb-1">
+          {TABS_LIST.map((t, i) => (
+            <button
+              key={t.label}
+              onClick={() => setTab(i)}
+              className={'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ' + (tab === i ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200')}
+            >
+              {t.label}
             </button>
           ))}
         </div>
-
-        {tab === 0 && <TabAgenda />}
-        {tab === 1 && <TabRegistros />}
-        {tab === 2 && <TabCombinados />}
-        {tab === 3 && <TabFantasias />}
+        <ActiveTab />
       </div>
     </div>
   )
 }
+
+export default VidaLivrePage
