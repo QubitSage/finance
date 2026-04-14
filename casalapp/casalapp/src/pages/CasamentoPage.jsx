@@ -234,7 +234,7 @@ function TabOrcamento() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-3 gap-2">
         <Card className="p-4 text-center">
           <p className="text-lg font-bold text-stone-800">{fmtMoney(totalOrcado)}</p>
           <p className="text-xs text-stone-400 mt-0.5">Orçado</p>
@@ -393,7 +393,7 @@ function TabConvidados() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Card className="p-3 text-center">
           <p className="text-xl font-bold text-stone-800">{convidados.length}</p>
           <p className="text-xs text-stone-400">Total</p>
@@ -649,12 +649,12 @@ export function CasamentoPage() {
         title="Casamento"
         subtitle="Planejamento completo do grande dia 💍"
       />
-      <div className="flex gap-1 bg-stone-100 rounded-2xl p-1">
+      <div className="flex gap-1 bg-stone-100 rounded-2xl p-1 overflow-x-auto no-scrollbar">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setTab(id)}
-            className={`flex-1 flex flex-col items-center gap-1 py-2 rounded-xl text-xs font-medium transition-all ${tab === id ? 'bg-white text-rose-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
+            className={`flex-shrink-0 flex flex-col items-center gap-1 py-2 px-3 rounded-xl text-xs font-medium transition-all ${tab === id ? 'bg-white text-rose-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}`}
           >
             <Icon className="w-4 h-4" strokeWidth={1.8} />
             {label}
