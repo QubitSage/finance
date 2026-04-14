@@ -770,6 +770,7 @@ function TabEla() {
 
 export function VidaLivrePage() {
   const [tab, setTab] = useState(0)
+  const ActiveTab = tab === 'Agenda' ? TabAgenda : tab === 'Registros' ? TabRegistros : tab === 'Combinados' ? TabCombinados : tab === 'Fantasias' ? TabFantasias : TabEla
 
   return (
     <div className="min-h-full">
@@ -806,8 +807,7 @@ export function VidaLivrePage() {
         <div className="flex gap-1 p-1 bg-stone-100 rounded-2xl mb-6 overflow-x-auto">
           {TABS.map((t, i) => (
             <button key={t} onClick={() => setTab(i)}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${  const ActiveTab = tab === 'Agenda' ? TabAgenda : tab === 'Registros' ? TabRegistros : tab === 'Combinados' ? TabCombinados : tab === 'Fantasias' ? TabFantasias : TabEla
-              {t}
+              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${tab === t ? 'bg-white text-rose-500 shadow-sm' : 'text-stone-400 hover:text-stone-600'}
             </button>
           ))}
         </div>
