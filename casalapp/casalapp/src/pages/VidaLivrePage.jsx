@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 
 // ─── Constantes ─────────────────────────────────────────────────────────────
-const TABS = ['Agenda', 'Registros', 'Combinados', 'Fantasias']
+const TABS = ['Agenda', 'Registros', 'Combinados', 'Fantasias', 'Ela']
 
 const STATUS_SAIDA = {
   planejado: { label: 'Planejado', color: 'bg-blue-50 text-blue-700 border-blue-200' },
@@ -583,6 +583,191 @@ function TabFantasias() {
 }
 
 // ─── Componente Principal ────────────────────────────────────────────────────
+
+// ── TAB ELA — Perfil de Conquistas da Vianka ─────────────────────────────────
+function TabEla() {
+  const { data: conquistas, loading, insert, update, remove } = useDB('vl_conquistas', { order:'data_conquista', asc:false })
+  const [showForm, setShowForm] = useState(false)
+  const [editItem, setEditItem] = useState(null)
+  const empty = { titulo:'', descricao:'', data_conquista:'', categoria:'saida', nivel:1, emoji:'🏆' }
+  const [form, setForm] = useState(empty)
+  const set = (k,v) => setForm(p=>({...p,[k]:v}))
+
+  const CATS = {
+    saida:     { label: 'Saída sozinha', color: 'bg-rose-100 text-rose-700' },
+    encontro:  { label: 'Encontro',      color: 'bg-pink-100 text-pink-700'  },
+    viagem:    { label: 'Viagem solo',   color: 'bg-indigo-100 text-indigo-700' },
+    pessoal:   { label: 'Pessoal',       color: 'bg-emerald-100 text-emerald-700' },
+    casal:     { label: 'Do casal',      color: 'bg-amber-100 text-amber-700' },
+  }
+
+  const EMOJIS = ['🏆','⭐','🌟','✨','💪','🦋','🌸','🔥','💃','🎯','🌈','💎','🚀','❤️','🥳']
+  const NIVEIS = ['','Iniciante','Exploradora','Confiante','Ousada','Lendária']
+
+  const handleSubmit = async () => {
+    if (!form.titulo.trim()) return
+    const payload = {
+      titulo: form.titulo,
+      descricao: form.descricao || null,
+      data_conquista: form.data_conquista || null,
+      categoria: form.categoria,
+      nivel: parseInt(form.nivel) || 1,
+      emoji: form.emoji || '🏆',
+    }
+    if (editItem) { await update(editItem.id, payload); setEditItem(null) }
+    else await insert(payload)
+    setForm(empty); setShowForm(false)
+  }
+  const startEdit = (c) => {
+    setForm({ titulo:c.titulo, descricao:c.descricao||'', data_conquista:c.data_conquista||'', categoria:c.categoria||'saida', nivel:c.nivel||1, emoji:c.emoji||'🏆' })
+    setEditItem(c); setShowForm(true)
+  }
+
+  const totalPontos = conquistas.reduce((s,c) => s + (c.nivel||1), 0)
+  const nivelGeral = totalPontos < 5 ? 1 : totalPontos < 12 ? 2 : totalPontos < 22 ? 3 : totalPontos < 35 ? 4 : 5
+
+  const iCls = { backgroundColor:'#ffffff', color:'#1c1917', border:'1px solid #d6d3d1', borderRadius:'8px', padding:'8px 12px', fontSize:'14px', width:'100%', outline:'none' }
+
+  return (
+    <div className="space-y-4">
+      {/* Perfil */}
+      <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-fuchsia-50 rounded-2xl p-5 border border-rose-100">
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-rose-400 to-pink-500 flex items-center justify-center text-3xl shadow-sm">
+            💃
+          </div>
+          <div>
+            <p className="text-lg font-bold text-stone-800">Vianka</p>
+            <p className="text-sm text-rose-600 font-medium">{NIVEIS[nivelGeral]} ✨</p>
+            <div className="flex gap-0.5 mt-1">
+              {Array.from({length:5}).map((_,i) => (
+                <div key={i} className={`h-2 w-8 rounded-full ${i < nivelGeral ? 'bg-rose-400' : 'bg-rose-100'}`} />
+              ))}
+            </div>
+          </div>
+          <div className="ml-auto text-center">
+            <p className="text-2xl font-bold text-rose-500">{conquistas.length}</p>
+            <p className="text-xs text-stone-400">conquistas</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          {Object.entries(CATS).map(([k,v]) => {
+            const count = conquistas.filter(c=>c.categoria===k).length
+            return (
+              <div key={k} className="bg-white/60 rounded-xl p-2.5 text-center">
+                <p className="text-lg font-bold text-stone-700">{count}</p>
+                <p className="text-xs text-stone-400 truncate">{v.label}</p>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <button onClick={() => { setShowForm(true); setEditItem(null); setForm(empty) }}
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white rounded-2xl py-3 text-sm font-medium transition-all">
+        <Plus className="w-4 h-4" /> Registrar Conquista
+      </button>
+
+      {showForm && (
+        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-stone-700">{editItem ? 'Editar' : 'Nova Conquista'}</h3>
+            <button onClick={() => { setShowForm(false); setEditItem(null) }}><X className="w-4 h-4 text-stone-400" /></button>
+          </div>
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Emoji</label>
+              <div className="flex gap-1 flex-wrap">
+                {EMOJIS.map(e => (
+                  <button key={e} onClick={() => set('emoji', e)}
+                    className={`text-xl p-1 rounded-lg ${form.emoji===e ? 'bg-rose-100 scale-125' : 'hover:bg-stone-100'}`}>{e}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Conquista *</label>
+              <input style={iCls} value={form.titulo} onChange={e=>set('titulo',e.target.value)} placeholder="Primeira saída sozinha, Viagem solo para SP..." />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-stone-500 block mb-1">Categoria</label>
+                <select style={iCls} value={form.categoria} onChange={e=>set('categoria',e.target.value)}>
+                  {Object.entries(CATS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-stone-500 block mb-1">Data</label>
+                <input type="date" style={iCls} value={form.data_conquista} onChange={e=>set('data_conquista',e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Nível ({NIVEIS[form.nivel]})</label>
+              <div className="flex gap-2">
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => set('nivel',n)}
+                    className={`flex-1 py-2 rounded-xl text-sm font-medium transition-all ${form.nivel===n ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-500'}`}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-xs text-stone-500 block mb-1">Como foi? O que sentiu?</label>
+              <textarea style={{...iCls, resize:'none'}} rows={2} value={form.descricao} onChange={e=>set('descricao',e.target.value)} placeholder="Descreva essa conquista, como se sentiu, o que foi especial..." />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button onClick={handleSubmit} className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-2 rounded-xl text-sm font-medium">
+              {editItem ? 'Salvar' : 'Registrar'}
+            </button>
+            <button onClick={() => { setShowForm(false); setEditItem(null) }} className="px-4 py-2 text-stone-500 text-sm">Cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {loading ? <p className="text-center text-stone-400 py-8">Carregando...</p> :
+        conquistas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="text-6xl mb-4">🦋</div>
+            <p className="font-medium text-stone-500 mb-1">Nenhuma conquista ainda</p>
+            <p className="text-sm text-stone-400">Cada passo é uma conquista. Registre o primeiro!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {conquistas.map(c => {
+              const cat = CATS[c.categoria] || CATS['saida']
+              return (
+                <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex gap-3 flex-1 min-w-0">
+                      <span className="text-2xl flex-shrink-0">{c.emoji || '🏆'}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="font-semibold text-stone-800">{c.titulo}</span>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cat.color}`}>{cat.label}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-stone-400">
+                          {c.data_conquista && <span>📅 {new Date(c.data_conquista+'T12:00:00').toLocaleDateString('pt-BR')}</span>}
+                          <span className="font-medium text-rose-500">Nível {c.nivel} — {NIVEIS[c.nivel]}</span>
+                        </div>
+                        {c.descricao && <p className="text-sm text-stone-600 italic mt-1.5">"{c.descricao}"</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 ml-2">
+                      <button onClick={() => startEdit(c)} className="p-1 text-stone-300 hover:text-amber-500"><Edit3 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => remove(c.id)} className="p-1 text-stone-300 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      }
+    </div>
+  )
+}
+
 export function VidaLivrePage() {
   const [tab, setTab] = useState(0)
 
@@ -621,7 +806,7 @@ export function VidaLivrePage() {
         <div className="flex gap-1 p-1 bg-stone-100 rounded-2xl mb-6 overflow-x-auto">
           {TABS.map((t, i) => (
             <button key={t} onClick={() => setTab(i)}
-              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${tab === i ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500 hover:text-stone-700'}`}>
+              className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap ${  const ActiveTab = tab === 'Agenda' ? TabAgenda : tab === 'Registros' ? TabRegistros : tab === 'Combinados' ? TabCombinados : tab === 'Fantasias' ? TabFantasias : TabEla
               {t}
             </button>
           ))}
