@@ -84,8 +84,9 @@ function TabAgenda() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.titulo.trim()) return
-    if (editId) { await update(editId, form); setEditId(null) }
-    else await insert(form)
+    const payload = { ...form, data: form.data || null, hora: form.hora || null, com_quem: form.com_quem || null, local: form.local || null, notas: form.notas || null }
+    if (editId) { await update(editId, payload); setEditId(null) }
+    else await insert(payload)
     setForm(empty); setAdding(false)
   }
 
@@ -208,8 +209,9 @@ function TabRegistros() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.titulo.trim()) return
-    if (editId) { await update(editId, form); setEditId(null) }
-    else await insert(form)
+    const payload2 = { ...form, data: form.data || null, com_quem: form.com_quem || null, local: form.local || null, notas: form.notas || null, aprendizado: form.aprendizado || null }
+    if (editId) { await update(editId, payload2); setEditId(null) }
+    else await insert(payload2)
     setForm(empty); setAdding(false)
   }
 
@@ -439,8 +441,9 @@ function TabFantasias() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!form.titulo.trim()) return
-    if (editId) { await update(editId, form); setEditId(null) }
-    else await insert(form)
+    const payload3 = { ...form, descricao: form.descricao || null, realizado_em: form.realizado_em || null }
+    if (editId) { await update(editId, payload3); setEditId(null) }
+    else await insert(payload3)
     setForm(empty); setAdding(false)
   }
 
