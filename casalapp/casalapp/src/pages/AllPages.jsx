@@ -46,8 +46,8 @@ export function WifePage() {
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <div className="card"><p className="stat-label">Direito ({settings?.wife_percentage||30}%)</p><p className="text-xl font-display font-semibold text-pink-500">{fmt(share)}</p></div>
-        <div className="card"><p className="stat-label">Gasto</p><p className="text-xl font-display font-semibold text-stone-700">{fmt(spent)}</p></div>
+        <div className="card"><p className="stat-label">Direito ({settings?.wife_percentage||30}%)</p><p className="text-base font-display font-semibold text-pink-500 truncate">{fmt(share)}</p></div>
+        <div className="card"><p className="stat-label">Gasto</p><p className="text-base font-display font-semibold text-stone-700 truncate">{fmt(spent)}</p></div>
         <div className="card"><p className="stat-label">Saldo</p><p className={`text-xl font-display font-semibold ${rem>=0?'text-sage-600':'text-blush-500'}`}>{fmt(rem)}</p></div>
       </div>
 
@@ -132,7 +132,7 @@ export function SavingsPage() {
 
       <div className="grid grid-cols-2 gap-3 mb-5">
         <div className="card"><p className="stat-label">Total guardado</p><p className="text-xl font-display font-semibold text-sage-600">{fmt(totSaved)}</p></div>
-        <div className="card"><p className="stat-label">Total das metas</p><p className="text-xl font-display font-semibold text-stone-700">{fmt(totTarget)}</p></div>
+        <div className="card"><p className="stat-label">Total das metas</p><p className="text-base font-display font-semibold text-stone-700 truncate">{fmt(totTarget)}</p></div>
       </div>
 
       {adding && (
@@ -1320,15 +1320,15 @@ export function ApartmentPage() {
 
       <div className="grid grid-cols-3 gap-2 mb-4">
         <div className="card text-center">
-          <p className="text-xl font-display font-bold text-stone-700">{pendingTasks}</p>
+          <p className="text-lg font-display font-bold text-stone-700">{pendingTasks}</p>
           <p className="text-xs text-stone-400">Tarefas</p>
         </div>
         <div className="card text-center">
-          <p className="text-xl font-display font-bold text-rose-600">R$ {monthlyTotal.toFixed(0)}</p>
+          <p className="text-lg font-display font-bold text-rose-600">R$ {monthlyTotal.toFixed(0)}</p>
           <p className="text-xs text-stone-400">Mensal</p>
         </div>
         <div className="card text-center">
-          <p className="text-xl font-display font-bold text-teal-600">{inventory.length}</p>
+          <p className="text-lg font-display font-bold text-teal-600">{inventory.length}</p>
           <p className="text-xs text-stone-400">Itens</p>
         </div>
       </div>
