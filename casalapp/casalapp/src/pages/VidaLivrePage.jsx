@@ -6,7 +6,7 @@ import { ptBR } from 'date-fns/locale'
 import {
   CalendarHeart, Plus, Trash2, Edit3, Check, X,
   Heart, Flame, Lock, Eye, EyeOff, Star, Clock,
-  MessageCircle, CheckCircle2, Circle, Sparkles,h
+  MessageCircle, CheckCircle2, Circle, Sparkles,
   ShieldCheck, AlertCircle, BookOpen, ChevronDown, ChevronUp
 } from 'lucide-react'
 
