@@ -5,9 +5,9 @@ import {
   LayoutDashboard, ArrowLeftRight, Heart, PiggyBank, BarChart2,
   Globe, Sparkles, HelpCircle, User, ShoppingCart, Home,
   Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, Table2, ListTodo, Flame as FlameIcon,
-  Camera,
+  Camera, Moon, Sun,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const NAV = [
   { to: '/',              icon: LayoutDashboard, label: 'Dashboard',       group: 'Finanças' },
@@ -44,13 +44,19 @@ export default function Layout() {
   const { settings } = useSettings()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark')
+  useEffect(() => {
+    if (dark) { document.documentElement.classList.add('dark'); localStorage.setItem('theme','dark') }
+    else { document.documentElement.classList.remove('dark'); localStorage.setItem('theme','light') }
+  }, [dark])
+
 
   return (
-    <div className="flex min-h-screen bg-stone-50">
+    <div className="flex min-h-screen bg-stone-50 dark:bg-stone-900">
       {/* Sidebar */}
-      <aside className="hidden md:flex w-56 bg-white border-r border-stone-100 flex-col py-6 px-3 fixed inset-y-0">
+      <aside className="hidden md:flex w-56 bg-white dark:bg-stone-800 border-r border-stone-100 dark:border-stone-700 flex-col py-6 px-3 fixed inset-y-0">
         <div className="px-3 mb-8">
-          <h1 className="text-lg font-display font-bold text-stone-800">💑 CasalApp</h1>
+          <h1 className="text-lg font-display font-bold text-stone-800 dark:text-stone-100">💑 CasalApp</h1>
           {settings?.user1_name && settings?.user2_name && (
             <p className="text-xs text-stone-400 mt-0.5">{settings.user1_name} & {settings.user2_name}</p>
           )}
@@ -74,6 +80,10 @@ export default function Layout() {
             )
           })}
         </nav>
+        <button onClick={() => setDark(d => !d)} className="flex items-center gap-2 px-3 py-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm transition-colors mb-1">
+          {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          {dark ? 'Modo claro' : 'Modo escuro'}
+        </button>
         <button onClick={signOut} className="flex items-center gap-2 px-3 py-2 text-stone-400 hover:text-rose-500 text-sm transition-colors">
           <LogOut className="w-4 h-4" /> Sair
         </button>
@@ -82,9 +92,9 @@ export default function Layout() {
       {/* Mobile Menu Overlay */}
       {menuOpen && (
         <div className="md:hidden fixed inset-0 z-50 bg-black/60" onClick={() => setMenuOpen(false)}>
-          <div className="absolute right-0 top-0 bottom-0 w-72 bg-white flex flex-col py-6 px-4 overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="absolute right-0 top-0 bottom-0 w-72 bg-white dark:bg-stone-800 flex flex-col py-6 px-4 overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display font-semibold text-stone-800">Menu</h2>
+              <h2 className="font-display font-semibold text-stone-800 dark:text-stone-100">Menu</h2>
               <button onClick={() => setMenuOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100">
                 <X className="w-4 h-4 text-stone-500" />
               </button>
@@ -98,7 +108,7 @@ export default function Layout() {
                     {group && <p className="text-xs font-semibold text-stone-300 uppercase tracking-wider mb-1">{group}</p>}
                     {groupItems.map(({ to, icon: Icon, label }) => (
                       <NavLink key={to} to={to} end={to === '/'} onClick={() => setMenuOpen(false)}
-                        className={({ isActive }) => 'flex items-center gap-3 py-2.5 px-3 rounded-xl text-sm transition-colors ' + (isActive ? 'bg-stone-900 text-white' : 'text-stone-600 hover:bg-stone-50')}
+                        className={({ isActive }) => 'flex items-center gap-3 py-2.5 px-3 rounded-xl text-sm transition-colors ' + (isActive ? 'bg-stone-900 dark:bg-stone-700 text-white' : 'text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-stone-700')}
                       >
                         <Icon className="w-4 h-4 flex-shrink-0" />
                         <span>{label}</span>
@@ -108,6 +118,10 @@ export default function Layout() {
                 )
               })}
             </nav>
+          <button onClick={() => setDark(d => !d)} className="flex items-center gap-2 py-2 px-3 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 text-sm">
+            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {dark ? 'Modo claro' : 'Modo escuro'}
+          </button>
             <button onClick={signOut} className="flex items-center gap-2 py-2 px-3 text-stone-400 hover:text-rose-500 text-sm mt-4">
               <LogOut className="w-4 h-4" /> Sair da conta
             </button>
@@ -116,12 +130,12 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 md:ml-56 pb-24 md:pb-0">
+      <main className="flex-1 md:ml-56 dark:text-stone-100 pb-24 md:pb-0">
         <Outlet />
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-stone-100 flex items-center z-40 pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-stone-800 border-t border-stone-100 dark:border-stone-700 flex items-center z-40 pb-safe">
         {BOTTOM_NAV.map(({ to, icon: Icon, label, isMenu }) => {
           if (isMenu) return (
             <button key="menu" onClick={() => setMenuOpen(true)} className="flex-1 flex flex-col items-center gap-0.5 py-2.5 text-stone-400">
@@ -131,7 +145,7 @@ export default function Layout() {
           )
           return (
             <NavLink key={to} to={to} end={to === '/'}
-              className={({ isActive }) => 'flex-1 flex flex-col items-center gap-0.5 py-3 min-h-[56px] transition-colors ' + (isActive ? 'text-stone-900' : 'text-stone-400')}
+              className={({ isActive }) => 'flex-1 flex flex-col items-center gap-0.5 py-3 min-h-[56px] transition-colors ' + (isActive ? 'text-stone-900' : 'text-stone-400 dark:text-stone-500')}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px]">{label}</span>
