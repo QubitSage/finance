@@ -1325,6 +1325,187 @@ function TabQuestionario() {
     </div>
   )
 }
+// ─── Constantes para TabObjetivos ────────────────────────────────────────────
+const OBJ_CORES = {
+  amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  dot: 'bg-amber-400',  title: 'text-amber-800'  },
+  rose:   { bg: 'bg-rose-50',   border: 'border-rose-200',   dot: 'bg-rose-400',   title: 'text-rose-800'   },
+  violet: { bg: 'bg-violet-50', border: 'border-violet-200', dot: 'bg-violet-400', title: 'text-violet-800' },
+  teal:   { bg: 'bg-teal-50',   border: 'border-teal-200',   dot: 'bg-teal-400',   title: 'text-teal-800'   },
+  blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   dot: 'bg-blue-400',   title: 'text-blue-800'   },
+  green:  { bg: 'bg-green-50',  border: 'border-green-200',  dot: 'bg-green-500',  title: 'text-green-800'  },
+  stone:  { bg: 'bg-stone-50',  border: 'border-stone-200',  dot: 'bg-stone-400',  title: 'text-stone-700'  },
+}
+const OBJ_EMOJIS = ['🌟','💒','🏠','✈️','🌍','💚','🐾','👶','💰','🕊️','🌿','❤️','🎯','🔑','🌙','🗺️']
+
+function ObjetivoForm({ form, setForm, onSave, onCancel }) {
+  const cor = OBJ_CORES[form.cor] || OBJ_CORES.amber
+  return (
+    <div className={`rounded-2xl border-2 p-5 space-y-3 ${cor.bg} ${cor.border}`}>
+      {/* Emoji picker */}
+      <div className="flex gap-1 flex-wrap">
+        {OBJ_EMOJIS.map(e => (
+          <button key={e} type="button" onClick={() => setForm(f => ({...f, emoji: e}))}
+            className={`text-lg p-1 rounded-lg transition-all ${form.emoji === e ? 'bg-white shadow scale-110' : 'hover:bg-white/60'}`}>
+            {e}
+          </button>
+        ))}
+      </div>
+      {/* Color picker */}
+      <div className="flex gap-2.5 items-center">
+        {Object.entries(OBJ_CORES).map(([k, v]) => (
+          <button key={k} type="button" onClick={() => setForm(f => ({...f, cor: k}))}
+            className={`w-5 h-5 rounded-full ${v.dot} transition-all ${form.cor === k ? 'ring-2 ring-offset-1 ring-stone-500 scale-125' : 'hover:scale-110'}`} />
+        ))}
+      </div>
+      {/* Title */}
+      <input
+        className="w-full bg-white/60 border-0 rounded-xl px-3 py-2 text-sm font-semibold text-stone-700 placeholder-stone-400 outline-none focus:bg-white transition-colors"
+        placeholder="Título (ex: Agora, Em 6 anos, Sonho grande...)"
+        value={form.titulo}
+        onChange={e => setForm(f => ({...f, titulo: e.target.value}))}
+      />
+      {/* Content */}
+      <textarea
+        className="w-full bg-white/60 border-0 rounded-xl px-3 py-2 text-sm text-stone-700 placeholder-stone-400 outline-none focus:bg-white transition-colors resize-none"
+        placeholder="O que vocês querem construir juntos..."
+        rows={9}
+        value={form.conteudo}
+        onChange={e => setForm(f => ({...f, conteudo: e.target.value}))}
+        autoFocus
+      />
+      <div className="flex gap-2">
+        <button onClick={onSave}
+          className="flex-1 py-2.5 rounded-xl bg-white/80 text-stone-700 text-sm font-semibold hover:bg-white transition-colors shadow-sm">
+          Salvar
+        </button>
+        <button onClick={onCancel} className="px-4 py-2 text-stone-500 text-sm hover:text-stone-700 transition-colors">Cancelar</button>
+      </div>
+    </div>
+  )
+}
+
+// ─── Aba: Objetivos ─────────────────────────────────────────────────────────
+const MANIFESTO_INICIAL = `noivar
+Casar
+Nosso apto
+Apto funcional pra nós
+Viver em paz no interior
+Trabalhar e fazer dinheiro com propósito
+Paz
+
+Daqui uns 6 anos nos preparar pra partir e morar em um lugar de 1° mundo.
+Enquanto isso, viajar, conhecer lugares — de preferência os que queremos morar no futuro.
+
+Morar em casa sem muro, com grama verde, quintal fofo e talvez um pet prático.
+
+Depois pensar em filhos.`
+
+function TabObjetivos() {
+  const { data: objetivos, insert, update, remove } = useDB('vl_objetivos', { order: 'ordem', asc: true })
+  const [editId, setEditId] = useState(null)
+  const [adding, setAdding] = useState(false)
+  const emptyForm = { titulo: '', conteudo: '', cor: 'amber', emoji: '🌟' }
+  const [form, setForm] = useState(emptyForm)
+
+  const handleSave = async () => {
+    if (!form.conteudo.trim()) return
+    if (editId) {
+      await update(editId, { titulo: form.titulo, conteudo: form.conteudo, cor: form.cor, emoji: form.emoji })
+      setEditId(null)
+    } else {
+      await insert({ ...form, ordem: objetivos.length })
+      setAdding(false)
+    }
+    setForm(emptyForm)
+  }
+
+  const startEdit = (obj) => {
+    setForm({ titulo: obj.titulo || '', conteudo: obj.conteudo || '', cor: obj.cor || 'amber', emoji: obj.emoji || '🌟' })
+    setEditId(obj.id)
+    setAdding(false)
+  }
+
+  const cancel = () => { setEditId(null); setAdding(false); setForm(emptyForm) }
+
+  const addManifesto = async () => {
+    await insert({ titulo: 'Nosso Manifesto', conteudo: MANIFESTO_INICIAL, cor: 'violet', emoji: '🗺️', ordem: 0 })
+  }
+
+  // Empty state
+  if (objetivos.length === 0 && !adding) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center gap-5">
+        <div className="text-6xl">🗺️</div>
+        <div>
+          <p className="font-bold text-stone-700 text-xl">Onde querem chegar?</p>
+          <p className="text-stone-400 text-sm mt-1.5 max-w-xs mx-auto leading-relaxed">
+            Um espaço para os objetivos, sonhos e o manifesto de vida de vocês dois.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <button onClick={addManifesto}
+            className="w-full py-3 rounded-2xl bg-gradient-to-r from-violet-500 to-rose-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm">
+            🗺️ Começar com nosso manifesto
+          </button>
+          <button onClick={() => setAdding(true)}
+            className="w-full py-3 rounded-2xl bg-stone-100 text-stone-600 text-sm font-medium hover:bg-stone-200 transition-colors">
+            + Criar do zero
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {!adding && editId === null && (
+        <div className="flex justify-end">
+          <button onClick={() => setAdding(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors">
+            <Plus size={16} /> Novo bloco
+          </button>
+        </div>
+      )}
+
+      {adding && (
+        <ObjetivoForm form={form} setForm={setForm} onSave={handleSave} onCancel={cancel} />
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {objetivos.map(obj => {
+          const cor = OBJ_CORES[obj.cor] || OBJ_CORES.amber
+          if (editId === obj.id) {
+            return <ObjetivoForm key={obj.id} form={form} setForm={setForm} onSave={handleSave} onCancel={cancel} />
+          }
+          return (
+            <div key={obj.id} className={`relative rounded-2xl border p-5 ${cor.bg} ${cor.border} group`}>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-2xl flex-shrink-0">{obj.emoji || '🌟'}</span>
+                  {obj.titulo && (
+                    <h3 className={`font-bold text-sm truncate ${cor.title}`}>{obj.titulo}</h3>
+                  )}
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <button onClick={() => startEdit(obj)}
+                    className="p-1.5 bg-white/70 hover:bg-white text-stone-500 rounded-lg transition-colors">
+                    <Edit3 size={13}/>
+                  </button>
+                  <button onClick={() => remove(obj.id)}
+                    className="p-1.5 bg-white/70 hover:bg-white text-stone-400 hover:text-red-400 rounded-lg transition-colors">
+                    <Trash2 size={13}/>
+                  </button>
+                </div>
+              </div>
+              <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">{obj.conteudo}</p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // Labels das tabs (mobile strip + desktop pills)
 const TAB_LABELS = [
   'Agenda',
@@ -1334,6 +1515,7 @@ const TAB_LABELS = [
   'Mimos 💝',
   'Diálogos',
   'Ela 💃',
+  'Objetivos 🗺️',
 ]
 
 export function VidaLivrePage() {
@@ -1418,6 +1600,7 @@ export function VidaLivrePage() {
         {tab === 4 && <TabMimos />}
         {tab === 5 && <TabQuestionario />}
         {tab === 6 && <TabEla />}
+        {tab === 7 && <TabObjetivos />}
       </div>
 
     </div>
