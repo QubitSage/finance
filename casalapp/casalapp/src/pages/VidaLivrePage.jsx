@@ -18,7 +18,7 @@ const TABS = ['Agenda', 'Registros', 'Combinados', 'Fantasias', 'Mimos', 'Questi
 
 const STATUS_SAIDA = {
   planejado: { label: 'Planejado', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  aconteceu: { label: 'Aconteceu', color: 'bg-green-50 text-green-700 border-green-200' },
+  aconteceu: { label: 'Aprovado', color: 'bg-green-50 text-green-700 border-green-200' },
   cancelado:  { label: 'Cancelado', color: 'bg-red-50 text-red-600 border-red-200' },
 }
 
@@ -120,12 +120,18 @@ function useVidaLivreNotifications(userId) {
       })
       .subscribe()
 
-    // Inscrever em novas Saídas
+    // Inscrever em novas Saídas e aprovações
     const saidasChannel = supabase
       .channel('vl-saidas-notify')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vl_saidas' }, (payload) => {
         if (!payload.new || payload.new.user_id === userId) return
         instantNotify('📅 Nova Saída', `"${payload.new.titulo}" foi adicionada na agenda`)
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vl_saidas' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        if (payload.new.status === 'aconteceu' && payload.old?.status === 'planejado') {
+          instantNotify('✅ Saída Aprovada!', `"${payload.new.titulo}" foi aprovada!`)
+        }
       })
       .subscribe()
 
@@ -178,7 +184,12 @@ function TabAgenda() {
     setEditId(s.id); setAdding(true)
   }
 
-  const upStatus = async (s, st) => { await update(s.id, { status: st }) }
+  const upStatus = async (s, st) => {
+    await update(s.id, { status: st })
+    if (st === 'aconteceu') {
+      instantNotify('✅ Saída Aprovada', `Você aprovou "${s.titulo}"`)
+    }
+  }
 
   const ShareIcon = ({ nivel }) => {
     const cfg = SHARE_NIVEL[nivel] || SHARE_NIVEL.privado
@@ -266,7 +277,7 @@ function TabAgenda() {
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   {s.status === 'planejado' && (
-                    <button onClick={() => upStatus(s,'aconteceu')} title="Marcar como aconteceu" className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg"><CheckCircle2 size={16}/></button>
+                    <button onClick={() => upStatus(s,'aconteceu')} title="Aprovar saída" className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg"><CheckCircle2 size={16}/></button>
                   )}
                   <button onClick={() => startEdit(s)} className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg"><Edit3 size={15}/></button>
                   <button onClick={() => remove(s.id)} className="p-1.5 text-stone-300 hover:text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={15}/></button>
