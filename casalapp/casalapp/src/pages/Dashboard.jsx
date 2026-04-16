@@ -1,7 +1,7 @@
 import { useDB } from '../hooks/useDB'
 import { useSettings } from '../hooks/useSettings'
 import { fmt, monthLabel, monthKey, TX_CATEGORIES } from '../lib/utils'
-import { format, subMonths, addMonths } from 'date-fns'
+import { format, subMonths, addMonths, differenceInDays } from 'date-fns'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -127,6 +127,12 @@ export default function Dashboard() {
   // Próxima viagem confirmada
   const proximaViagem = viagens.filter(v=>v.status==='confirmada'&&v.data_ida>=today).sort((a,b)=>a.data_ida.localeCompare(b.data_ida))[0]
 
+  // Contagem regressiva para o casamento
+  const weddingDate = settings?.wedding_date
+  const weddingDaysLeft = weddingDate
+    ? differenceInDays(new Date(weddingDate + 'T12:00:00'), new Date())
+    : null
+
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       <PageHeader title="Dashboard" subtitle={monthLabel(month) + ' · ' + (settings?.couple_name||'Nosso Casal')} />
@@ -230,7 +236,7 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Casamento */}
+        {/* Casamento + Countdown */}
         <div className="card cursor-pointer hover:shadow-md transition-shadow" onClick={()=>navigate('/casamento')}>
           <div className="flex items-center gap-2 mb-3">
             <Gem className="w-4 h-4 text-rose-500" strokeWidth={1.8} />
@@ -241,6 +247,23 @@ export default function Dashboard() {
             <div className="bg-gradient-to-r from-rose-400 to-pink-500 rounded-full h-2 transition-all" style={{width:casamentoPct+'%'}} />
           </div>
           <p className="text-xs text-stone-400">{checklist.filter(t=>t.done).length} de {checklist.length} tarefas concluídas</p>
+          {weddingDaysLeft !== null && (
+            <div className="mt-3 pt-3 border-t border-stone-50 text-center">
+              {weddingDaysLeft > 0 ? (
+                <>
+                  <p className="text-2xl font-bold text-rose-500 font-display">{weddingDaysLeft}</p>
+                  <p className="text-xs text-stone-400 mt-0.5">dias para o grande dia 💒</p>
+                </>
+              ) : weddingDaysLeft === 0 ? (
+                <p className="text-sm font-bold text-rose-500">🎊 Hoje é o grande dia!</p>
+              ) : (
+                <p className="text-xs text-stone-400">💑 Casados há {Math.abs(weddingDaysLeft)} dias</p>
+              )}
+            </div>
+          )}
+          {weddingDaysLeft === null && (
+            <p className="text-xs text-stone-300 mt-2">Defina a data no Casamento →</p>
+          )}
         </div>
 
         {/* Próxima viagem */}

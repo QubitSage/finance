@@ -346,6 +346,9 @@ export function ConfigPage() {
                 <span className="text-stone-500 text-sm font-medium">%</span>
               </div>
             </div>
+            <div className="col-span-full sm:col-span-1"><label className="label">Data do Casamento 💒</label>
+              <input className="input w-full" type="date" value={cur.wedding_date||''} onChange={e=>setForm(p=>({...(p??settings),wedding_date:e.target.value||null}))}/>
+            </div>
             <div><label className="label">% Empresa</label>
               <div className="flex items-center gap-2">
                 <input className="input max-w-[80px]" type="number" min="0" max="100" step="1" value={cur.company_percentage||20} onChange={e=>setForm(p=>({...(p??settings),company_percentage:parseFloat(e.target.value)}))}/>
