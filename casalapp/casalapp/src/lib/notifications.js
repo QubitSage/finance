@@ -102,4 +102,29 @@ export async function rescheduleAllAlarms(todos) {
 }
 
 export function registerSW() {}
-                         
+
+// ─── Notificação instantânea (para eventos em tempo real) ─────────────────
+export async function instantNotify(title, body) {
+    try {
+        const cap = await getCap();
+        const LN = await getLN();
+        if (cap && cap.isNativePlatform() && LN) {
+            const id = Math.floor(Math.random() * 2000000) + 1000000;
+            await LN.schedule({ notifications: [{
+                id,
+                title,
+                body,
+                schedule: { at: new Date(Date.now() + 100) },
+                smallIcon: 'ic_stat_icon_config_sample',
+                iconColor: '#f43f5e',
+            }] });
+            return { ok: true };
+        }
+        if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(title, { body, icon: '/icon.svg' });
+            return { ok: true };
+        }
+        return { ok: false, error: 'No permission' };
+    } catch(e) { return { ok: false, error: e.message }; }
+}
+

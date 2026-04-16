@@ -1,13 +1,17 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useDB } from '../hooks/useDB'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
+import { instantNotify, requestPermission } from '../lib/notifications'
 import PageHeader from '../components/PageHeader'
-import { format, parseISO, isPast, isToday, isFuture } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   CalendarHeart, Plus, Trash2, Edit3, Check, X,
   Heart, Flame, Lock, Eye, EyeOff, Star, Clock,
   MessageCircle, CheckCircle2, Circle, Sparkles,
-  ShieldCheck, AlertCircle, BookOpen, ChevronDown, ChevronUp
+  ShieldCheck, AlertCircle, BookOpen, ChevronDown, ChevronUp,
+  LayoutGrid
 } from 'lucide-react'
 
 // ─── Constantes ─────────────────────────────────────────────────────────────
@@ -64,6 +68,86 @@ function EmptyState({ icon: Icon, title, sub }) {
       <p className="text-sm mt-1">{sub}</p>
     </div>
   )
+}
+
+// ─── Hook: Notificações Realtime do Vida Livre ──────────────────────────────
+function useVidaLivreNotifications(userId) {
+  useEffect(() => {
+    if (!userId) return
+
+    // Pedir permissão de notificação se ainda não foi dada
+    requestPermission()
+
+    // Inscrever nas mudanças de Mimos (wishes)
+    const wishesChannel = supabase
+      .channel('vl-wishes-notify')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'wishes' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        const { status, title } = payload.new
+        if (status === 'aprovado') instantNotify('💝 Mimo Aprovado!', `"${title}" foi aprovado com amor!`)
+        else if (status === 'negado') instantNotify('💔 Mimo Negado', `"${title}" foi negado desta vez.`)
+        else if (status === 'realizado') instantNotify('✅ Mimo Realizado!', `"${title}" foi realizado! 🥳`)
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'wishes' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        instantNotify('💝 Novo Mimo', `Um novo desejo foi adicionado: "${payload.new.title}"`)
+      })
+      .subscribe()
+
+    // Inscrever em novas Fantasias
+    const fantasiasChannel = supabase
+      .channel('vl-fantasias-notify')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vl_fantasias' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        instantNotify('✨ Nova Fantasia', `"${payload.new.titulo}" foi adicionada em Fantasias`)
+      })
+      .subscribe()
+
+    // Inscrever em novos Combinados
+    const combinadosChannel = supabase
+      .channel('vl-combinados-notify')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vl_combinados' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        instantNotify('📋 Novo Combinado', 'Um novo combinado foi adicionado')
+      })
+      .subscribe()
+
+    // Inscrever em novos Registros
+    const registrosChannel = supabase
+      .channel('vl-registros-notify')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vl_registros' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        instantNotify('📖 Novo Registro', `"${payload.new.titulo}" foi registrado`)
+      })
+      .subscribe()
+
+    // Inscrever em novas Saídas
+    const saidasChannel = supabase
+      .channel('vl-saidas-notify')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vl_saidas' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        instantNotify('📅 Nova Saída', `"${payload.new.titulo}" foi adicionada na agenda`)
+      })
+      .subscribe()
+
+    // Inscrever em novas Conquistas
+    const conquistasChannel = supabase
+      .channel('vl-conquistas-notify')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'vl_conquistas' }, (payload) => {
+        if (!payload.new || payload.new.user_id === userId) return
+        instantNotify('🏆 Nova Conquista!', `"${payload.new.titulo}" foi registrado como conquista`)
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(wishesChannel)
+      supabase.removeChannel(fantasiasChannel)
+      supabase.removeChannel(combinadosChannel)
+      supabase.removeChannel(registrosChannel)
+      supabase.removeChannel(saidasChannel)
+      supabase.removeChannel(conquistasChannel)
+    }
+  }, [userId])
 }
 
 // ─── Aba: Agenda de Saídas ──────────────────────────────────────────────────
@@ -809,10 +893,12 @@ function TabMimos() {
 
   const handleApprove = async (w) => {
     await update(w.id, { status: 'aprovado' })
+    instantNotify('✅ Mimo Aprovado', `Você aprovou "${w.title}"`)
   }
 
   const handleDeny = async (w) => {
     await update(w.id, { status: 'negado' })
+    instantNotify('❌ Mimo Negado', `Você negou "${w.title}"`)
   }
 
   const pending = wishes.filter(w => w.status === 'pendente').length
@@ -1108,44 +1194,173 @@ function TabQuestionario() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             )
 }
+// ─── Nav Bottom Mobile: ícones das tabs ─────────────────────────────────────
+const NAV_TABS = [
+  { idx: 0, label: 'Agenda',     icon: CalendarHeart },
+  { idx: 4, label: 'Mimos',      icon: Heart },
+  { idx: 3, label: 'Fantasias',  icon: Sparkles },
+  { idx: 2, label: 'Combinados', icon: ShieldCheck },
+  { idx: 99, label: 'Mais',      icon: LayoutGrid }, // abre drawer
+]
+
+const DRAWER_TABS = [
+  { idx: 1, label: 'Registros',  icon: BookOpen,      emoji: '📖' },
+  { idx: 5, label: 'Diálogos',   icon: MessageCircle, emoji: '💬' },
+  { idx: 6, label: 'Ela',        icon: Star,          emoji: '💃' },
+]
+
+// Labels completos para o header
+const TAB_LABELS = [
+  'Agenda',
+  'Registros',
+  'Combinados',
+  'Fantasias',
+  'Mimos 💝',
+  'Diálogos 💬',
+  'Ela 💃',
+]
+
 export function VidaLivrePage() {
+  const { user } = useAuth()
   const [tab, setTab] = useState(0)
-  const TABS_LIST = [
-    { label: 'Agenda', component: TabAgenda },
-    { label: 'Registros', component: TabRegistros },
-    { label: 'Combinados', component: TabCombinados },
-    { label: 'Fantasias', component: TabFantasias },
-    { label: 'Mimos 💝', component: TabMimos },
-    { label: 'Diálogos 💬', component: TabQuestionario },
-    { label: 'Ela 💃', component: TabEla },
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  // Ativa notificações Realtime para o parceiro
+  useVidaLivreNotifications(user?.id)
+
+  const TABS_COMPONENTS = [
+    TabAgenda,
+    TabRegistros,
+    TabCombinados,
+    TabFantasias,
+    TabMimos,
+    TabQuestionario,
+    TabEla,
   ]
-  const ActiveTab = TABS_LIST[tab]?.component || TabAgenda
+  const ActiveTab = TABS_COMPONENTS[tab] || TabAgenda
+
+  const handleNavClick = (idx) => {
+    if (idx === 99) { setDrawerOpen(true); return }
+    setTab(idx)
+    setDrawerOpen(false)
+  }
+
+  const handleDrawerTab = (idx) => {
+    setTab(idx)
+    setDrawerOpen(false)
+  }
 
   return (
-    <div className="relative">
-      <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
+    <div className="relative min-h-screen bg-stone-50">
+
+      {/* ── Header fixo mobile ───────────────────────────────────────────── */}
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-sm border-b border-stone-100 px-4 py-3 flex items-center justify-between md:hidden">
+        <div>
+          <h1 className="text-base font-bold text-stone-800">Vida Livre 🌸</h1>
+          <p className="text-xs text-stone-400">{TAB_LABELS[tab]}</p>
+        </div>
+        <span className="flex items-center gap-1 text-xs text-rose-400 bg-rose-50 px-3 py-1.5 rounded-full font-medium">
+          <Lock size={10} /> Privado
+        </span>
+      </div>
+
+      {/* ── Header desktop ───────────────────────────────────────────────── */}
+      <div className="hidden md:block p-6">
         <PageHeader
           title="Vida Livre"
-          subtitle="Espaco privado do casal"
+          subtitle="Espaço privado do casal"
           action={
             <span className="flex items-center gap-1.5 text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full">
-              <span>Privado</span>
+              <Lock size={10} /> Privado
             </span>
           }
         />
-        <div className="flex gap-1 overflow-x-auto pb-2 no-scrollbar -mx-4 px-4">
-          {TABS_LIST.map((t, i) => (
+        {/* Tabs desktop: scrollable pill bar */}
+        <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar mt-4">
+          {TAB_LABELS.map((label, i) => (
             <button
-              key={t.label}
+              key={label}
               onClick={() => setTab(i)}
-              className={'flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all ' + (tab === i ? 'bg-rose-500 text-white' : 'bg-stone-100 text-stone-500 hover:bg-stone-200')}
+              className={'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ' +
+                (tab === i ? 'bg-rose-500 text-white shadow-sm' : 'bg-white text-stone-500 border border-stone-200 hover:border-rose-300')}
             >
-              {t.label}
+              {label}
             </button>
           ))}
         </div>
-        <ActiveTab />
       </div>
+
+      {/* ── Conteúdo ─────────────────────────────────────────────────────── */}
+      <div className="px-0 pb-28 md:px-6 md:pb-6 md:max-w-3xl md:mx-auto">
+        <div className="md:hidden px-4 pt-4">
+          <ActiveTab />
+        </div>
+        <div className="hidden md:block">
+          <ActiveTab />
+        </div>
+      </div>
+
+      {/* ── Bottom Nav (mobile only) ──────────────────────────────────────── */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
+        <div className="flex items-center justify-around px-2 py-1 safe-area-pb">
+          {NAV_TABS.map(({ idx, label, icon: Icon }) => {
+            const isActive = idx !== 99 && tab === idx
+            return (
+              <button
+                key={label}
+                onClick={() => handleNavClick(idx)}
+                className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-w-[56px] transition-all"
+              >
+                <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-rose-500' : 'bg-transparent'}`}>
+                  <Icon
+                    size={20}
+                    className={isActive ? 'text-white' : 'text-stone-400'}
+                    strokeWidth={isActive ? 2.5 : 1.8}
+                  />
+                </div>
+                <span className={`text-[10px] font-medium leading-tight ${isActive ? 'text-rose-500' : 'text-stone-400'}`}>
+                  {label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+
+      {/* ── Drawer "Mais" (mobile only) ───────────────────────────────────── */}
+      {drawerOpen && (
+        <>
+          {/* overlay */}
+          <div
+            className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          {/* sheet */}
+          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl pb-safe">
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-stone-200" />
+            </div>
+            <div className="px-5 pb-2">
+              <p className="text-xs text-stone-400 font-medium uppercase tracking-widest mb-3 mt-1">Mais seções</p>
+              <div className="space-y-1 pb-6">
+                {DRAWER_TABS.map(({ idx, label, icon: Icon, emoji }) => (
+                  <button
+                    key={label}
+                    onClick={() => handleDrawerTab(idx)}
+                    className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all ${tab === idx ? 'bg-rose-50 text-rose-600' : 'text-stone-700 hover:bg-stone-50'}`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tab === idx ? 'bg-rose-100' : 'bg-stone-100'}`}>
+                      <Icon size={20} className={tab === idx ? 'text-rose-500' : 'text-stone-500'} />
+                    </div>
+                    <span className="text-base font-medium">{emoji} {label}</span>
+                    {tab === idx && <Check size={16} className="ml-auto text-rose-500" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
