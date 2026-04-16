@@ -10,8 +10,7 @@ import {
   CalendarHeart, Plus, Trash2, Edit3, Check, X,
   Heart, Flame, Lock, Eye, EyeOff, Star, Clock,
   MessageCircle, CheckCircle2, Circle, Sparkles,
-  ShieldCheck, AlertCircle, BookOpen, ChevronDown, ChevronUp,
-  LayoutGrid
+  ShieldCheck, AlertCircle, BookOpen, ChevronDown, ChevronUp
 } from 'lucide-react'
 
 // ─── Constantes ─────────────────────────────────────────────────────────────
@@ -1194,36 +1193,20 @@ function TabQuestionario() {
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             )
 }
-// ─── Nav Bottom Mobile: ícones das tabs ─────────────────────────────────────
-const NAV_TABS = [
-  { idx: 0, label: 'Agenda',     icon: CalendarHeart },
-  { idx: 4, label: 'Mimos',      icon: Heart },
-  { idx: 3, label: 'Fantasias',  icon: Sparkles },
-  { idx: 2, label: 'Combinados', icon: ShieldCheck },
-  { idx: 99, label: 'Mais',      icon: LayoutGrid }, // abre drawer
-]
-
-const DRAWER_TABS = [
-  { idx: 1, label: 'Registros',  icon: BookOpen,      emoji: '📖' },
-  { idx: 5, label: 'Diálogos',   icon: MessageCircle, emoji: '💬' },
-  { idx: 6, label: 'Ela',        icon: Star,          emoji: '💃' },
-]
-
-// Labels completos para o header
+// Labels das tabs (mobile strip + desktop pills)
 const TAB_LABELS = [
   'Agenda',
   'Registros',
   'Combinados',
   'Fantasias',
   'Mimos 💝',
-  'Diálogos 💬',
+  'Diálogos',
   'Ela 💃',
 ]
 
 export function VidaLivrePage() {
   const { user } = useAuth()
   const [tab, setTab] = useState(0)
-  const [drawerOpen, setDrawerOpen] = useState(false)
 
   // Ativa notificações Realtime para o parceiro
   useVidaLivreNotifications(user?.id)
@@ -1239,33 +1222,38 @@ export function VidaLivrePage() {
   ]
   const ActiveTab = TABS_COMPONENTS[tab] || TabAgenda
 
-  const handleNavClick = (idx) => {
-    if (idx === 99) { setDrawerOpen(true); return }
-    setTab(idx)
-    setDrawerOpen(false)
-  }
-
-  const handleDrawerTab = (idx) => {
-    setTab(idx)
-    setDrawerOpen(false)
-  }
-
   return (
-    <div className="relative min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50">
 
-      {/* ── Header fixo mobile ───────────────────────────────────────────── */}
-      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-sm border-b border-stone-100 px-4 py-3 flex items-center justify-between md:hidden">
-        <div>
+      {/* ── Cabeçalho mobile: título + tab strip horizontal ───────────────── */}
+      <div className="sticky top-0 z-20 bg-white border-b border-stone-100 shadow-sm md:hidden">
+        <div className="px-4 pt-3 pb-2 flex items-center justify-between">
           <h1 className="text-base font-bold text-stone-800">Vida Livre 🌸</h1>
-          <p className="text-xs text-stone-400">{TAB_LABELS[tab]}</p>
+          <span className="flex items-center gap-1 text-xs text-rose-400 bg-rose-50 px-2.5 py-1 rounded-full font-medium">
+            <Lock size={10} /> Privado
+          </span>
         </div>
-        <span className="flex items-center gap-1 text-xs text-rose-400 bg-rose-50 px-3 py-1.5 rounded-full font-medium">
-          <Lock size={10} /> Privado
-        </span>
+        {/* Tab strip — scroll horizontal, todas as categorias visíveis */}
+        <div className="flex gap-1.5 overflow-x-auto px-4 pb-3 no-scrollbar">
+          {TAB_LABELS.map((label, i) => (
+            <button
+              key={label}
+              onClick={() => setTab(i)}
+              className={
+                'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ' +
+                (tab === i
+                  ? 'bg-rose-500 text-white shadow-sm'
+                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200')
+              }
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* ── Header desktop ───────────────────────────────────────────────── */}
-      <div className="hidden md:block p-6">
+      {/* ── Cabeçalho desktop: PageHeader + pills ────────────────────────── */}
+      <div className="hidden md:block px-6 pt-6 pb-2">
         <PageHeader
           title="Vida Livre"
           subtitle="Espaço privado do casal"
@@ -1275,14 +1263,17 @@ export function VidaLivrePage() {
             </span>
           }
         />
-        {/* Tabs desktop: scrollable pill bar */}
         <div className="flex gap-1.5 overflow-x-auto pb-2 no-scrollbar mt-4">
           {TAB_LABELS.map((label, i) => (
             <button
               key={label}
               onClick={() => setTab(i)}
-              className={'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ' +
-                (tab === i ? 'bg-rose-500 text-white shadow-sm' : 'bg-white text-stone-500 border border-stone-200 hover:border-rose-300')}
+              className={
+                'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ' +
+                (tab === i
+                  ? 'bg-rose-500 text-white shadow-sm'
+                  : 'bg-white text-stone-500 border border-stone-200 hover:border-rose-300')
+              }
             >
               {label}
             </button>
@@ -1291,76 +1282,10 @@ export function VidaLivrePage() {
       </div>
 
       {/* ── Conteúdo ─────────────────────────────────────────────────────── */}
-      <div className="px-0 pb-28 md:px-6 md:pb-6 md:max-w-3xl md:mx-auto">
-        <div className="md:hidden px-4 pt-4">
-          <ActiveTab />
-        </div>
-        <div className="hidden md:block">
-          <ActiveTab />
-        </div>
+      <div className="px-4 py-4 md:px-6 md:py-4">
+        <ActiveTab />
       </div>
 
-      {/* ── Bottom Nav (mobile only) ──────────────────────────────────────── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-stone-100 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]">
-        <div className="flex items-center justify-around px-2 py-1 safe-area-pb">
-          {NAV_TABS.map(({ idx, label, icon: Icon }) => {
-            const isActive = idx !== 99 && tab === idx
-            return (
-              <button
-                key={label}
-                onClick={() => handleNavClick(idx)}
-                className="flex flex-col items-center justify-center gap-0.5 py-2 px-3 min-w-[56px] transition-all"
-              >
-                <div className={`p-1.5 rounded-xl transition-all ${isActive ? 'bg-rose-500' : 'bg-transparent'}`}>
-                  <Icon
-                    size={20}
-                    className={isActive ? 'text-white' : 'text-stone-400'}
-                    strokeWidth={isActive ? 2.5 : 1.8}
-                  />
-                </div>
-                <span className={`text-[10px] font-medium leading-tight ${isActive ? 'text-rose-500' : 'text-stone-400'}`}>
-                  {label}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-      </nav>
-
-      {/* ── Drawer "Mais" (mobile only) ───────────────────────────────────── */}
-      {drawerOpen && (
-        <>
-          {/* overlay */}
-          <div
-            className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
-            onClick={() => setDrawerOpen(false)}
-          />
-          {/* sheet */}
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl pb-safe">
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 rounded-full bg-stone-200" />
-            </div>
-            <div className="px-5 pb-2">
-              <p className="text-xs text-stone-400 font-medium uppercase tracking-widest mb-3 mt-1">Mais seções</p>
-              <div className="space-y-1 pb-6">
-                {DRAWER_TABS.map(({ idx, label, icon: Icon, emoji }) => (
-                  <button
-                    key={label}
-                    onClick={() => handleDrawerTab(idx)}
-                    className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all ${tab === idx ? 'bg-rose-50 text-rose-600' : 'text-stone-700 hover:bg-stone-50'}`}
-                  >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${tab === idx ? 'bg-rose-100' : 'bg-stone-100'}`}>
-                      <Icon size={20} className={tab === idx ? 'text-rose-500' : 'text-stone-500'} />
-                    </div>
-                    <span className="text-base font-medium">{emoji} {label}</span>
-                    {tab === idx && <Check size={16} className="ml-auto text-rose-500" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   )
 }

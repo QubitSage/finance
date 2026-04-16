@@ -1150,8 +1150,8 @@ export function MarketPage() {
 
       {(adding || editing) && (
         <form onSubmit={handleSave} className="card space-y-3 border-2 border-stone-200 mb-4">
-          <div className="grid grid-cols-2 gap-2">
-            <input className="input col-span-2" placeholder="Nome do produto *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input className="input sm:col-span-2" placeholder="Nome do produto *" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
             <div className="flex gap-1">
               <input className="input flex-1" type="number" step="0.1" placeholder="Qtd" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
               <select className="input w-16" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
@@ -1166,8 +1166,8 @@ export function MarketPage() {
               <option value="">Loja (opcional)</option>
               {MARKET_STORES.map(s => <option key={s}>{s}</option>)}
             </select>
-            <input className="input col-span-2" placeholder="Observações" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-            <div className="col-span-2 flex gap-4">
+            <input className="input sm:col-span-2" placeholder="Observações" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            <div className="sm:col-span-2 flex gap-4">
               <label className="flex items-center gap-2 text-sm text-stone-600 cursor-pointer">
                 <input type="checkbox" checked={form.in_stock} onChange={e => setForm(f => ({ ...f, in_stock: e.target.checked }))} className="w-4 h-4 rounded" />
                 Tenho em casa

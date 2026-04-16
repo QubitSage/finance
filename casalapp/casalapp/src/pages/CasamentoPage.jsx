@@ -118,7 +118,7 @@ function TabChecklist() {
             <h3 className="font-semibold text-stone-700">{editItem ? 'Editar' : 'Nova Tarefa'}</h3>
             <button onClick={() => { setShowForm(false); setEditItem(null) }}><X className="w-4 h-4 text-stone-400" /></button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="text-xs text-stone-500 block mb-1">Tarefa *</label>
               <input style={inputCls} value={form.tarefa} onChange={e => set('tarefa', e.target.value)} placeholder="Confirmar local da cerimônia..." />
@@ -269,7 +269,7 @@ function TabOrcamento() {
             <h3 className="font-semibold text-stone-700">{editItem ? 'Editar' : 'Novo Item'}</h3>
             <button onClick={() => { setShowForm(false); setEditItem(null) }}><X className="w-4 h-4 text-stone-400" /></button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="text-xs text-stone-500 block mb-1">Descrição *</label>
               <input style={inputCls} value={form.descricao} onChange={e => set('descricao', e.target.value)} placeholder="Buffet, Fotógrafo, Flores..." />
@@ -393,7 +393,7 @@ function TabConvidados() {
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Card className="p-3 text-center">
           <p className="text-xl font-bold text-stone-800">{convidados.length}</p>
           <p className="text-xs text-stone-400">Total</p>
@@ -429,7 +429,7 @@ function TabConvidados() {
             <h3 className="font-semibold text-stone-700">{editItem ? 'Editar' : 'Novo Convidado'}</h3>
             <button onClick={() => { setShowForm(false); setEditItem(null) }}><X className="w-4 h-4 text-stone-400" /></button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="text-xs text-stone-500 block mb-1">Nome *</label>
               <input style={inputCls} value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Nome do convidado" />
@@ -547,7 +547,7 @@ function TabFornecedores() {
             <h3 className="font-semibold text-stone-700">{editItem ? 'Editar' : 'Novo Fornecedor'}</h3>
             <button onClick={() => { setShowForm(false); setEditItem(null) }}><X className="w-4 h-4 text-stone-400" /></button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="col-span-2">
               <label className="text-xs text-stone-500 block mb-1">Nome *</label>
               <input style={inputCls} value={form.nome} onChange={e => set('nome', e.target.value)} placeholder="Buffet ABC, Foto Arte..." />
