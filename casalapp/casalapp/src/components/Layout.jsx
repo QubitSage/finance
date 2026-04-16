@@ -52,7 +52,7 @@ export default function Layout() {
 
 
   return (
-    <div className="flex min-h-screen bg-stone-50 dark:bg-stone-900">
+    <div className="flex min-h-screen w-full max-w-full bg-stone-50 dark:bg-stone-900 overflow-x-hidden">
       {/* Sidebar */}
       <aside className="hidden md:flex w-56 bg-white dark:bg-stone-800 border-r border-stone-100 dark:border-stone-700 flex-col py-6 px-3 fixed inset-y-0">
         <div className="px-3 mb-8">
@@ -130,7 +130,7 @@ export default function Layout() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 md:ml-56 dark:text-stone-100 pb-24 md:pb-0">
+      <main className="flex-1 min-w-0 w-full md:ml-56 dark:text-stone-100 pb-24 md:pb-0 overflow-x-hidden">
         <Outlet />
       </main>
 
