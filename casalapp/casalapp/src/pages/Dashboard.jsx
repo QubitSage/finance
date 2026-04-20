@@ -178,7 +178,7 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="card text-center py-10">
-          <p className="text-stone-300 text-sm">Nenhuma transação este mês ainda.</p>
+          <p className="text-stone-400 dark:text-stone-500 text-sm">Nenhuma transação este mês ainda.</p>
         </div>
       )}
 
@@ -262,7 +262,7 @@ export default function Dashboard() {
             </div>
           )}
           {weddingDaysLeft === null && (
-            <p className="text-xs text-stone-300 mt-2">Defina a data no Casamento →</p>
+            <p className="text-xs text-stone-400 mt-2">Defina a data no Casamento →</p>
           )}
         </div>
 

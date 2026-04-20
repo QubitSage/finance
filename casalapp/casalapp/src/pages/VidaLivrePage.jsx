@@ -53,7 +53,7 @@ function Badge({ children, className = '' }) {
 
 function Card({ children, className = '' }) {
   return (
-    <div className={`bg-white rounded-2xl border border-stone-100 shadow-sm ${className}`}>
+    <div className={`bg-white dark:bg-stone-800 rounded-2xl border border-stone-100 dark:border-stone-700 shadow-sm ${className}`}>
       {children}
     </div>
   )
@@ -204,7 +204,7 @@ function TabAgenda({ onCreateRegistro }) {
         <div className="flex gap-2 flex-wrap">
           {['todas','planejado','aconteceu','cancelado'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filter === f ? 'bg-rose-500 text-white' : 'bg-white text-stone-500 border border-stone-200 hover:border-rose-300'}`}>
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filter === f ? 'bg-rose-500 text-white' : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-600 hover:border-rose-300 dark:hover:border-rose-700'}`}>
               {f === 'todas' ? 'Todas' : STATUS_SAIDA[f]?.label}
             </button>
           ))}
@@ -600,9 +600,9 @@ function TabFantasias() {
 
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">
-          <button onClick={() => setFilterCat('todas')} className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filterCat==='todas' ? 'bg-rose-500 text-white' : 'bg-white text-stone-500 border border-stone-200'}`}>Todas</button>
+          <button onClick={() => setFilterCat('todas')} className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filterCat==='todas' ? 'bg-rose-500 text-white' : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-600'}`}>Todas</button>
           {Object.entries(CAT_FANTASIA).map(([k,v]) => (
-            <button key={k} onClick={() => setFilterCat(k)} className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filterCat===k ? 'bg-rose-500 text-white' : 'bg-white text-stone-500 border border-stone-200'}`}>{v.label}</button>
+            <button key={k} onClick={() => setFilterCat(k)} className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filterCat===k ? 'bg-rose-500 text-white' : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-600'}`}>{v.label}</button>
           ))}
         </div>
         <button onClick={() => { setAdding(true); setEditId(null); setForm(empty) }}
@@ -771,9 +771,9 @@ function TabEla() {
           {Object.entries(CATS).map(([k,v]) => {
             const count = conquistas.filter(c=>c.categoria===k).length
             return (
-              <div key={k} className="bg-white/60 rounded-xl p-2.5 text-center">
-                <p className="text-lg font-bold text-stone-700">{count}</p>
-                <p className="text-xs text-stone-400 truncate">{v.label}</p>
+              <div key={k} className="bg-white/60 dark:bg-stone-700/60 rounded-xl p-2.5 text-center">
+                <p className="text-lg font-bold text-stone-700 dark:text-stone-200">{count}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{v.label}</p>
               </div>
             )
           })}
@@ -786,9 +786,9 @@ function TabEla() {
       </button>
 
       {showForm && (
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-100 p-5">
+        <div className="bg-white dark:bg-stone-800 rounded-2xl shadow-sm border border-stone-100 dark:border-stone-700 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-stone-700">{editItem ? 'Editar' : 'Nova Conquista'}</h3>
+            <h3 className="font-semibold text-stone-700 dark:text-stone-200">{editItem ? 'Editar' : 'Nova Conquista'}</h3>
             <button onClick={() => { setShowForm(false); setEditItem(null) }}><X className="w-4 h-4 text-stone-400" /></button>
           </div>
           <div className="space-y-3">
@@ -854,7 +854,7 @@ function TabEla() {
             {conquistas.map(c => {
               const cat = CATS[c.categoria] || CATS['saida']
               return (
-                <div key={c.id} className="bg-white rounded-2xl shadow-sm border border-stone-100 p-4">
+                <div key={c.id} className="bg-white dark:bg-stone-800 rounded-2xl shadow-sm border border-stone-100 dark:border-stone-700 p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex gap-3 flex-1 min-w-0">
                       <span className="text-2xl flex-shrink-0">{c.emoji || '🏆'}</span>
@@ -1880,13 +1880,13 @@ export function VidaLivrePage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-900">
 
       {/* ── Cabeçalho mobile: título + tab strip horizontal ───────────────── */}
-      <div className="sticky top-0 z-20 bg-white border-b border-stone-100 shadow-sm md:hidden">
+      <div className="sticky top-0 z-20 bg-white dark:bg-stone-800 border-b border-stone-100 dark:border-stone-700 shadow-sm md:hidden">
         <div className="px-4 pt-3 pb-2 flex items-center justify-between">
-          <h1 className="text-base font-bold text-stone-800">Vida Livre 🌸</h1>
-          <span className="flex items-center gap-1 text-xs text-rose-400 bg-rose-50 px-2.5 py-1 rounded-full font-medium">
+          <h1 className="text-base font-bold text-stone-800 dark:text-stone-100">Vida Livre 🌸</h1>
+          <span className="flex items-center gap-1 text-xs text-rose-400 bg-rose-50 dark:bg-rose-900/30 dark:text-rose-300 px-2.5 py-1 rounded-full font-medium">
             <Lock size={10} /> Privado
           </span>
         </div>
@@ -1900,7 +1900,7 @@ export function VidaLivrePage() {
                 'flex-shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ' +
                 (tab === i
                   ? 'bg-rose-500 text-white shadow-sm'
-                  : 'bg-stone-100 text-stone-500 hover:bg-stone-200')
+                  : 'bg-stone-100 dark:bg-stone-700 text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-stone-600')
               }
             >
               {label}
@@ -1915,7 +1915,7 @@ export function VidaLivrePage() {
           title="Vida Livre"
           subtitle="Espaço privado do casal"
           action={
-            <span className="flex items-center gap-1.5 text-xs text-stone-400 bg-stone-100 px-3 py-1.5 rounded-full">
+            <span className="flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400 bg-stone-100 dark:bg-stone-700 px-3 py-1.5 rounded-full">
               <Lock size={10} /> Privado
             </span>
           }
@@ -1929,7 +1929,7 @@ export function VidaLivrePage() {
                 'flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all ' +
                 (tab === i
                   ? 'bg-rose-500 text-white shadow-sm'
-                  : 'bg-white text-stone-500 border border-stone-200 hover:border-rose-300')
+                  : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-600 hover:border-rose-300 dark:hover:border-rose-700')
               }
             >
               {label}
