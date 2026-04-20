@@ -1506,6 +1506,352 @@ function TabObjetivos() {
   )
 }
 
+// ─── Constantes para TabSimulacao ────────────────────────────────────────────
+const SIM_CORES = {
+  blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   dot: 'bg-blue-400',   header: 'text-blue-700'   },
+  green:  { bg: 'bg-green-50',  border: 'border-green-200',  dot: 'bg-green-500',  header: 'text-green-700'  },
+  rose:   { bg: 'bg-rose-50',   border: 'border-rose-200',   dot: 'bg-rose-400',   header: 'text-rose-700'   },
+  violet: { bg: 'bg-violet-50', border: 'border-violet-200', dot: 'bg-violet-400', header: 'text-violet-700' },
+  amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  dot: 'bg-amber-400',  header: 'text-amber-700'  },
+  teal:   { bg: 'bg-teal-50',   border: 'border-teal-200',   dot: 'bg-teal-400',   header: 'text-teal-700'   },
+  stone:  { bg: 'bg-stone-50',  border: 'border-stone-200',  dot: 'bg-stone-400',  header: 'text-stone-600'  },
+}
+const SIM_EMOJIS = ['🏠','🛒','💊','📱','🐾','🚗','🎯','💰','🍽️','🌿','🎨','🏋️','✈️','🔑','📋','💡']
+
+const SIM_SEED = [
+  { cat: { nome: 'Moradia',               emoji: '🏠', cor: 'blue',   ordem: 0 }, itens: ['Aluguel','Condomínio','IPTU','Energia','Água e Esgoto','Gás','Internet e Wi-Fi','Streaming'] },
+  { cat: { nome: 'Supermercado',          emoji: '🛒', cor: 'green',  ordem: 1 }, itens: ['Alimentação','Higiene e Limpeza'] },
+  { cat: { nome: 'Saúde',                 emoji: '💊', cor: 'rose',   ordem: 2 }, itens: ['Plano de Saúde','Farmácia'] },
+  { cat: { nome: 'Telefone',              emoji: '📱', cor: 'violet', ordem: 3 }, itens: ['Plano Individual / Familiar'] },
+  { cat: { nome: 'Pet',                   emoji: '🐾', cor: 'amber',  ordem: 4 }, itens: ['Ração','Veterinário'] },
+  { cat: { nome: 'Transporte',            emoji: '🚗', cor: 'teal',   ordem: 5 }, itens: ['Combustível ou Apps','Seguro Auto e IPVA','Manutenção do Veículo'] },
+  { cat: { nome: 'Estilo de Vida e Futuro', emoji: '🎯', cor: 'stone', ordem: 6 }, itens: ['Lazer e Jantares','Academia e Cuidados Pessoais','Reserva de Emergência','Fundo Casamento / Viagens'] },
+]
+
+// ─── Aba: Simulação de Gastos ────────────────────────────────────────────────
+function TabSimulacao() {
+  const { user } = useAuth()
+  const { data: categorias, insert: insertCat, update: updateCat, remove: removeCat } = useDB('vl_sim_categorias', { order: 'ordem', asc: true })
+  const { data: todosItens, insert: insertItem, update: updateItem, remove: removeItem } = useDB('vl_sim_itens', { order: 'ordem', asc: true })
+
+  // Renda persiste em localStorage (não precisa de tabela extra)
+  const [renda, setRendaState] = useState(() => { try { return localStorage.getItem('casalapp_sim_renda') || '' } catch { return '' } })
+  const setRenda = (v) => { setRendaState(v); try { localStorage.setItem('casalapp_sim_renda', v) } catch {} }
+
+  const [expandedCats, setExpandedCats] = useState({})
+  const [addingCat, setAddingCat]       = useState(false)
+  const [editCatId, setEditCatId]       = useState(null)
+  const [catForm, setCatForm]           = useState({ nome: '', emoji: '📋', cor: 'stone' })
+  const [addingItemIn, setAddingItemIn] = useState(null) // cat id
+  const [itemForm, setItemForm]         = useState({ nome: '', valor: '' })
+  const [editItemId, setEditItemId]     = useState(null)
+  const [editItemForm, setEditItemForm] = useState({ nome: '', valor: '' })
+  const [seeding, setSeeding]           = useState(false)
+
+  // Itens agrupados por categoria (client-side filter)
+  const itensPorCat = useMemo(() => {
+    const map = {}
+    categorias.forEach(c => { map[c.id] = [] })
+    todosItens.forEach(item => { if (map[item.categoria_id]) map[item.categoria_id].push(item) })
+    return map
+  }, [categorias, todosItens])
+
+  const totalPorCat = useMemo(() => {
+    const t = {}
+    Object.entries(itensPorCat).forEach(([id, items]) => {
+      t[id] = items.reduce((s, i) => s + (parseFloat(i.valor) || 0), 0)
+    })
+    return t
+  }, [itensPorCat])
+
+  const totalGeral = Object.values(totalPorCat).reduce((s, v) => s + v, 0)
+  const rendaNum   = parseFloat(String(renda).replace(',', '.')) || 0
+  const sobra      = rendaNum - totalGeral
+  const pct        = rendaNum > 0 ? Math.min(100, Math.round((totalGeral / rendaNum) * 100)) : 0
+
+  const fmtBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+  const toggleCat = (id) => setExpandedCats(p => ({ ...p, [id]: !(p[id] ?? true) }))
+
+  // ── Categoria ─────────────────────────────────────────────────────────────
+  const handleSaveCat = async () => {
+    if (!catForm.nome.trim()) return
+    if (editCatId) {
+      await updateCat(editCatId, { nome: catForm.nome, emoji: catForm.emoji, cor: catForm.cor })
+      setEditCatId(null)
+    } else {
+      await insertCat({ nome: catForm.nome, emoji: catForm.emoji, cor: catForm.cor, ordem: categorias.length })
+      setAddingCat(false)
+    }
+    setCatForm({ nome: '', emoji: '📋', cor: 'stone' })
+  }
+
+  const startEditCat = (cat, e) => {
+    e.stopPropagation()
+    setCatForm({ nome: cat.nome, emoji: cat.emoji || '📋', cor: cat.cor || 'stone' })
+    setEditCatId(cat.id)
+    setAddingCat(false)
+  }
+
+  // ── Item ──────────────────────────────────────────────────────────────────
+  const handleSaveItem = async (catId) => {
+    if (!itemForm.nome.trim()) return
+    await insertItem({
+      categoria_id: catId,
+      nome: itemForm.nome,
+      valor: parseFloat(String(itemForm.valor).replace(',', '.')) || 0,
+      ordem: (itensPorCat[catId] || []).length,
+    })
+    setItemForm({ nome: '', valor: '' })
+    setAddingItemIn(null)
+  }
+
+  const startEditItem = (item) => {
+    setEditItemForm({ nome: item.nome, valor: String(item.valor || '') })
+    setEditItemId(item.id)
+  }
+
+  const handleSaveEditItem = async () => {
+    if (!editItemForm.nome.trim()) return
+    await updateItem(editItemId, {
+      nome: editItemForm.nome,
+      valor: parseFloat(String(editItemForm.valor).replace(',', '.')) || 0,
+    })
+    setEditItemId(null)
+  }
+
+  // ── Seed ──────────────────────────────────────────────────────────────────
+  const handleSeed = async () => {
+    if (!user?.id) return
+    setSeeding(true)
+    for (const { cat, itens } of SIM_SEED) {
+      const { data: newCat } = await supabase.from('vl_sim_categorias').insert({ ...cat, user_id: user.id }).select().single()
+      if (newCat) {
+        for (let i = 0; i < itens.length; i++) {
+          await supabase.from('vl_sim_itens').insert({ categoria_id: newCat.id, user_id: user.id, nome: itens[i], valor: 0, ordem: i })
+        }
+      }
+    }
+    setSeeding(false)
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────
+  if (categorias.length === 0 && !addingCat) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-center gap-5">
+        <div className="text-6xl">💸</div>
+        <div>
+          <p className="font-bold text-stone-700 text-xl">Simule os gastos do casal</p>
+          <p className="text-stone-400 text-sm mt-1.5 max-w-xs mx-auto leading-relaxed">
+            Crie categorias, adicione itens com valores e veja quanto sobra da renda.
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 w-full max-w-xs">
+          <button onClick={handleSeed} disabled={seeding}
+            className="w-full py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm disabled:opacity-60">
+            {seeding ? 'Criando...' : '💸 Carregar categorias padrão'}
+          </button>
+          <button onClick={() => setAddingCat(true)}
+            className="w-full py-3 rounded-2xl bg-stone-100 text-stone-600 text-sm font-medium hover:bg-stone-200 transition-colors">
+            + Criar do zero
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Main view ─────────────────────────────────────────────────────────────
+  return (
+    <div className="space-y-4">
+
+      {/* Renda + barra de comprometimento */}
+      <Card className="p-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <div className="flex-1">
+            <label className="text-xs text-stone-400 font-medium mb-1 block">Renda mensal do casal</label>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm text-stone-400 font-medium">R$</span>
+              <input
+                type="number" min="0" step="100" placeholder="0"
+                value={renda} onChange={e => setRenda(e.target.value)}
+                className="input-base w-36 text-base font-bold"
+              />
+            </div>
+          </div>
+          {rendaNum > 0 && (
+            <div className="text-right flex-shrink-0">
+              <p className="text-xs text-stone-400">
+                <span className="font-bold text-stone-700">{pct}%</span> comprometido
+              </p>
+              <p className={`text-sm font-bold mt-0.5 ${sobra >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                {sobra >= 0 ? '✅ Sobra ' : '⚠️ Falta '}{fmtBRL(Math.abs(sobra))}
+              </p>
+            </div>
+          )}
+        </div>
+        {rendaNum > 0 && (
+          <div className="mt-3">
+            <div className="w-full bg-stone-100 rounded-full h-2.5">
+              <div className={`rounded-full h-2.5 transition-all duration-300 ${pct > 100 ? 'bg-red-400' : pct > 85 ? 'bg-amber-400' : 'bg-green-400'}`}
+                style={{ width: pct + '%' }} />
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* Botão + form nova categoria */}
+      {!addingCat && editCatId === null && (
+        <button onClick={() => { setAddingCat(true); setCatForm({ nome: '', emoji: '📋', cor: 'stone' }) }}
+          className="flex items-center gap-2 px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors">
+          <Plus size={16} /> Nova categoria
+        </button>
+      )}
+
+      {(addingCat || editCatId !== null) && (
+        <Card className="p-4 border-2 border-rose-100">
+          <p className="text-sm font-semibold text-stone-600 mb-3">{editCatId ? 'Editar categoria' : 'Nova categoria'}</p>
+          <div className="flex gap-1 flex-wrap mb-3">
+            {SIM_EMOJIS.map(e => (
+              <button key={e} type="button" onClick={() => setCatForm(f => ({...f, emoji: e}))}
+                className={`text-xl p-1 rounded-lg transition-all ${catForm.emoji === e ? 'bg-rose-100 scale-110' : 'hover:bg-stone-100'}`}>{e}</button>
+            ))}
+          </div>
+          <div className="flex gap-2.5 mb-3">
+            {Object.entries(SIM_CORES).map(([k, v]) => (
+              <button key={k} type="button" onClick={() => setCatForm(f => ({...f, cor: k}))}
+                className={`w-5 h-5 rounded-full ${v.dot} transition-all ${catForm.cor === k ? 'ring-2 ring-offset-1 ring-stone-500 scale-125' : 'hover:scale-110'}`} />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input className="input-base flex-1" placeholder="Nome da categoria *"
+              value={catForm.nome} onChange={e => setCatForm(f => ({...f, nome: e.target.value}))}
+              onKeyDown={e => e.key === 'Enter' && handleSaveCat()} autoFocus />
+            <button onClick={handleSaveCat} className="px-4 py-2 bg-rose-500 text-white rounded-xl text-sm font-medium hover:bg-rose-600 transition-colors">Salvar</button>
+            <button onClick={() => { setAddingCat(false); setEditCatId(null) }} className="px-3 py-2 text-stone-400 hover:text-stone-600 text-sm">Cancelar</button>
+          </div>
+        </Card>
+      )}
+
+      {/* Lista de categorias */}
+      <div className="space-y-3">
+        {categorias.map(cat => {
+          const cor    = SIM_CORES[cat.cor] || SIM_CORES.stone
+          const itens  = itensPorCat[cat.id] || []
+          const total  = totalPorCat[cat.id] || 0
+          const isOpen = expandedCats[cat.id] ?? true
+
+          return (
+            <div key={cat.id} className={`rounded-2xl border overflow-hidden ${cor.bg} ${cor.border}`}>
+
+              {/* Header da categoria */}
+              <div className="flex items-center gap-2 px-4 py-3 cursor-pointer select-none" onClick={() => toggleCat(cat.id)}>
+                <span className="text-xl flex-shrink-0">{cat.emoji || '📋'}</span>
+                <span className={`font-bold text-sm flex-1 truncate ${cor.header}`}>{cat.nome}</span>
+                <span className={`text-sm font-bold flex-shrink-0 mr-1 ${cor.header}`}>{fmtBRL(total)}</span>
+                <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                  <button onClick={e => startEditCat(cat, e)} className="p-1 text-stone-400 hover:text-stone-600 rounded-lg"><Edit3 size={12}/></button>
+                  <button onClick={e => { e.stopPropagation(); removeCat(cat.id) }} className="p-1 text-stone-300 hover:text-red-400 rounded-lg"><Trash2 size={12}/></button>
+                </div>
+                {isOpen ? <ChevronUp size={14} className="text-stone-400 flex-shrink-0" /> : <ChevronDown size={14} className="text-stone-400 flex-shrink-0" />}
+              </div>
+
+              {/* Itens */}
+              {isOpen && (
+                <div className="border-t border-white/50">
+                  {itens.map(item => (
+                    <div key={item.id} className="group flex items-center gap-2 px-4 py-2.5 border-b border-white/40 last:border-0 bg-white/40 hover:bg-white/60 transition-colors">
+                      {editItemId === item.id ? (
+                        <>
+                          <input className="flex-1 bg-white rounded-lg px-2 py-1 text-sm outline-none border border-stone-200"
+                            value={editItemForm.nome} onChange={e => setEditItemForm(f => ({...f, nome: e.target.value}))}
+                            onKeyDown={e => e.key === 'Enter' && handleSaveEditItem()} autoFocus />
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <span className="text-xs text-stone-400">R$</span>
+                            <input type="number" min="0" step="50"
+                              className="w-24 bg-white rounded-lg px-2 py-1 text-sm text-right outline-none border border-stone-200"
+                              value={editItemForm.valor} onChange={e => setEditItemForm(f => ({...f, valor: e.target.value}))}
+                              onKeyDown={e => e.key === 'Enter' && handleSaveEditItem()} />
+                          </div>
+                          <button onClick={handleSaveEditItem} className="p-1 text-green-500 hover:text-green-700"><Check size={14}/></button>
+                          <button onClick={() => setEditItemId(null)} className="p-1 text-stone-300 hover:text-stone-500"><X size={14}/></button>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex-1 text-sm text-stone-700 truncate">{item.nome}</span>
+                          <span className={`text-sm font-semibold flex-shrink-0 ${parseFloat(item.valor) > 0 ? cor.header : 'text-stone-300'}`}>
+                            {fmtBRL(parseFloat(item.valor) || 0)}
+                          </span>
+                          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                            <button onClick={() => startEditItem(item)} className="p-1 text-stone-300 hover:text-stone-600 rounded-lg"><Edit3 size={12}/></button>
+                            <button onClick={() => removeItem(item.id)} className="p-1 text-stone-200 hover:text-red-400 rounded-lg"><Trash2 size={12}/></button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Form novo item */}
+                  {addingItemIn === cat.id ? (
+                    <div className="flex items-center gap-2 px-4 py-2.5 bg-white/60">
+                      <input className="flex-1 bg-white rounded-lg px-2 py-1.5 text-sm outline-none border border-stone-200"
+                        placeholder="Nome do item" value={itemForm.nome}
+                        onChange={e => setItemForm(f => ({...f, nome: e.target.value}))}
+                        onKeyDown={e => e.key === 'Enter' && handleSaveItem(cat.id)} autoFocus />
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <span className="text-xs text-stone-400">R$</span>
+                        <input type="number" min="0" step="50" placeholder="0"
+                          className="w-24 bg-white rounded-lg px-2 py-1.5 text-sm text-right outline-none border border-stone-200"
+                          value={itemForm.valor} onChange={e => setItemForm(f => ({...f, valor: e.target.value}))}
+                          onKeyDown={e => e.key === 'Enter' && handleSaveItem(cat.id)} />
+                      </div>
+                      <button onClick={() => handleSaveItem(cat.id)} className="p-1 text-green-500 hover:text-green-700"><Check size={14}/></button>
+                      <button onClick={() => { setAddingItemIn(null); setItemForm({ nome: '', valor: '' }) }}
+                        className="p-1 text-stone-300 hover:text-stone-500"><X size={14}/></button>
+                    </div>
+                  ) : (
+                    <button onClick={() => { setAddingItemIn(cat.id); setItemForm({ nome: '', valor: '' }) }}
+                      className="w-full flex items-center gap-2 px-4 py-2.5 text-xs text-stone-400 hover:text-stone-600 hover:bg-white/40 transition-colors">
+                      <Plus size={12} /> Adicionar item
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Resumo total */}
+      {categorias.length > 0 && (
+        <Card className="p-4 mt-2">
+          <div className="space-y-2">
+            {categorias.map(cat => {
+              const total = totalPorCat[cat.id] || 0
+              if (total === 0) return null
+              const cor = SIM_CORES[cat.cor] || SIM_CORES.stone
+              return (
+                <div key={cat.id} className="flex items-center justify-between text-sm">
+                  <span className="text-stone-500 flex items-center gap-1.5">{cat.emoji} {cat.nome}</span>
+                  <span className={`font-medium ${cor.header}`}>{fmtBRL(total)}</span>
+                </div>
+              )
+            })}
+            <div className="pt-2 mt-1 border-t border-stone-100 flex items-center justify-between">
+              <span className="font-bold text-stone-700">Total</span>
+              <span className="text-xl font-bold text-stone-800">{fmtBRL(totalGeral)}</span>
+            </div>
+            {rendaNum > 0 && (
+              <div className={`flex items-center justify-between pt-1 border-t border-stone-100 ${sobra >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                <span className="text-sm font-semibold">{sobra >= 0 ? 'Sobra' : 'Déficit'}</span>
+                <span className="text-lg font-bold">{sobra >= 0 ? '+' : '-'}{fmtBRL(Math.abs(sobra))}</span>
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+    </div>
+  )
+}
+
 // Labels das tabs (mobile strip + desktop pills)
 const TAB_LABELS = [
   'Agenda',
@@ -1516,6 +1862,7 @@ const TAB_LABELS = [
   'Diálogos',
   'Ela 💃',
   'Objetivos 🗺️',
+  'Simulação 💸',
 ]
 
 export function VidaLivrePage() {
@@ -1601,6 +1948,7 @@ export function VidaLivrePage() {
         {tab === 5 && <TabQuestionario />}
         {tab === 6 && <TabEla />}
         {tab === 7 && <TabObjetivos />}
+        {tab === 8 && <TabSimulacao />}
       </div>
 
     </div>
