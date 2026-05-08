@@ -1528,15 +1528,32 @@ const SIM_SEED = [
   { cat: { nome: 'Estilo de Vida e Futuro', emoji: '🎯', cor: 'stone', ordem: 6 }, itens: ['Lazer e Jantares','Academia e Cuidados Pessoais','Reserva de Emergência','Fundo Casamento / Viagens'] },
 ]
 
+const MIMOS_SEED = [
+  { cat: { nome: 'Mimos',     emoji: '💝', cor: 'rose',   ordem: 0 }, itens: [] },
+  { cat: { nome: 'Saídas',    emoji: '🍽️', cor: 'amber',  ordem: 1 }, itens: [] },
+  { cat: { nome: 'Encontros', emoji: '💕', cor: 'violet', ordem: 2 }, itens: [] },
+  { cat: { nome: 'Desejos',   emoji: '⭐', cor: 'teal',   ordem: 3 }, itens: [] },
+  { cat: { nome: 'Estéticas', emoji: '💄', cor: 'green',  ordem: 4 }, itens: [] },
+]
+
 // ─── Aba: Simulação de Gastos ────────────────────────────────────────────────
-function TabSimulacao() {
+function TabSimulacao({
+  tabelaCategorias = 'vl_sim_categorias',
+  tabelaItens = 'vl_sim_itens',
+  rendaKey = 'casalapp_sim_renda',
+  seed = SIM_SEED,
+  emptyTitulo = 'Simule os gastos do casal',
+  emptySub = 'Crie categorias, adicione itens com valores e veja quanto sobra da renda.',
+  emptyEmoji = '💸',
+  rendaLabel = 'Renda mensal do casal',
+} = {}) {
   const { user } = useAuth()
-  const { data: categorias, insert: insertCat, update: updateCat, remove: removeCat } = useDB('vl_sim_categorias', { order: 'ordem', asc: true })
-  const { data: todosItens, insert: insertItem, update: updateItem, remove: removeItem } = useDB('vl_sim_itens', { order: 'ordem', asc: true })
+  const { data: categorias, insert: insertCat, update: updateCat, remove: removeCat } = useDB(tabelaCategorias, { order: 'ordem', asc: true })
+  const { data: todosItens, insert: insertItem, update: updateItem, remove: removeItem } = useDB(tabelaItens, { order: 'ordem', asc: true })
 
   // Renda persiste em localStorage (não precisa de tabela extra)
-  const [renda, setRendaState] = useState(() => { try { return localStorage.getItem('casalapp_sim_renda') || '' } catch { return '' } })
-  const setRenda = (v) => { setRendaState(v); try { localStorage.setItem('casalapp_sim_renda', v) } catch {} }
+  const [renda, setRendaState] = useState(() => { try { return localStorage.getItem(rendaKey) || '' } catch { return '' } })
+  const setRenda = (v) => { setRendaState(v); try { localStorage.setItem(rendaKey, v) } catch {} }
 
   const [expandedCats, setExpandedCats] = useState({})
   const [addingCat, setAddingCat]       = useState(false)
@@ -1623,11 +1640,11 @@ function TabSimulacao() {
   const handleSeed = async () => {
     if (!user?.id) return
     setSeeding(true)
-    for (const { cat, itens } of SIM_SEED) {
-      const { data: newCat } = await supabase.from('vl_sim_categorias').insert({ ...cat, user_id: user.id }).select().single()
+    for (const { cat, itens } of seed) {
+      const { data: newCat } = await supabase.from(tabelaCategorias).insert({ ...cat, user_id: user.id }).select().single()
       if (newCat) {
         for (let i = 0; i < itens.length; i++) {
-          await supabase.from('vl_sim_itens').insert({ categoria_id: newCat.id, user_id: user.id, nome: itens[i], valor: 0, ordem: i })
+          await supabase.from(tabelaItens).insert({ categoria_id: newCat.id, user_id: user.id, nome: itens[i], valor: 0, ordem: i })
         }
       }
     }
@@ -1638,17 +1655,17 @@ function TabSimulacao() {
   if (categorias.length === 0 && !addingCat) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center gap-5">
-        <div className="text-6xl">💸</div>
+        <div className="text-6xl">{emptyEmoji}</div>
         <div>
-          <p className="font-bold text-stone-700 text-xl">Simule os gastos do casal</p>
+          <p className="font-bold text-stone-700 text-xl">{emptyTitulo}</p>
           <p className="text-stone-400 text-sm mt-1.5 max-w-xs mx-auto leading-relaxed">
-            Crie categorias, adicione itens com valores e veja quanto sobra da renda.
+            {emptySub}
           </p>
         </div>
         <div className="flex flex-col gap-3 w-full max-w-xs">
           <button onClick={handleSeed} disabled={seeding}
             className="w-full py-3 rounded-2xl bg-gradient-to-r from-teal-500 to-blue-500 text-white text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm disabled:opacity-60">
-            {seeding ? 'Criando...' : '💸 Carregar categorias padrão'}
+            {seeding ? 'Criando...' : `${emptyEmoji} Carregar categorias padrão`}
           </button>
           <button onClick={() => setAddingCat(true)}
             className="w-full py-3 rounded-2xl bg-stone-100 text-stone-600 text-sm font-medium hover:bg-stone-200 transition-colors">
@@ -1667,7 +1684,7 @@ function TabSimulacao() {
       <Card className="p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div className="flex-1">
-            <label className="text-xs text-stone-400 font-medium mb-1 block">Renda mensal do casal</label>
+            <label className="text-xs text-stone-400 font-medium mb-1 block">{rendaLabel}</label>
             <div className="flex items-center gap-1.5">
               <span className="text-sm text-stone-400 font-medium">R$</span>
               <input
@@ -1863,6 +1880,7 @@ const TAB_LABELS = [
   'Ela 💃',
   'Objetivos 🗺️',
   'Simulação 💸',
+  'Simulação Mimos 💝',
 ]
 
 export function VidaLivrePage() {
@@ -1949,6 +1967,18 @@ export function VidaLivrePage() {
         {tab === 6 && <TabEla />}
         {tab === 7 && <TabObjetivos />}
         {tab === 8 && <TabSimulacao />}
+        {tab === 9 && (
+          <TabSimulacao
+            tabelaCategorias="vl_mimos_categorias"
+            tabelaItens="vl_mimos_itens"
+            rendaKey="casalapp_mimos_renda"
+            seed={MIMOS_SEED}
+            emptyTitulo="Simule os mimos do casal"
+            emptySub="Categorias prontas (Mimos, Saídas, Encontros, Desejos, Estéticas) e veja o orçamento do mês."
+            emptyEmoji="💝"
+            rendaLabel="Orçamento mensal de mimos"
+          />
+        )}
       </div>
 
     </div>

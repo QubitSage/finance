@@ -14,6 +14,7 @@ import {
 } from './pages/AllPages'
 import { TodoPage } from './pages/TodoPage'
 import { VidaLivrePage } from './pages/VidaLivrePage'
+import { PotenciaisPage } from './pages/PotenciaisPage'
 import { ViagensPage } from './pages/ViagensPage'
 import { CasamentoPage } from './pages/CasamentoPage'
 import { MetasPage } from './pages/MetasPage'
@@ -64,6 +65,7 @@ function App() {
         <Route path="compromissos" element={<CompromissosPage />} />
         <Route path="todo" element={<TodoPage />} />
         <Route path="vida-livre" element={<VidaLivrePage />} />
+        <Route path="potenciais" element={<PotenciaisPage />} />
         <Route path="agenda" element={<AgendaPage />} />
         <Route path="memorias" element={<MemoriasPage />} />
         <Route path="transacoes" element={<Navigate to="/financas" replace />} />
