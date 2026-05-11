@@ -16,29 +16,24 @@ const NAV = [
   { to: '/planilha',      icon: Table2,           label: 'Planilha',        group: 'Finanças' },
   { to: '/viagens',       icon: Globe,            label: 'Viagens',         group: 'Casal' },
   { to: '/casamento',     icon: Gem,              label: 'Casamento',       group: 'Casal' },
-  { to: '/agenda',        icon: CalendarDays,     label: 'Agenda',          group: 'Casal' },
-  { to: '/memorias',      icon: Camera,           label: 'Memórias',        group: 'Casal' },
   { to: '/vida-livre',    icon: FlameIcon,        label: 'Vida Livre',      group: 'Casal' },
-  { to: '/potenciais',    icon: Users,            label: 'Potenciais',      group: 'Casal' },
   { to: '/dados',         icon: User,             label: 'Dados',           group: 'Casa' },
   { to: '/mercado',       icon: ShoppingCart,     label: 'Mercado',         group: 'Casa' },
   { to: '/apartamento',   icon: Home,             label: 'Apartamento',     group: 'Casa' },
-  { to: '/todo',          icon: ListTodo,         label: 'To-Do List',      group: 'Casa' },
-  { to: '/metas',         icon: Target,           label: 'Metas',           group: 'Pessoal' },
-  { to: '/compromissos',  icon: CalendarDays,     label: 'Compromissos',    group: 'Pessoal' },
+  { to: '/pendencias',    icon: ListTodo,         label: 'Pendências',      group: 'Casa' },
   { to: '/config',        icon: Settings,         label: 'Configurações',   group: '' },
 ]
 
 // Bottom bar shows only top 5 for mobile
 const BOTTOM_NAV = [
-  { to: '/',           icon: LayoutDashboard, label: 'Home' },
-  { to: '/financas',   icon: ArrowLeftRight,  label: 'Finanças' },
-  { to: '/viagens',    icon: Globe,           label: 'Viagens' },
-  { to: '/metas',      icon: Target,          label: 'Metas' },
-  { to: '/menu',       icon: Menu,            label: 'Menu', isMenu: true },
+  { to: '/',             icon: LayoutDashboard, label: 'Home' },
+  { to: '/financas',     icon: ArrowLeftRight,  label: 'Finanças' },
+  { to: '/viagens',      icon: Globe,           label: 'Viagens' },
+  { to: '/pendencias',   icon: ListTodo,        label: 'Pendências' },
+  { to: '/menu',         icon: Menu,            label: 'Menu', isMenu: true },
 ]
 
-const GROUPS = ['Finanças','Casal','Casa','Pessoal','']
+const GROUPS = ['Finanças','Casal','Casa','']
 
 export default function Layout() {
   const { signOut, user } = useAuth()

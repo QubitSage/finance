@@ -9,19 +9,15 @@ import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
 import {
   ReportsPage, ConfigPage,
-  DataPage, MarketPage, ApartmentPage,
+  DataPage,
   SpreadsheetPage, WifePage, SavingsPage
 } from './pages/AllPages'
-import { TodoPage } from './pages/TodoPage'
+import { ApartmentPage, MarketPage } from './pages/GamifiedPage'
+import { PendenciasPage } from './pages/PendenciasPage'
 import { VidaLivrePage } from './pages/VidaLivrePage'
-import { PotenciaisPage } from './pages/PotenciaisPage'
 import { ViagensPage } from './pages/ViagensPage'
 import { CasamentoPage } from './pages/CasamentoPage'
-import { MetasPage } from './pages/MetasPage'
-import { AgendaPage } from './pages/AgendaPage'
-import { MemoriasPage } from './pages/MemoriasPage'
 import { FinancePage } from './pages/FinancePage'
-import { CompromissosPage } from './pages/CompromissosPage'
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => registerSW())
@@ -61,20 +57,20 @@ function App() {
         <Route path="mercado" element={<MarketPage />} />
         <Route path="apartamento" element={<ApartmentPage />} />
         <Route path="casamento" element={<CasamentoPage />} />
-        <Route path="metas" element={<MetasPage />} />
-        <Route path="compromissos" element={<CompromissosPage />} />
-        <Route path="todo" element={<TodoPage />} />
+        <Route path="pendencias" element={<PendenciasPage />} />
         <Route path="vida-livre" element={<VidaLivrePage />} />
-        <Route path="potenciais" element={<PotenciaisPage />} />
-        <Route path="agenda" element={<AgendaPage />} />
-        <Route path="memorias" element={<MemoriasPage />} />
         <Route path="transacoes" element={<Navigate to="/financas" replace />} />
         <Route path="esposa" element={<Navigate to="/financas" replace />} />
         <Route path="poupanca" element={<Navigate to="/financas" replace />} />
         <Route path="regras" element={<Navigate to="/vida-livre" replace />} />
         <Route path="desejos" element={<Navigate to="/vida-livre" replace />} />
         <Route path="questionario" element={<Navigate to="/vida-livre" replace />} />
-        <Route path="pendencias" element={<Navigate to="/compromissos" replace />} />
+        <Route path="todo" element={<Navigate to="/pendencias" replace />} />
+        <Route path="agenda" element={<Navigate to="/vida-livre" replace />} />
+        <Route path="memorias" element={<Navigate to="/" replace />} />
+        <Route path="metas" element={<Navigate to="/" replace />} />
+        <Route path="compromissos" element={<Navigate to="/pendencias" replace />} />
+        <Route path="potenciais" element={<Navigate to="/vida-livre" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

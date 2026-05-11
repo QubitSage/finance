@@ -18,8 +18,9 @@ const TABS = ['Agenda', 'Registros', 'Combinados', 'Fantasias', 'Mimos', 'Questi
 
 const STATUS_SAIDA = {
   planejado: { label: 'Planejado', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-  aconteceu: { label: 'Aprovado', color: 'bg-green-50 text-green-700 border-green-200' },
-  cancelado:  { label: 'Cancelado', color: 'bg-red-50 text-red-600 border-red-200' },
+  aconteceu: { label: 'Aprovado',  color: 'bg-amber-50 text-amber-700 border-amber-200' },
+  realizado: { label: 'Realizado', color: 'bg-green-50 text-green-700 border-green-200' },
+  cancelado: { label: 'Cancelado', color: 'bg-red-50 text-red-600 border-red-200' },
 }
 
 const SHARE_NIVEL = {
@@ -157,7 +158,7 @@ function useVidaLivreNotifications(userId) {
 }
 
 // ─── Aba: Agenda de Saídas ──────────────────────────────────────────────────
-function TabAgenda({ onCreateRegistro }) {
+function TabAgenda() {
   const { data: saidas, insert, remove, update } = useDB('vl_saidas')
   const [adding, setAdding] = useState(false)
   const [editId, setEditId] = useState(null)
@@ -189,6 +190,8 @@ function TabAgenda({ onCreateRegistro }) {
     await update(s.id, { status: st })
     if (st === 'aconteceu') {
       instantNotify('✅ Saída Aprovada', `Você aprovou "${s.titulo}"`)
+    } else if (st === 'realizado') {
+      instantNotify('🎉 Saída Realizada', `"${s.titulo}" foi marcada como realizada!`)
     }
   }
 
@@ -202,7 +205,7 @@ function TabAgenda({ onCreateRegistro }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">
-          {['todas','planejado','aconteceu','cancelado'].map(f => (
+          {['todas','planejado','aconteceu','realizado','cancelado'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${filter === f ? 'bg-rose-500 text-white' : 'bg-white dark:bg-stone-700 text-stone-600 dark:text-stone-300 border border-stone-200 dark:border-stone-600 hover:border-rose-300 dark:hover:border-rose-700'}`}>
               {f === 'todas' ? 'Todas' : STATUS_SAIDA[f]?.label}
@@ -278,10 +281,10 @@ function TabAgenda({ onCreateRegistro }) {
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   {s.status === 'planejado' && (
-                    <button onClick={() => upStatus(s,'aconteceu')} title="Aprovar saída" className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg"><CheckCircle2 size={16}/></button>
+                    <button onClick={() => upStatus(s,'aconteceu')} title="Aprovar saída" className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg"><CheckCircle2 size={16}/></button>
                   )}
-                  {s.status === 'aconteceu' && onCreateRegistro && (
-                    <button onClick={() => onCreateRegistro(s)} title="Criar registro desta saída" className="p-1.5 text-purple-400 hover:bg-purple-50 rounded-lg"><BookOpen size={15}/></button>
+                  {s.status === 'aconteceu' && (
+                    <button onClick={() => upStatus(s,'realizado')} title="Marcar como realizada (pontua)" className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg"><Sparkles size={16}/></button>
                   )}
                   <button onClick={() => startEdit(s)} className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg"><Edit3 size={15}/></button>
                   <button onClick={() => remove(s.id)} className="p-1.5 text-stone-300 hover:text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={15}/></button>
@@ -891,7 +894,7 @@ function TabMimos() {
   const [editing, setEditing] = useState(null)
   const [filterStatus, setFilterStatus] = useState('todos')
   const [form, setForm] = useState({
-    title: '', description: '', category: 'pessoal', estimated_cost: '',
+    title: '', description: '', como: '', category: 'pessoal', estimated_cost: '',
     status: 'pendente', priority: 'média'
   })
   const { data: wishes, insert, update, remove } = useDB('wishes')
@@ -921,7 +924,7 @@ function TabMimos() {
       await insert(payload)
       setAdding(false)
     }
-    setForm({ title: '', description: '', category: 'pessoal', estimated_cost: '', status: 'pendente', priority: 'média' })
+    setForm({ title: '', description: '', como: '', category: 'pessoal', estimated_cost: '', status: 'pendente', priority: 'média' })
   }
 
   const [pendingAction, setPendingAction] = useState(null) // { id, title, type }
@@ -967,6 +970,7 @@ function TabMimos() {
         <form onSubmit={handleSave} className="card space-y-3 border-2 border-pink-200">
           <input className="input" placeholder="Desejo / Mimo *" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
           <textarea className="input" placeholder="Descrição..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
+          <textarea className="input" placeholder="Como? (a forma, o jeito, o que precisa pra acontecer)" value={form.como} onChange={e => setForm(f => ({ ...f, como: e.target.value }))} rows={2} />
           <div className="grid grid-cols-2 gap-2">
             <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
               {CATEGORIES.map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
@@ -1026,6 +1030,11 @@ function TabMimos() {
                   {w.estimated_cost && <span className="text-xs text-stone-500 font-medium">R$ {parseFloat(w.estimated_cost).toFixed(2)}</span>}
                   <span className={'text-xs px-2 py-0.5 rounded-full ' + (w.status === 'aprovado' ? 'bg-teal-100 text-teal-700' : w.status === 'negado' ? 'bg-rose-100 text-rose-600' : w.status === 'realizado' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700')}>{w.status}</span>
                 </div>
+                {w.como && (
+                  <p className="text-xs text-stone-500 mt-1.5 italic flex items-start gap-1">
+                    <Sparkles size={10} className="mt-0.5 flex-shrink-0 text-pink-300" /> Como: {w.como}
+                  </p>
+                )}
                 {w.resposta && (
                   <p className="text-xs text-stone-400 mt-1.5 italic flex items-start gap-1">
                     <MessageCircle size={10} className="mt-0.5 flex-shrink-0 text-rose-300" /> "{w.resposta}"
@@ -1035,15 +1044,21 @@ function TabMimos() {
               <div className="flex gap-1">
                 {w.status === 'pendente' && pendingAction?.id !== w.id && (
                   <>
-                    <button onClick={() => startAction(w, 'aprovado')} className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center text-teal-600 hover:bg-teal-200 transition-colors">
+                    <button onClick={() => startAction(w, 'aprovado')} className="w-7 h-7 rounded-lg bg-amber-100 flex items-center justify-center text-amber-600 hover:bg-amber-200 transition-colors" title="Aprovar">
                       <Check className="w-3.5 h-3.5" />
                     </button>
-                    <button onClick={() => startAction(w, 'negado')} className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center text-rose-500 hover:bg-rose-200 transition-colors">
+                    <button onClick={() => startAction(w, 'negado')} className="w-7 h-7 rounded-lg bg-rose-100 flex items-center justify-center text-rose-500 hover:bg-rose-200 transition-colors" title="Negar">
                       <X className="w-3.5 h-3.5" />
                     </button>
                   </>
                 )}
-                <button onClick={() => { setEditing(w); setForm({ title: w.title || '', description: w.description || '', category: w.category || 'pessoal', estimated_cost: w.estimated_cost || '', status: w.status || 'pendente', priority: w.priority || 'média' }); setAdding(false) }} className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 transition-colors">
+                {w.status === 'aprovado' && (
+                  <button onClick={async () => { await update(w.id, { status: 'realizado' }); instantNotify('🎉 Mimo Realizado', `"${w.title}" foi marcado como realizado!`) }}
+                    className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center text-green-600 hover:bg-green-200 transition-colors" title="Marcar como realizado (pontua)">
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button onClick={() => { setEditing(w); setForm({ title: w.title || '', description: w.description || '', como: w.como || '', category: w.category || 'pessoal', estimated_cost: w.estimated_cost || '', status: w.status || 'pendente', priority: w.priority || 'média' }); setAdding(false) }} className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center text-stone-500 hover:bg-stone-200 transition-colors">
                   <Edit3 className="w-3.5 h-3.5" />
                 </button>
                 <button onClick={() => remove(w.id)} className="w-7 h-7 rounded-lg bg-stone-100 flex items-center justify-center text-stone-400 hover:bg-rose-100 hover:text-rose-400 transition-colors">
@@ -1872,12 +1887,8 @@ function TabSimulacao({
 // Labels das tabs (mobile strip + desktop pills)
 const TAB_LABELS = [
   'Agenda',
-  'Registros',
   'Combinados',
-  'Fantasias',
   'Mimos 💝',
-  'Diálogos',
-  'Ela 💃',
   'Objetivos 🗺️',
   'Simulação 💸',
   'Simulação Mimos 💝',
@@ -1886,16 +1897,9 @@ const TAB_LABELS = [
 export function VidaLivrePage() {
   const { user } = useAuth()
   const [tab, setTab] = useState(0)
-  const [prefilledRegistro, setPrefilledRegistro] = useState(null)
 
   // Ativa notificações Realtime para o parceiro
   useVidaLivreNotifications(user?.id)
-
-  // Quando clica "Criar Registro" em uma saída aprovada, vai para tab Registros com dados pre-preenchidos
-  const handleCreateRegistro = (saida) => {
-    setPrefilledRegistro(saida)
-    setTab(1)
-  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-900">
@@ -1958,16 +1962,12 @@ export function VidaLivrePage() {
 
       {/* ── Conteúdo ─────────────────────────────────────────────────────── */}
       <div className="px-4 py-4 md:px-6 md:py-4">
-        {tab === 0 && <TabAgenda onCreateRegistro={handleCreateRegistro} />}
-        {tab === 1 && <TabRegistros prefill={prefilledRegistro} onClearPrefill={() => setPrefilledRegistro(null)} />}
-        {tab === 2 && <TabCombinados />}
-        {tab === 3 && <TabFantasias />}
-        {tab === 4 && <TabMimos />}
-        {tab === 5 && <TabQuestionario />}
-        {tab === 6 && <TabEla />}
-        {tab === 7 && <TabObjetivos />}
-        {tab === 8 && <TabSimulacao />}
-        {tab === 9 && (
+        {tab === 0 && <TabAgenda />}
+        {tab === 1 && <TabCombinados />}
+        {tab === 2 && <TabMimos />}
+        {tab === 3 && <TabObjetivos />}
+        {tab === 4 && <TabSimulacao />}
+        {tab === 5 && (
           <TabSimulacao
             tabelaCategorias="vl_mimos_categorias"
             tabelaItens="vl_mimos_itens"
