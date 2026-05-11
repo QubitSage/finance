@@ -1,9 +1,12 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useDB } from '../hooks/useDB'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
+import { instantNotify } from '../lib/notifications'
 import PageHeader from '../components/PageHeader'
 import {
   Trophy, Plus, Trash2, Edit3, X, Zap, Gift, Check,
-  ChevronDown, History, Archive, ArchiveRestore,
+  ChevronDown, History, Archive, ArchiveRestore, CalendarHeart,
 } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -374,6 +377,7 @@ function TabRequisitos() {
 const TABS = ['Recompensas Ativas', 'Arquivadas', 'Requisitos']
 
 export function RecompensasPage() {
+  const { user } = useAuth()
   const [tab, setTab] = useState(0)
   const [addingPremio, setAddingPremio] = useState(false)
   const [editPremioId, setEditPremioId] = useState(null)
@@ -435,12 +439,39 @@ export function RecompensasPage() {
   }
 
   const handleResgatarConfirm = async (premio, nota) => {
+    // 1. Registra o resgate (subtrai do progresso)
     await insertResgate({
       premio_id: premio.id,
       premio_nome: premio.nome,
       custo: premio.custo,
       nota: nota?.trim() || null,
     })
+
+    // 2. Cria entrada na Agenda (vl_saidas) como Aprovado pra amanhã, mesma hora
+    if (user?.id) {
+      const now = new Date()
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      const data = tomorrow.toISOString().slice(0, 10)
+      const hora = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
+      const descricao = 'Você ganhou ' + premio.nome + ' por completar os requisitos' + (nota?.trim() ? ' — ' + nota.trim() : '')
+
+      const { error } = await supabase.from('vl_saidas').insert({
+        user_id: user.id,
+        titulo: '🎁 ' + premio.nome,
+        data,
+        hora,
+        com_quem: null,
+        local: null,
+        status: 'aconteceu', // = Aprovado (label do app)
+        share: 'resumo',
+        notas: descricao,
+      })
+
+      if (!error) {
+        instantNotify('🎁 Recompensa resgatada!', premio.emoji + ' ' + premio.nome + ' — agendada pra amanhã')
+      }
+    }
   }
 
   const handleSavePremio = async () => {
