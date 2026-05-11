@@ -1,9 +1,14 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, createContext, useContext } from 'react'
 import { useDB } from '../hooks/useDB'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { instantNotify, requestPermission } from '../lib/notifications'
 import PageHeader from '../components/PageHeader'
+import RealizarPicker from '../components/RealizarPicker'
+
+// Context que expõe `triggerRealizar(type, item, onConfirmed)` pras tabs
+const RealizarContext = createContext(null)
+const useRealizar = () => useContext(RealizarContext)
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
@@ -160,6 +165,7 @@ function useVidaLivreNotifications(userId) {
 // ─── Aba: Agenda de Saídas ──────────────────────────────────────────────────
 function TabAgenda() {
   const { data: saidas, insert, remove, update } = useDB('vl_saidas')
+  const realizar = useRealizar()
   const [adding, setAdding] = useState(false)
   const [editId, setEditId] = useState(null)
   const [filter, setFilter] = useState('todas')
@@ -284,7 +290,13 @@ function TabAgenda() {
                     <button onClick={() => upStatus(s,'aconteceu')} title="Aprovar saída" className="p-1.5 text-amber-500 hover:bg-amber-50 rounded-lg"><CheckCircle2 size={16}/></button>
                   )}
                   {s.status === 'aconteceu' && (
-                    <button onClick={() => upStatus(s,'realizado')} title="Marcar como realizada (pontua)" className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg"><Sparkles size={16}/></button>
+                    <button
+                      onClick={() => realizar?.trigger('saida', s, async () => { await upStatus(s,'realizado') })}
+                      title="Marcar como realizada (pontua)"
+                      className="p-1.5 text-green-500 hover:bg-green-50 rounded-lg"
+                    >
+                      <Sparkles size={16}/>
+                    </button>
                   )}
                   <button onClick={() => startEdit(s)} className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg"><Edit3 size={15}/></button>
                   <button onClick={() => remove(s.id)} className="p-1.5 text-stone-300 hover:text-red-400 hover:bg-red-50 rounded-lg"><Trash2 size={15}/></button>
@@ -890,6 +902,7 @@ function TabEla() {
 
 // ─── Tab: Mimos da Vianka ──────────────────────────────────────────────────
 function TabMimos() {
+  const realizar = useRealizar()
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState(null)
   const [filterStatus, setFilterStatus] = useState('todos')
@@ -1053,8 +1066,14 @@ function TabMimos() {
                   </>
                 )}
                 {w.status === 'aprovado' && (
-                  <button onClick={async () => { await update(w.id, { status: 'realizado' }); instantNotify('🎉 Mimo Realizado', `"${w.title}" foi marcado como realizado!`) }}
-                    className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center text-green-600 hover:bg-green-200 transition-colors" title="Marcar como realizado (pontua)">
+                  <button
+                    onClick={() => realizar?.trigger('mimo', w, async () => {
+                      await update(w.id, { status: 'realizado' })
+                      instantNotify('🎉 Mimo Realizado', `"${w.title}" foi marcado como realizado!`)
+                    })}
+                    className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center text-green-600 hover:bg-green-200 transition-colors"
+                    title="Marcar como realizado (pontua)"
+                  >
                     <Sparkles className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -1897,11 +1916,42 @@ const TAB_LABELS = [
 export function VidaLivrePage() {
   const { user } = useAuth()
   const [tab, setTab] = useState(0)
+  const [pendingRealizado, setPendingRealizado] = useState(null) // { type, item, onConfirmed }
 
   // Ativa notificações Realtime para o parceiro
   useVidaLivreNotifications(user?.id)
 
+  const triggerRealizar = (type, item, onConfirmed) => {
+    setPendingRealizado({ type, item, onConfirmed })
+  }
+
+  const handleRealizarComplete = async (acao) => {
+    if (!pendingRealizado) return
+    // 1. Atualiza status do item
+    await pendingRealizado.onConfirmed()
+    // 2. Se escolheu uma ação, insere o evento de pontos
+    if (acao && user?.id) {
+      await supabase.from('recompensas_eventos').insert({
+        user_id: user.id,
+        acao_id: acao.id,
+        acao_nome: acao.nome,
+        pontos: acao.pontos,
+        fonte: pendingRealizado.type,
+        ref_id: pendingRealizado.item?.id ? String(pendingRealizado.item.id) : null,
+      })
+      instantNotify('🏆 +' + acao.pontos + ' pts', acao.emoji + ' ' + acao.nome)
+    }
+  }
+
   return (
+    <RealizarContext.Provider value={{ trigger: triggerRealizar }}>
+      {pendingRealizado && (
+        <RealizarPicker
+          pending={pendingRealizado}
+          onClose={() => setPendingRealizado(null)}
+          onComplete={handleRealizarComplete}
+        />
+      )}
     <div className="min-h-screen bg-stone-50 dark:bg-stone-900">
 
       {/* ── Cabeçalho mobile: título + tab strip horizontal ───────────────── */}
@@ -1982,6 +2032,7 @@ export function VidaLivrePage() {
       </div>
 
     </div>
+    </RealizarContext.Provider>
   )
 }
 

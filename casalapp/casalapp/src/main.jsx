@@ -15,6 +15,7 @@ import {
 import { ApartmentPage, MarketPage } from './pages/GamifiedPage'
 import { PendenciasPage } from './pages/PendenciasPage'
 import { VidaLivrePage } from './pages/VidaLivrePage'
+import { RecompensasPage } from './pages/RecompensasPage'
 import { ViagensPage } from './pages/ViagensPage'
 import { CasamentoPage } from './pages/CasamentoPage'
 import { FinancePage } from './pages/FinancePage'
@@ -59,6 +60,7 @@ function App() {
         <Route path="casamento" element={<CasamentoPage />} />
         <Route path="pendencias" element={<PendenciasPage />} />
         <Route path="vida-livre" element={<VidaLivrePage />} />
+        <Route path="recompensas" element={<RecompensasPage />} />
         <Route path="transacoes" element={<Navigate to="/financas" replace />} />
         <Route path="esposa" element={<Navigate to="/financas" replace />} />
         <Route path="poupanca" element={<Navigate to="/financas" replace />} />
