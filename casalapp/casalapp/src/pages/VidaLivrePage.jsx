@@ -1925,21 +1925,22 @@ export function VidaLivrePage() {
     setPendingRealizado({ type, item, onConfirmed })
   }
 
-  const handleRealizarComplete = async (acao) => {
+  const handleRealizarComplete = async (recompensa, requisito) => {
     if (!pendingRealizado) return
-    // 1. Atualiza status do item
+    // 1. Atualiza status do item (vira "realizado")
     await pendingRealizado.onConfirmed()
-    // 2. Se escolheu uma ação, insere o evento de pontos
-    if (acao && user?.id) {
+    // 2. Se escolheu recompensa + requisito, insere o evento de pontos
+    if (recompensa && requisito && user?.id) {
       await supabase.from('recompensas_eventos').insert({
         user_id: user.id,
-        acao_id: acao.id,
-        acao_nome: acao.nome,
-        pontos: acao.pontos,
+        recompensa_id: recompensa.id,
+        acao_id: requisito.id,
+        acao_nome: requisito.nome,
+        pontos: requisito.pontos,
         fonte: pendingRealizado.type,
         ref_id: pendingRealizado.item?.id ? String(pendingRealizado.item.id) : null,
       })
-      instantNotify('🏆 +' + acao.pontos + ' pts', acao.emoji + ' ' + acao.nome)
+      instantNotify('🏆 +' + requisito.pontos + ' pts em ' + recompensa.nome, requisito.emoji + ' ' + requisito.nome)
     }
   }
 
