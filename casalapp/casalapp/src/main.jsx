@@ -13,7 +13,7 @@ import {
   SpreadsheetPage, WifePage, SavingsPage
 } from './pages/AllPages'
 import { ApartmentPage, MarketPage } from './pages/GamifiedPage'
-import { PendenciasPage } from './pages/PendenciasPage'
+import { TrabalhoPage } from './pages/TrabalhoPage'
 import { VidaLivrePage } from './pages/VidaLivrePage'
 import { RecompensasPage } from './pages/RecompensasPage'
 import { ViagensPage } from './pages/ViagensPage'
@@ -58,7 +58,7 @@ function App() {
         <Route path="mercado" element={<MarketPage />} />
         <Route path="apartamento" element={<ApartmentPage />} />
         <Route path="casamento" element={<CasamentoPage />} />
-        <Route path="pendencias" element={<PendenciasPage />} />
+        <Route path="trabalho" element={<TrabalhoPage />} />
         <Route path="vida-livre" element={<VidaLivrePage />} />
         <Route path="recompensas" element={<RecompensasPage />} />
         <Route path="transacoes" element={<Navigate to="/financas" replace />} />
@@ -67,11 +67,12 @@ function App() {
         <Route path="regras" element={<Navigate to="/vida-livre" replace />} />
         <Route path="desejos" element={<Navigate to="/vida-livre" replace />} />
         <Route path="questionario" element={<Navigate to="/vida-livre" replace />} />
-        <Route path="todo" element={<Navigate to="/pendencias" replace />} />
+        <Route path="todo" element={<Navigate to="/trabalho" replace />} />
+        <Route path="pendencias" element={<Navigate to="/trabalho" replace />} />
         <Route path="agenda" element={<Navigate to="/vida-livre" replace />} />
         <Route path="memorias" element={<Navigate to="/" replace />} />
         <Route path="metas" element={<Navigate to="/" replace />} />
-        <Route path="compromissos" element={<Navigate to="/pendencias" replace />} />
+        <Route path="compromissos" element={<Navigate to="/trabalho" replace />} />
         <Route path="potenciais" element={<Navigate to="/vida-livre" replace />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

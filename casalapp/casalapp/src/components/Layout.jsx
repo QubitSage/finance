@@ -5,7 +5,7 @@ import {
   LayoutDashboard, ArrowLeftRight, Heart, PiggyBank, BarChart2,
   Globe, Sparkles, HelpCircle, User, ShoppingCart, Home,
   Gem, CalendarDays, Target, ClipboardList, Settings, LogOut, Menu, X, Table2, ListTodo, Flame as FlameIcon,
-  Camera, Moon, Sun, Users, Trophy,
+  Camera, Moon, Sun, Users, Trophy, Briefcase,
 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -21,7 +21,7 @@ const NAV = [
   { to: '/dados',         icon: User,             label: 'Dados',           group: 'Casa' },
   { to: '/mercado',       icon: ShoppingCart,     label: 'Mercado',         group: 'Casa' },
   { to: '/apartamento',   icon: Home,             label: 'Apartamento',     group: 'Casa' },
-  { to: '/pendencias',    icon: ListTodo,         label: 'Pendências',      group: 'Casa' },
+  { to: '/trabalho',      icon: Briefcase,        label: 'Trabalho',        group: 'Casa' },
   { to: '/config',        icon: Settings,         label: 'Configurações',   group: '' },
 ]
 
@@ -30,7 +30,7 @@ const BOTTOM_NAV = [
   { to: '/',             icon: LayoutDashboard, label: 'Home' },
   { to: '/financas',     icon: ArrowLeftRight,  label: 'Finanças' },
   { to: '/viagens',      icon: Globe,           label: 'Viagens' },
-  { to: '/pendencias',   icon: ListTodo,        label: 'Pendências' },
+  { to: '/trabalho',     icon: Briefcase,       label: 'Trabalho' },
   { to: '/menu',         icon: Menu,            label: 'Menu', isMenu: true },
 ]
 
