@@ -39,6 +39,45 @@ const DEFAULT_STATE = {
 
 let cache = null
 const listeners = new Set()
+const persistHooks = new Set()
+const cloudListeners = new Set()
+
+export function onLocalPersist(fn) {
+  persistHooks.add(fn)
+  return () => persistHooks.delete(fn)
+}
+
+export function onCloudStatus(fn) {
+  cloudListeners.add(fn)
+  return () => cloudListeners.delete(fn)
+}
+
+export function notifyCloudListeners(event) {
+  cloudListeners.forEach((fn) => fn(event))
+}
+
+export function stateForCloud() {
+  const state = load()
+  const { sessionUser, activeUser, ...sharedSettings } = state.settings || {}
+  return { ...state, settings: { ...sharedSettings, sessionUser: null, activeUser: sharedSettings.user1 || 'Bruno' } }
+}
+
+export function hydrateFromCloud(remoteState) {
+  const local = load()
+  const merged = {
+    ...DEFAULT_STATE,
+    ...remoteState,
+    settings: {
+      ...DEFAULT_STATE.settings,
+      ...(remoteState.settings || {}),
+      sessionUser: local.settings?.sessionUser ?? null,
+      activeUser: local.settings?.activeUser ?? remoteState.settings?.activeUser ?? 'Bruno',
+    },
+  }
+  cache = merged
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
+  listeners.forEach((fn) => fn(cache))
+}
 
 function load() {
   if (cache) return cache
@@ -55,6 +94,7 @@ function save(next) {
   cache = next
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   listeners.forEach((fn) => fn(cache))
+  persistHooks.forEach((fn) => fn())
 }
 
 export function subscribe(fn) {

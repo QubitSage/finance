@@ -1,42 +1,54 @@
 # Vida Livre
 
-App do casal — agenda, mimos, marcos, regras e planejamento. Dados locais no celular (`localStorage`).
+App do casal — agenda, mimos, marcos, regras e planejamento. **Site web** com sync na nuvem (Supabase): Bruno e Vianka usam cada um no seu navegador, em qualquer lugar.
 
 ## Desenvolvimento
 
 ```bash
 cd vida-livre
+cp .env.example .env.local   # preencha com Supabase
 npm install
 npm run dev
 ```
 
-## Deploy
+Sem `.env.local`, o app roda só no navegador local (sem sync).
 
-### Android (APK automático)
+## Supabase (obrigatório para sync entre dispositivos)
 
-Cada push na `main` que altera `vida-livre/` gera um APK na release **[apk-latest](https://github.com/QubitSage/finance/releases/tag/apk-latest)**.
+1. Projeto no [Supabase](https://supabase.com) (pode reutilizar o do CasalApp antigo)
+2. **SQL Editor** → cole e execute `supabase/schema.sql`
+3. **Authentication → Users** → crie um usuário do casal (ex.: `casal@casal.app` + senha forte)
+4. **Database → Replication** → confirme que `vl_couple_state` está na publicação realtime
+5. Copie **Project URL** e **anon key** para as variáveis abaixo
 
-No celular: baixar `vida-livre.apk` → instalar (substitui o CasalApp antigo, mesmo `com.casalapp.app`).
+### Variáveis de ambiente
 
-### Web (Vercel)
+| Variável | Descrição |
+|----------|-----------|
+| `VITE_SUPABASE_URL` | URL do projeto |
+| `VITE_SUPABASE_ANON_KEY` | Chave anon (pública) |
+| `VITE_COUPLE_EMAIL` | E-mail do usuário compartilhado do casal |
+| `VITE_COUPLE_PASSWORD` | Senha desse usuário |
 
-O `vercel.json` na raiz do repositório aponta o deploy para `vida-livre/`. Faça redeploy no painel Vercel após o push.
+No **Vercel** (project-rz2rl): Settings → Environment Variables → adicione as 4 para Production.
 
-Se o build falhar, confira em **Settings → General → Node.js Version** que está em **20.x**.
+## Deploy web
 
-### GitHub Actions (APK)
+Site: **https://project-rz2rl.vercel.app**
 
-Se o workflow falhar em poucos segundos **sem rodar nenhum step**, o problema é na conta GitHub (Actions desabilitado ou limite de minutos). Abra [Actions](https://github.com/QubitSage/finance/actions) e veja a mensagem vermelha no topo do job.
+Root Directory no Vercel: `vida-livre`. Node **20.x**.
 
-Depois de corrigir: **Actions → Build Android APK → Run workflow** (manual).
+## Login
 
-### Build local Android
+Código pessoal de 6 dígitos (não vai para a nuvem — fica só no aparelho):
 
-```bash
-npm run cap:sync
-npm run cap:open
-```
+| Pessoa | Código |
+|--------|--------|
+| Vianka | `220696` |
+| Bruno | `160497` |
 
-## Logins
+Os **dados do casal** (agenda, mimos, marcos, regras…) sincronizam via Supabase. Cada um entra com seu código e vê o seu lado.
 
-- **Vianka** e **Bruno** — escolha na tela inicial. Dados separados por sessão; acordos do casal são compartilhados.
+## Android (opcional)
+
+APK via GitHub Actions — ver workflow em `.github/workflows/build-android.yml`.
