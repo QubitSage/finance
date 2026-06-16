@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { resolveUserFromCode } from '../lib/constants'
 import { getState, subscribe, updateSettings } from '../lib/storage'
 
 const SessionContext = createContext(null)
@@ -17,6 +18,13 @@ export function SessionProvider({ children }) {
 
   const login = (name) => {
     updateSettings({ sessionUser: name, activeUser: name })
+  }
+
+  const loginWithCode = (code) => {
+    const name = resolveUserFromCode(code, user1, user2)
+    if (!name) return false
+    login(name)
+    return true
   }
 
   const logout = () => {
@@ -42,6 +50,7 @@ export function SessionProvider({ children }) {
         canApproveMimos: isPartner,
         canEditMimosFixos: isPartner,
         login,
+        loginWithCode,
         logout,
       }}
     >

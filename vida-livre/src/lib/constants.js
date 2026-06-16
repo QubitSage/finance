@@ -1,3 +1,13 @@
+export const PARTNER_ACCESS_CODE = '160497'
+export const HER_ACCESS_CODE = '220696'
+
+export function resolveUserFromCode(code, user1, user2) {
+  const digits = String(code).replace(/\D/g, '')
+  if (digits === HER_ACCESS_CODE) return user2
+  if (digits === PARTNER_ACCESS_CODE) return user1
+  return null
+}
+
 export const STATUS_SAIDA = {
   planejado: { label: 'Planejado', className: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
   aconteceu: { label: 'Aprovado', className: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
