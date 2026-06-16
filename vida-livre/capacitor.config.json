@@ -2,7 +2,6 @@
   "appId": "com.casalapp.app",
   "appName": "Vida Livre",
   "webDir": "dist",
-  "bundledWebRuntime": false,
   "android": {
     "allowMixedContent": true,
     "captureInput": true

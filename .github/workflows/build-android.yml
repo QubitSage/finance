@@ -27,6 +27,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: vida-livre/package-lock.json
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -39,7 +41,7 @@ jobs:
 
       - name: Install npm dependencies
         working-directory: vida-livre
-        run: npm ci
+        run: npm install
 
       - name: Build Vite web app
         working-directory: vida-livre
