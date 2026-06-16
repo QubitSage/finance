@@ -4,11 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'casalapp/casalapp/src/**'
-      - 'casalapp/casalapp/public/**'
-      - 'casalapp/casalapp/index.html'
-      - 'casalapp/casalapp/package.json'
-      - 'casalapp/casalapp/capacitor.config.json'
+      - 'vida-livre/**'
       - '.github/workflows/build-android.yml'
   workflow_dispatch:
 
@@ -42,53 +38,52 @@ jobs:
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
       - name: Install npm dependencies
-        working-directory: casalapp/casalapp
-        run: npm install
+        working-directory: vida-livre
+        run: npm ci
 
       - name: Build Vite web app
-        working-directory: casalapp/casalapp
+        working-directory: vida-livre
         run: npm run build
 
       - name: Add Capacitor Android platform
-        working-directory: casalapp/casalapp
+        working-directory: vida-livre
         run: npx cap add android 2>/dev/null || true
 
       - name: Sync web assets into Android
-        working-directory: casalapp/casalapp
+        working-directory: vida-livre
         run: npx cap sync android
 
       - name: Build debug APK
-        working-directory: casalapp/casalapp/android
+        working-directory: vida-livre/android
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon -q
 
       - name: Rename APK
-        run: |
-          cp casalapp/casalapp/android/app/build/outputs/apk/debug/app-debug.apk casal-app.apk
+        run: cp vida-livre/android/app/build/outputs/apk/debug/app-debug.apk vida-livre.apk
 
       - name: Upload artifact (90 dias)
         uses: actions/upload-artifact@v4
         with:
-          name: casal-app-apk
-          path: casal-app.apk
+          name: vida-livre-apk
+          path: vida-livre.apk
           retention-days: 90
 
-      - name: Publicar como GitHub Release (link fixo)
+      - name: Publicar como GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
-          name: "CasalApp — APK mais recente"
+          name: "Vida Livre — APK mais recente"
           body: |
             ### Instalar no Android
 
-            1. Baixe o arquivo `casal-app.apk` abaixo
+            1. Baixe o arquivo `vida-livre.apk` abaixo
             2. Abra no celular
-            3. Se pedir permissão para "instalar de fontes desconhecidas" → Permitir
-            4. Instalar e abrir 🎉
+            3. Se pedir permissão para instalar de fontes desconhecidas → Permitir
+            4. Instalar e abrir
 
-            > Gerado automaticamente a cada atualização do app.
-          files: casal-app.apk
+            > Substitui o CasalApp anterior (mesmo pacote `com.casalapp.app`).
+          files: vida-livre.apk
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

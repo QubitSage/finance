@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --color-vl-bg: #0c0a12;
+  --color-vl-surface: #14101f;
+  --color-vl-elevated: #1c1629;
+  --color-vl-border: #2a2238;
+  --color-vl-muted: #8b7fa8;
+  --color-vl-text: #f0eaf8;
+  --color-vl-accent: #e879f9;
+  --color-vl-accent-dim: #a855f7;
+  --color-vl-cyan: #22d3ee;
+  --color-vl-rose: #fb7185;
+  --color-vl-success: #4ade80;
+  --color-vl-warning: #fbbf24;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: clip;
+  }
+  body {
+    @apply bg-[var(--color-vl-bg)] text-[var(--color-vl-text)] font-sans antialiased min-h-screen;
+  }
+}
+
+@layer components {
+  .vl-card {
+    @apply rounded-2xl border border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4 shadow-lg shadow-black/20;
+  }
+  .vl-card-glow {
+    @apply rounded-2xl border border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4;
+    box-shadow: 0 0 40px -12px color-mix(in srgb, var(--color-vl-accent) 25%, transparent);
+  }
+  .vl-input {
+    @apply w-full rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] px-3 py-2.5 text-sm text-[var(--color-vl-text)] placeholder:text-[var(--color-vl-muted)] outline-none transition-all focus:border-[var(--color-vl-accent)] focus:ring-2 focus:ring-[var(--color-vl-accent)]/20;
+  }
+  .vl-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[var(--color-vl-accent-dim)] to-[var(--color-vl-accent)] px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/20 transition-all hover:opacity-90 active:scale-[0.98];
+  }
+  .vl-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] px-4 py-2.5 text-sm font-medium text-[var(--color-vl-muted)] transition-all hover:border-[var(--color-vl-accent)]/40 hover:text-[var(--color-vl-text)] active:scale-[0.98];
+  }
+  .vl-btn-icon {
+    @apply flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)] transition-all hover:border-[var(--color-vl-accent)]/40 hover:text-[var(--color-vl-text)];
+  }
+  .vl-pill {
+    @apply flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all;
+  }
+  .vl-pill-active {
+    @apply bg-gradient-to-r from-[var(--color-vl-accent-dim)] to-[var(--color-vl-accent)] text-white shadow-md shadow-fuchsia-500/25;
+  }
+  .vl-pill-inactive {
+    @apply border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)] hover:border-[var(--color-vl-accent)]/30 hover:text-[var(--color-vl-text)];
+  }
+  .vl-label {
+    @apply mb-1 block text-xs font-medium text-[var(--color-vl-muted)];
+  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
