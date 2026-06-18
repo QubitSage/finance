@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, CalendarHeart, BookOpen, Sparkles, Heart,
-  Star, Map, Wallet, Gift, Lock, Menu, X, LogOut, Trophy, ScrollText, Globe, Bell,
+  Star, Map, Wallet, Gift, Lock, Menu, X, LogOut, Trophy, ScrollText, Globe, Bell, HelpCircle,
 } from 'lucide-react'
 import { getModulesForSession } from '../lib/views'
 import { useSession } from '../contexts/SessionContext'
