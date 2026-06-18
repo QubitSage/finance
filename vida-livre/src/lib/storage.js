@@ -240,6 +240,7 @@ export function importBatch({
   user2Name,
   questionario,
   appendQuestionario = true,
+  questionarioPatches,
 }) {
   const state = load()
   const imported = state.settings.imported_batches || []
@@ -401,6 +402,23 @@ export function importBatch({
     next.questionario = appendQuestionario
       ? [...(state.questionario || []), ...rows]
       : rows
+  }
+
+  if (questionarioPatches?.length) {
+    const user2 = user2Name || state.settings.user2
+    const now = new Date().toISOString()
+    next.questionario = (next.questionario || state.questionario || []).map((q) => {
+      const patch = questionarioPatches.find((p) =>
+        q.pergunta?.toLowerCase().includes(p.match.toLowerCase())
+      )
+      if (!patch) return q
+      const respostas = q.respostas || []
+      if (respostas.some((r) => r.texto === patch.resposta)) return q
+      return {
+        ...q,
+        respostas: [...respostas, { texto: patch.resposta, de: user2, data: now }],
+      }
+    })
   }
 
   next.settings = nextSettings

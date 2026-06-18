@@ -24,6 +24,12 @@ import {
   BATCH_6_SETTINGS,
 } from '../data/batch-6-mesada-planejamento'
 
+import {
+  BATCH_7_ID,
+  BATCH_7_COMBINADOS,
+  BATCH_7_QUESTIONARIO_PATCHES,
+} from '../data/batch-7-respostas-planejamento'
+
 export const BATCH_4_ID = 'batch-4-marcos-livres'
 
 export function runPendingBatchImports() {
@@ -75,6 +81,15 @@ export function runPendingBatchImports() {
     settingsPatch: BATCH_6_SETTINGS,
   })
   results.push({ batch: BATCH_6_ID, ...r6 })
+
+  const r7 = importBatch({
+    batchId: BATCH_7_ID,
+    combinados: BATCH_7_COMBINADOS,
+    appendCombinados: true,
+    questionarioPatches: BATCH_7_QUESTIONARIO_PATCHES,
+    user2Name: 'Vianka',
+  })
+  results.push({ batch: BATCH_7_ID, ...r7 })
 
   return results
 }

@@ -143,7 +143,13 @@ export default function AgendaPage({ onNavigate }) {
 
       {!canEdit && (
         <p className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-200">
-          Saídas e dates compartilhados — o resto é privado dela.
+          Saídas e dates compartilhados — ela prioriza sozinha e dates; casal só quando ela quiser (aviso prévio).
+        </p>
+      )}
+
+      {canEdit && (
+        <p className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
+          Prioridade: sair sozinha e dates. Com ele só se você quiser — avisa bem antes.
         </p>
       )}
 

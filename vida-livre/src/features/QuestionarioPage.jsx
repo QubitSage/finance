@@ -94,8 +94,8 @@ export default function QuestionarioPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
-        Perguntas em aberto — respondam juntos quando fizer sentido. Planejamento fica aqui até ela responder.
+      <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+        Perguntas de planejamento respondidas — combinado registrado. Histórico completo em Planejamento e Em aberto.
       </p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <FilterPills options={['todas', ...Q_CATS]} value={filterCat} onChange={setFilterCat} />

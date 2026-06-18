@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Map, HelpCircle, ChevronRight, Plus, Wallet, Sparkles } from 'lucide-react'
+import { Map, HelpCircle, Wallet, Sparkles } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useLocalDB } from '../hooks/useLocalDB'
-import { useScopedDB } from '../hooks/useScopedDB'
 import { getMesadaResumo, ensureMesadaCredit, registrarMovimento } from '../lib/mesada'
 import {
-  VIES_PLANEJAMENTO, VIES_PERGUNTAS_ABERTAS, PROXIMOS_PASSOS,
+  VIES_PLANEJAMENTO, VIES_ACORDOS_RESPONDIDOS, PROXIMOS_PASSOS,
   MESADA_ORCAMENTO, fmtBRL,
 } from '../lib/constants'
 import { subscribe } from '../lib/storage'
@@ -14,17 +13,14 @@ import PlanejamentoCard from '../components/PlanejamentoCard'
 import { Badge } from '../components/ui/primitives'
 
 export default function PlanejamentoPage({ onNavigate }) {
-  const { user, isHer, isPartner } = useSession()
+  const { isPartner } = useSession()
   const [, tick] = useState(0)
-  const { data: questions } = useScopedDB('questionario', { scope: 'couple' })
   const { data: movimentos } = useLocalDB('mesada_movimentos', { order: 'created_at', asc: false })
 
   useEffect(() => subscribe(() => tick((n) => n + 1)), [])
   useEffect(() => { ensureMesadaCredit(); tick((n) => n + 1) }, [])
 
   const resumo = getMesadaResumo()
-  const abertas = questions.filter((q) => q.categoria === 'planejamento' && !(q.respostas || []).some((r) => r.de && r.de !== user))
-  const abertasCount = questions.filter((q) => q.categoria === 'planejamento' && (q.respostas || []).length === 0).length
 
   const [showMov, setShowMov] = useState(false)
   const [movForm, setMovForm] = useState({ tipo: 'debito', valor: '', bucket: 'estetica', nota: '' })
@@ -95,32 +91,25 @@ export default function PlanejamentoPage({ onNavigate }) {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-amber-200">
-            <HelpCircle size={16} /> Em aberto — aguardando ela
+          <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-200">
+            <HelpCircle size={16} /> Combinado — respostas dela
           </h3>
-          {abertasCount > 0 && (
-            <button type="button" onClick={() => { setNavPreset({ questionarioFilter: 'planejamento' }); onNavigate?.('em-aberto') }} className="text-xs text-amber-300 hover:underline">
-              Ver todas ({abertasCount})
-            </button>
-          )}
+          <button type="button" onClick={() => { setNavPreset({ questionarioFilter: 'planejamento' }); onNavigate?.('em-aberto') }} className="text-xs text-emerald-300 hover:underline">
+            Ver no questionário
+          </button>
         </div>
         <div className="space-y-2">
-          {VIES_PERGUNTAS_ABERTAS.map((p) => (
-            <div key={p.id} className="vl-card border-amber-500/30 border-dashed bg-amber-500/5">
-              <p className="flex items-center gap-2 text-sm font-medium text-amber-200">
+          {VIES_ACORDOS_RESPONDIDOS.map((p) => (
+            <div key={p.id} className="vl-card border-emerald-500/25 bg-emerald-500/5">
+              <p className="flex items-center gap-2 text-sm font-medium text-emerald-200">
                 <span>{p.emoji}</span> {p.titulo}
-                <Badge className="bg-amber-500/15 text-amber-300 text-[10px]">aberto</Badge>
+                <Badge className="bg-emerald-500/15 text-emerald-300 text-[10px]">respondido</Badge>
               </p>
-              {p.contexto && <p className="mt-1 text-xs text-[var(--color-vl-muted)]">{p.contexto}</p>}
-              <p className="mt-2 text-sm italic text-amber-100/90">{p.pergunta}</p>
+              <p className="mt-1 text-xs text-[var(--color-vl-muted)]">{p.pergunta}</p>
+              <p className="mt-2 text-sm leading-relaxed text-emerald-100/95">{p.resposta}</p>
             </div>
           ))}
         </div>
-        {isHer && abertas.length > 0 && (
-          <button type="button" onClick={() => { setNavPreset({ questionarioFilter: 'planejamento' }); onNavigate?.('em-aberto') }} className="vl-btn-primary mt-3 w-full text-sm">
-            Responder perguntas <ChevronRight size={14} className="inline" />
-          </button>
-        )}
       </section>
 
       {movimentos.length > 0 && (

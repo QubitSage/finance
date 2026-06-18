@@ -16,7 +16,7 @@ export const STATUS_SAIDA = {
 }
 
 export const TIPO_AGENDA = {
-  saida: { label: 'Saída', emoji: '🚗', desc: 'Sair para qualquer lugar', className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' },
+  saida: { label: 'Saída', emoji: '🚗', desc: 'Sair sozinha ou acompanhada — prioridade dela', className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' },
   date: { label: 'Date', emoji: '💕', desc: 'Encontro romântico com alguém', className: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
 }
 
@@ -158,7 +158,7 @@ export const MESADA_CREDITO_CICLO = 2000
 export const MESADA_ORCAMENTO = {
   estetica: {
     label: 'Estética',
-    desc: 'Salão e derivados',
+    desc: 'Salão, manutenção, unha, pé, cílios e derivados',
     limite: 500,
     emoji: '💅',
     className: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
@@ -204,24 +204,31 @@ export const FIXO_MESADA_BUCKET = {
 /** Viés de planejamento — regras acordadas */
 export const VIES_PLANEJAMENTO = [
   {
+    id: 'agenda',
+    titulo: 'Agenda & saídas',
+    emoji: '📅',
+    regra: 'Preferência por sair sozinha e ter dates. Sair com o marido só se ela quiser — avisa bem antes, sem pressão.',
+    status: 'ativo',
+  },
+  {
     id: 'transporte',
     titulo: 'Transporte / translado',
     emoji: '🚕',
-    regra: 'Planejado → não desconta da mesada dela. Escondido, sem planejamento ou de última hora → desconta do saldo dela.',
+    regra: 'Planejado → não desconta da mesada. Escondido, sem planejamento ou de última hora → desconta do saldo dela. Translado não planejado: Bruno paga.',
+    status: 'ativo',
+  },
+  {
+    id: 'manutencao',
+    titulo: 'Manutenção',
+    emoji: '💅',
+    regra: 'Manutenção = estética (salão, unha, pé, cílios, depilação, limpeza de pele…). Entra no bucket Estética da mesada (R$500).',
     status: 'ativo',
   },
   {
     id: 'looks',
     titulo: 'Looks & mimos',
     emoji: '👗',
-    regra: 'Para usar com outra pessoa ou sozinha → desconta. Para usar com o marido → não desconta (só avisar aqui).',
-    status: 'ativo',
-  },
-  {
-    id: 'preferencia',
-    titulo: 'Prioridade nas saídas',
-    emoji: '✨',
-    regra: 'Ela tem preferência por sair sozinha ou acompanhada. Marido fica em segundo plano — sem culpa, com carinho.',
+    regra: 'Sozinha ou com outra pessoa → desconta da mesada. Com o marido → não desconta; avisa bem antes pelo app ou mensagem.',
     status: 'ativo',
   },
   {
@@ -240,31 +247,28 @@ export const VIES_PLANEJAMENTO = [
   },
 ]
 
-/** Perguntas em aberto — aguardando resposta dela */
-export const VIES_PERGUNTAS_ABERTAS = [
+/** Respostas firmadas — combinado do casal */
+export const VIES_ACORDOS_RESPONDIDOS = [
+  {
+    id: 'prioridade_saidas',
+    titulo: 'Agenda & saídas',
+    emoji: '📅',
+    pergunta: 'Priorizar sozinha, dates ou saídas em casal?',
+    resposta: 'Prefere sair sozinha e ter dates. Sair comigo só se ela quiser — avisa bem antes.',
+  },
   {
     id: 'translado_manutencao',
-    titulo: 'Translado & manutenção',
-    emoji: '🔧',
-    contexto: 'Translado: você paga quando não for planejado · eu pago o resto.',
-    pergunta: 'O que você quer dizer com manutenção?',
-    status: 'aberto',
+    titulo: 'Manutenção',
+    emoji: '💅',
+    pergunta: 'O que é manutenção?',
+    resposta: 'Manutenção é estética — salão, unha, pé, cílios, depilação e cuidados do bucket Estética. Translado não planejado: Bruno paga; o resto sai da mesada dela.',
   },
   {
     id: 'looks_sem_mim',
-    titulo: 'Looks sem mim',
-    emoji: '👠',
-    contexto: 'Sem mim: sai do seu saldo + registrar no site.',
-    pergunta: 'Comigo: me avisa aqui — como prefere avisar?',
-    status: 'aberto',
-  },
-  {
-    id: 'prioridade_saidas',
-    titulo: 'Prioridade nas saídas',
-    emoji: '🌙',
-    contexto: 'Você pretende priorizar sozinha / sem mim / dates?',
-    pergunta: 'Ou pretende priorizar mais saídas em casal?',
-    status: 'aberto',
+    titulo: 'Looks & saídas com marido',
+    emoji: '💑',
+    pergunta: 'Como avisar quando for comigo?',
+    resposta: 'Avisa bem antes — pelo app ou mensagem. Saída em casal só quando ela quiser; prioridade é sozinha e dates.',
   },
 ]
 
