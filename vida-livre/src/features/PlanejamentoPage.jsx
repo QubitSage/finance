@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Map, HelpCircle, Wallet, Sparkles } from 'lucide-react'
+import { Map, HelpCircle, Wallet, Sparkles, FileImage } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useLocalDB } from '../hooks/useLocalDB'
 import { getMesadaResumo, ensureMesadaCredit, registrarMovimento, getMesadaOrcamento } from '../lib/mesada'
@@ -10,10 +10,11 @@ import { subscribe } from '../lib/storage'
 import { setNavPreset } from '../lib/nav'
 import PlanejamentoCard from '../components/PlanejamentoCard'
 import MesadaConfigPanel from '../components/MesadaConfigPanel'
+import PlanejamentoExportModal from '../components/PlanejamentoExportModal'
 import { Badge } from '../components/ui/primitives'
 
 export default function PlanejamentoPage({ onNavigate }) {
-  const { user, isPartner } = useSession()
+  const { user, isPartner, user2 } = useSession()
   const [, tick] = useState(0)
   const { data: movimentos } = useLocalDB('mesada_movimentos', { order: 'created_at', asc: false })
   const orcamento = getMesadaOrcamento()
@@ -24,6 +25,7 @@ export default function PlanejamentoPage({ onNavigate }) {
   const resumo = getMesadaResumo()
 
   const [showMov, setShowMov] = useState(false)
+  const [showExport, setShowExport] = useState(false)
   const [movForm, setMovForm] = useState({ tipo: 'debito', valor: '', bucket: 'estetica', nota: '' })
 
   const submitMov = (e) => {
@@ -38,6 +40,21 @@ export default function PlanejamentoPage({ onNavigate }) {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <PlanejamentoCard resumo={resumo} />
+
+      <button
+        type="button"
+        onClick={() => setShowExport(true)}
+        className="vl-btn-primary w-full text-sm"
+      >
+        <FileImage size={16} /> Gerar card para imprimir / salvar
+      </button>
+
+      <PlanejamentoExportModal
+        open={showExport}
+        onClose={() => setShowExport(false)}
+        resumo={resumo}
+        nome={user2}
+      />
 
       {isPartner && (
         <>

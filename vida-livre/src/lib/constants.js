@@ -273,7 +273,6 @@ export const VIES_ACORDOS_RESPONDIDOS = [
 ]
 
 export const PROXIMOS_PASSOS = [
-  { emoji: '🎨', titulo: 'Card visual de planejamento', desc: 'Montar lance tipo Canva e mandar pra ela', status: 'em_breve' },
   { emoji: '💬', titulo: 'Bot no WhatsApp', desc: 'Organizar gastos e custos no dia a dia', status: 'em_breve' },
 ]
 
