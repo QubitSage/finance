@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, CalendarHeart, BookOpen, Sparkles, Heart,
-  Star, Map, Wallet, Gift, Lock, Menu, X, LogOut, Trophy, ScrollText, Globe, Bell, HelpCircle,
+  Star, Map, Wallet, Gift, Lock, LogOut, Trophy, ScrollText, Globe, Bell, HelpCircle,
 } from 'lucide-react'
 import { getModulesForSession } from '../lib/views'
 import { useSession } from '../contexts/SessionContext'
 import { subscribe } from '../lib/storage'
 import { getPartnerPendingCount } from '../lib/pendencias'
 import SyncIndicator from './SyncIndicator'
+import MobileBottomNav from './MobileBottomNav'
+import MobileMoreSheet from './MobileMoreSheet'
 
 const ICONS = {
   Home, CalendarHeart, BookOpen, Sparkles, Heart,
@@ -17,7 +19,7 @@ const ICONS = {
 
 export default function Layout({ active, onNavigate, children }) {
   const { sessionUser, isHer, user2, logout } = useSession()
-  const [menuOpen, setMenuOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
   const [, tick] = useState(0)
   const modules = getModulesForSession(isHer)
   const activeMod = modules.find((m) => m.id === active)
@@ -25,13 +27,18 @@ export default function Layout({ active, onNavigate, children }) {
 
   useEffect(() => subscribe(() => tick((n) => n + 1)), [])
 
+  useEffect(() => {
+    setMoreOpen(false)
+  }, [active])
+
   const handleLogout = () => {
     logout()
-    menuOpen && setMenuOpen(false)
+    setMoreOpen(false)
   }
 
   return (
-    <div className="flex min-h-screen">
+    <div className="vl-app-shell flex min-h-[100dvh]">
+      {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4 md:flex">
         <div className="mb-6 px-2">
           <h1 className="bg-gradient-to-r from-fuchsia-300 to-violet-300 bg-clip-text text-lg font-bold text-transparent">
@@ -73,97 +80,69 @@ export default function Layout({ active, onNavigate, children }) {
         </button>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col md:ml-60">
-        <header className="sticky top-0 z-20 border-b border-[var(--color-vl-border)] bg-[var(--color-vl-bg)]/80 backdrop-blur-xl">
-          <div className="flex items-center justify-between px-4 py-3 md:px-6">
-            <div>
-              <h2 className="text-base font-semibold md:text-lg">{activeMod?.label}</h2>
-              <p className="text-xs text-[var(--color-vl-muted)] md:hidden">{sessionUser}</p>
+      <div className="flex min-h-[100dvh] flex-1 flex-col md:ml-60">
+        {/* Mobile app header */}
+        <header className="vl-mobile-header sticky top-0 z-30 md:hidden">
+          <div className="flex items-center gap-3 px-4 pb-3 pt-safe">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 text-xs font-bold text-fuchsia-200 ring-1 ring-fuchsia-500/20">
+              VL
             </div>
-            <div className="flex items-center gap-2">
-              <SyncIndicator />
-              <button type="button" className="vl-btn-icon hidden md:flex" onClick={handleLogout} title="Trocar usuário">
-                <LogOut size={16} />
-              </button>
-              <button type="button" className="vl-btn-icon md:hidden" onClick={() => setMenuOpen(true)} aria-label="Menu">
-                <Menu size={18} />
-              </button>
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-base font-semibold leading-tight">{activeMod?.label}</h2>
+              <p className="truncate text-[11px] text-[var(--color-vl-muted)]">{sessionUser}</p>
             </div>
-          </div>
-          <div className="flex gap-1.5 overflow-x-auto px-4 pb-3 no-scrollbar md:hidden">
-            {modules.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                onClick={() => onNavigate(m.id)}
-                className={`vl-pill ${active === m.id ? 'vl-pill-active' : 'vl-pill-inactive'}`}
-              >
-                {m.label}
-              </button>
-            ))}
+            <SyncIndicator />
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-4 md:px-6 md:py-6">
+        {/* Desktop header */}
+        <header className="sticky top-0 z-20 hidden border-b border-[var(--color-vl-border)] bg-[var(--color-vl-bg)]/80 backdrop-blur-xl md:block">
+          <div className="flex items-center justify-between px-6 py-3">
+            <h2 className="text-lg font-semibold">{activeMod?.label}</h2>
+            <div className="flex items-center gap-2">
+              <SyncIndicator />
+              <button type="button" className="vl-btn-icon" onClick={handleLogout} title="Trocar usuário">
+                <LogOut size={16} />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <main className="vl-main-content flex-1 px-4 py-4 md:px-6 md:py-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={`${sessionUser}-${active}`}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18 }}
             >
               {children}
             </motion.div>
           </AnimatePresence>
         </main>
-      </div>
 
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-40 bg-black/60 md:hidden"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setMenuOpen(false)}
-            />
-            <motion.aside
-              className="fixed inset-y-0 right-0 z-50 flex w-72 flex-col border-l border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4 md:hidden"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            >
-              <div className="mb-4 flex items-center justify-between">
-                <span className="font-semibold">{sessionUser}</span>
-                <button type="button" className="vl-btn-icon" onClick={() => setMenuOpen(false)}><X size={16} /></button>
-              </div>
-              <nav className="flex-1 space-y-0.5 overflow-y-auto">
-                {modules.map((m) => {
-                  const Icon = ICONS[m.icon]
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => { onNavigate(m.id); setMenuOpen(false) }}
-                      className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm ${
-                        active === m.id ? 'bg-fuchsia-500/20 text-fuchsia-200' : 'text-[var(--color-vl-muted)]'
-                      }`}
-                    >
-                      <Icon size={16} /> {m.label}
-                    </button>
-                  )
-                })}
-              </nav>
-              <button type="button" onClick={handleLogout} className="vl-btn-ghost mt-4 w-full text-xs">
-                <LogOut size={14} /> Trocar usuário
-              </button>
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+        <MobileBottomNav
+          active={active}
+          isHer={isHer}
+          pendingCount={pendingCount}
+          icons={ICONS}
+          onNavigate={onNavigate}
+          onOpenMore={() => setMoreOpen(true)}
+        />
+
+        <MobileMoreSheet
+          open={moreOpen}
+          onClose={() => setMoreOpen(false)}
+          active={active}
+          isHer={isHer}
+          sessionUser={sessionUser}
+          pendingCount={pendingCount}
+          icons={ICONS}
+          onNavigate={onNavigate}
+          onLogout={handleLogout}
+        />
+      </div>
     </div>
   )
 }

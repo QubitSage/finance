@@ -11,7 +11,7 @@ import { ensureMesadaCredit } from './lib/mesada'
 
 function BootScreen({ message, error, onRetry, onOffline }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+    <div className="vl-app-shell flex min-h-[100dvh] flex-col items-center justify-center px-6 text-center pt-safe pb-safe">
       {!error && (
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-fuchsia-400 border-t-transparent" />
       )}

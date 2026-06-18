@@ -121,21 +121,21 @@ export default function HomePage({ onNavigate }) {
         </button>
       )}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
         {quickActions.map((a) => (
           <button
             key={a.label}
             type="button"
             onClick={a.action}
-            className="vl-card relative flex flex-col items-center gap-1.5 py-3 text-center transition hover:border-fuchsia-500/30"
+            className="vl-quick-action relative flex flex-col items-center gap-2 rounded-2xl border border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4 text-center shadow-sm shadow-black/10 transition active:scale-[0.97]"
           >
             {a.badge > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
                 {a.badge}
               </span>
             )}
-            <a.icon size={18} className="text-fuchsia-300" />
-            <span className="text-xs font-medium">{a.label}</span>
+            <a.icon size={22} className="text-fuchsia-300" />
+            <span className="text-xs font-semibold leading-tight">{a.label}</span>
           </button>
         ))}
       </div>

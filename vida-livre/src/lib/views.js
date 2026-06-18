@@ -30,3 +30,31 @@ export const MODULES_PARTNER = [
 export function getModulesForSession(isHer) {
   return isHer ? MODULES_HER : MODULES_PARTNER
 }
+
+/** Abas principais no mobile — resto fica em “Mais” */
+export const MOBILE_PRIMARY_HER = [
+  { id: 'home', label: 'Início', icon: 'Home' },
+  { id: 'planejamento', label: 'Plano', icon: 'Wallet' },
+  { id: 'agenda', label: 'Agenda', icon: 'CalendarHeart' },
+  { id: 'mimos', label: 'Mimos', icon: 'Heart' },
+]
+
+export const MOBILE_PRIMARY_PARTNER = [
+  { id: 'home', label: 'Início', icon: 'Home' },
+  { id: 'pendencias', label: 'Pendências', icon: 'Bell', showBadge: true },
+  { id: 'planejamento', label: 'Plano', icon: 'Wallet' },
+  { id: 'mimos', label: 'Mimos', icon: 'Heart' },
+]
+
+export function getMobilePrimaryTabs(isHer) {
+  return isHer ? MOBILE_PRIMARY_HER : MOBILE_PRIMARY_PARTNER
+}
+
+export function getMobileMoreModules(isHer) {
+  const primary = new Set(getMobilePrimaryTabs(isHer).map((m) => m.id))
+  return getModulesForSession(isHer).filter((m) => !primary.has(m.id))
+}
+
+export function isMobilePrimaryTab(active, isHer) {
+  return getMobilePrimaryTabs(isHer).some((m) => m.id === active)
+}
