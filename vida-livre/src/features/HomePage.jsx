@@ -1,19 +1,29 @@
 import { useMemo, useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CalendarHeart, Heart, Sparkles, Clock, AlertCircle, Zap, Trophy } from 'lucide-react'
+import {
+  CalendarHeart, Heart, Sparkles, Clock, AlertCircle, Zap, Trophy,
+  Plus, Bell, Gift, ChevronRight,
+} from 'lucide-react'
 import { getCollection, subscribe } from '../lib/storage'
 import { getSaldoPontos } from '../lib/pontos'
 import { useSession } from '../contexts/SessionContext'
-import { STATUS_SAIDA } from '../lib/constants'
+import { STATUS_SAIDA, TIPO_AGENDA, fmtBRL } from '../lib/constants'
+import { getActivities, getUnreadActivities, markActivitiesSeen, activityForViewer } from '../lib/activity'
+import { getPartnerPendingCount } from '../lib/pendencias'
+import { setNavPreset } from '../lib/nav'
 import { Badge } from '../components/ui/primitives'
 
 function belongsToHer(row, user2) {
   return row.owner === user2 || !row.owner
 }
 
-export default function HomePage() {
-  const { sessionUser, isHer, isPartner, user2, user1 } = useSession()
+function currentMonth() {
+  return new Date().toISOString().slice(0, 7)
+}
+
+export default function HomePage({ onNavigate }) {
+  const { sessionUser, isHer, isPartner, user2 } = useSession()
   const [, tick] = useState(0)
   useEffect(() => subscribe(() => tick((n) => n + 1)), [])
 
@@ -21,39 +31,65 @@ export default function HomePage() {
   const wishes = getCollection('wishes')
   const fantasias = getCollection('fantasias')
   const marcos = getCollection('marcos')
+  const fixos = getCollection('mimos_fixos')
+  const variaveis = getCollection('mimos_variaveis')
   const saldo = getSaldoPontos()
+  const month = currentMonth()
   const marcosPendentes = marcos.filter((m) => m.status === 'pendente')
 
   const herWishes = wishes.filter((w) => belongsToHer(w, user2))
   const herSaidas = saidas.filter((s) => belongsToHer(s, user2))
   const herFantasias = fantasias.filter((f) => belongsToHer(f, user2))
-
   const pendingMimos = herWishes.filter((w) => w.status === 'pendente')
-  const myMimos = isHer
-    ? herWishes
-  : herWishes
+  const pendingCount = isPartner ? getPartnerPendingCount(user2) : 0
+
+  const fixosAtivos = fixos.filter((f) => f.ativo !== false)
+  const fixosUsados = fixosAtivos.filter((f) => f.usado_mes === month).length
+  const totalMensal = fixosAtivos.filter((f) => (f.periodicidade || 'mensal') === 'mensal')
+    .reduce((s, f) => s + (Number(f.valor) || 0), 0)
+  const mimosDisp = variaveis.filter((m) => m.status === 'disponivel' || m.status === 'resgatado')
 
   const upcoming = useMemo(() => {
-    const list = isHer
-      ? herSaidas
-      : herSaidas.filter((s) => s.share !== 'privado')
+    const list = isHer ? herSaidas : herSaidas.filter((s) => s.share !== 'privado')
     return [...list]
       .filter((s) => s.data && s.status !== 'cancelado' && s.status !== 'realizado')
       .sort((a, b) => a.data.localeCompare(b.data))
       .slice(0, 5)
   }, [herSaidas, isHer])
 
+  const novidades = useMemo(() => {
+    return getActivities(8).filter((a) => activityForViewer(a, sessionUser, null, user2, isHer))
+  }, [sessionUser, user2, isHer, tick])
+
+  const unread = getUnreadActivities(sessionUser).length
+
+  const go = (page) => onNavigate?.(page)
+
+  const quickActions = isHer
+    ? [
+        { label: 'Nova saída', icon: CalendarHeart, action: () => { setNavPreset({ agendaTipo: 'saida' }); go('agenda') } },
+        { label: 'Novo date', icon: Heart, action: () => { setNavPreset({ agendaTipo: 'date' }); go('agenda') } },
+        { label: 'Pedir mimo', icon: Gift, action: () => go('mimos') },
+        { label: 'Registro', icon: Sparkles, action: () => go('registros') },
+      ]
+    : [
+        { label: 'Pendências', icon: Bell, badge: pendingCount, action: () => go('pendencias') },
+        { label: 'Mimos', icon: Heart, action: () => go('mimos') },
+        { label: 'Agenda dela', icon: CalendarHeart, action: () => go('agenda') },
+        { label: 'Marcos', icon: Trophy, action: () => go('recompensas') },
+      ]
+
   const statsHer = [
-    { label: 'Meus mimos', value: herWishes.filter((w) => w.status === 'pendente').length, sub: 'pendentes', icon: Heart, color: 'text-rose-300' },
-    { label: 'Minhas saídas', value: herSaidas.filter((s) => !['realizado', 'cancelado'].includes(s.status)).length, icon: CalendarHeart, color: 'text-cyan-300' },
+    { label: 'Pedidos', value: pendingMimos.length, sub: 'pendentes', icon: Heart, color: 'text-rose-300' },
+    { label: 'Agenda', value: herSaidas.filter((s) => !['realizado', 'cancelado'].includes(s.status)).length, icon: CalendarHeart, color: 'text-cyan-300' },
     { label: 'Fantasias', value: herFantasias.length, icon: Sparkles, color: 'text-fuchsia-300' },
     { label: 'Pontos', value: saldo, icon: Zap, color: 'text-amber-300' },
   ]
 
   const statsPartner = [
-    { label: 'Mimos p/ aprovar', value: pendingMimos.length, icon: Heart, color: 'text-rose-300' },
-    { label: 'Marcos pendentes', value: marcosPendentes.length, icon: Trophy, color: 'text-amber-300' },
-    { label: 'Saídas dela', value: upcoming.length, icon: CalendarHeart, color: 'text-cyan-300' },
+    { label: 'Pendências', value: pendingCount, icon: Bell, color: 'text-rose-300' },
+    { label: 'Marcos', value: marcosPendentes.length, icon: Trophy, color: 'text-amber-300' },
+    { label: 'Agenda', value: upcoming.length, icon: CalendarHeart, color: 'text-cyan-300' },
     { label: 'Pontos dela', value: saldo, icon: Zap, color: 'text-violet-300' },
   ]
 
@@ -70,9 +106,43 @@ export default function HomePage() {
         </h3>
         <p className="mt-2 text-sm text-[var(--color-vl-muted)]">
           {isHer
-            ? 'Só você vê agenda, registros e mimos completos aqui.'
-            : `Você gerencia aprovações, marcos e regras. Dados de ${user2} ficam no login dela.`}
+            ? 'Saídas, dates, mimos e registros — tudo privado aqui.'
+            : 'Aprovações, mimos variáveis e pendências num só lugar.'}
         </p>
+      </div>
+
+      {isPartner && pendingCount > 0 && (
+        <button
+          type="button"
+          onClick={() => go('pendencias')}
+          className="vl-card flex w-full items-center gap-3 border-rose-500/40 bg-rose-500/10 text-left transition hover:border-rose-500/60"
+        >
+          <AlertCircle size={20} className="shrink-0 text-rose-300" />
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold text-rose-200">{pendingCount} pendência{pendingCount > 1 ? 's' : ''}</p>
+            <p className="text-xs text-rose-200/70">Mimos, saídas/dates e marcos aguardando</p>
+          </div>
+          <ChevronRight size={18} className="text-rose-300" />
+        </button>
+      )}
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {quickActions.map((a) => (
+          <button
+            key={a.label}
+            type="button"
+            onClick={a.action}
+            className="vl-card relative flex flex-col items-center gap-1.5 py-3 text-center transition hover:border-fuchsia-500/30"
+          >
+            {a.badge > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                {a.badge}
+              </span>
+            )}
+            <a.icon size={18} className="text-fuchsia-300" />
+            <span className="text-xs font-medium">{a.label}</span>
+          </button>
+        ))}
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -84,6 +154,52 @@ export default function HomePage() {
           </div>
         ))}
       </div>
+
+      {(isHer || fixosAtivos.length > 0) && (
+        <section className="vl-card border-rose-500/25">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="flex items-center gap-2 font-semibold text-rose-200">
+              <Gift size={16} /> Mimos fixos
+            </h4>
+            <button type="button" onClick={() => go('mimos')} className="text-xs text-fuchsia-300 hover:underline">Ver todos</button>
+          </div>
+          <p className="text-2xl font-bold text-rose-300">{fmtBRL(totalMensal)}<span className="text-sm font-normal text-[var(--color-vl-muted)]">/mês</span></p>
+          <p className="mt-1 text-xs text-[var(--color-vl-muted)]">
+            {fixosUsados} de {fixosAtivos.filter((f) => (f.periodicidade || 'mensal') === 'mensal').length} usados este mês
+          </p>
+          {mimosDisp.length > 0 && (
+            <p className="mt-2 text-xs text-cyan-300">{mimosDisp.length} mimo{mimosDisp.length > 1 ? 's' : ''} variável{mimosDisp.length > 1 ? 'is' : ''} disponível{mimosDisp.length > 1 ? 'eis' : ''}</p>
+          )}
+        </section>
+      )}
+
+      {novidades.length > 0 && (
+        <section className="vl-card">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="flex items-center gap-2 text-sm font-semibold">
+              <Sparkles size={14} className="text-fuchsia-400" />
+              Novidades
+              {unread > 0 && <Badge className="bg-fuchsia-500/20 text-fuchsia-200">{unread} nova{unread > 1 ? 's' : ''}</Badge>}
+            </h4>
+            {unread > 0 && (
+              <button type="button" onClick={() => { markActivitiesSeen(sessionUser); tick((n) => n + 1) }} className="text-xs text-[var(--color-vl-muted)] hover:text-fuchsia-300">
+                Marcar lidas
+              </button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {novidades.slice(0, 5).map((a) => (
+              <div key={a.id} className="rounded-xl bg-[var(--color-vl-elevated)] px-3 py-2">
+                <p className="text-sm font-medium">{a.titulo}</p>
+                {a.mensagem && <p className="text-xs text-[var(--color-vl-muted)] truncate">{a.mensagem}</p>}
+                <p className="mt-0.5 text-[10px] text-[var(--color-vl-muted)]">
+                  {format(parseISO(a.created_at), "dd/MM 'às' HH:mm", { locale: ptBR })}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {marcos.length > 0 && (
         <section className="vl-card border-amber-500/30">
@@ -109,28 +225,11 @@ export default function HomePage() {
         </section>
       )}
 
-      {isPartner && pendingMimos.length > 0 && (
-        <section className="vl-card border-rose-500/30">
-          <div className="mb-3 flex items-center gap-2">
-            <AlertCircle size={16} className="text-rose-300" />
-            <h4 className="font-semibold text-rose-200">Mimos aguardando você</h4>
-          </div>
-          <div className="space-y-2">
-            {pendingMimos.slice(0, 3).map((w) => (
-              <div key={w.id} className="flex items-center justify-between rounded-xl bg-[var(--color-vl-elevated)] px-3 py-2">
-                <span className="text-sm truncate">{w.title}</span>
-                <Badge className="bg-amber-500/15 text-amber-300 border-amber-500/30">pendente</Badge>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {isHer && myMimos.filter((w) => w.status === 'aprovado').length > 0 && (
+      {isHer && herWishes.filter((w) => w.status === 'aprovado').length > 0 && (
         <section className="vl-card border-cyan-500/30">
-          <h4 className="mb-2 font-semibold text-cyan-200">Mimos aprovados</h4>
+          <h4 className="mb-2 font-semibold text-cyan-200">Pedidos aprovados</h4>
           <div className="space-y-2">
-            {myMimos.filter((w) => w.status === 'aprovado').slice(0, 3).map((w) => (
+            {herWishes.filter((w) => w.status === 'aprovado').slice(0, 3).map((w) => (
               <div key={w.id} className="rounded-xl bg-[var(--color-vl-elevated)] px-3 py-2 text-sm">{w.title}</div>
             ))}
           </div>
@@ -139,22 +238,27 @@ export default function HomePage() {
 
       <section>
         <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--color-vl-muted)]">
-          <Clock size={14} /> {isHer ? 'Próximas saídas' : 'Próximas saídas dela (compartilhadas)'}
+          <Clock size={14} /> {isHer ? 'Próximas saídas & dates' : 'Agenda dela (compartilhada)'}
         </h4>
         {upcoming.length === 0 ? (
-          <p className="text-sm text-[var(--color-vl-muted)]">Nenhuma saída planejada.</p>
+          <p className="text-sm text-[var(--color-vl-muted)]">Nada planejado.</p>
         ) : (
           <div className="space-y-2">
             {upcoming.map((s) => {
               const st = STATUS_SAIDA[s.status]
+              const tipo = TIPO_AGENDA[s.tipo] || TIPO_AGENDA.saida
               const d = s.data ? parseISO(s.data) : null
               return (
                 <div key={s.id} className="vl-card flex items-center justify-between gap-3">
                   <div className="min-w-0">
+                    <div className="mb-0.5 flex items-center gap-2">
+                      <Badge className={tipo.className}>{tipo.emoji} {tipo.label}</Badge>
+                    </div>
                     <p className="font-medium truncate">{s.titulo}</p>
                     <p className="text-xs text-[var(--color-vl-muted)]">
                       {d ? format(d, 'dd MMM yyyy', { locale: ptBR }) : 'Sem data'}
                       {s.hora ? ` · ${s.hora}` : ''}
+                      {s.com_quem ? ` · ${s.com_quem}` : ''}
                     </p>
                   </div>
                   {st && <Badge className={st.className}>{st.label}</Badge>}
@@ -162,6 +266,11 @@ export default function HomePage() {
               )
             })}
           </div>
+        )}
+        {isHer && (
+          <button type="button" onClick={() => go('agenda')} className="mt-3 vl-btn-ghost w-full text-sm">
+            <Plus size={14} /> Ver agenda completa
+          </button>
         )}
       </section>
     </div>

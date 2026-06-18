@@ -76,6 +76,7 @@ export async function pushToCloud() {
       remoteUpdatedAt = data.updated_at
       saveSyncMeta({ remoteUpdatedAt: data.updated_at })
     }
+    notifyCloudListeners({ status: 'synced' })
   } finally {
     pushing = false
   }
@@ -83,6 +84,7 @@ export async function pushToCloud() {
 
 function schedulePush() {
   if (applyingRemote || !isCloudConfigured) return
+  notifyCloudListeners({ status: 'syncing' })
   clearTimeout(pushTimer)
   pushTimer = setTimeout(() => {
     pushToCloud().catch((err) => {

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { BookOpen, Plus, Trash2, Edit3, Heart, Lock, ChevronDown, ChevronUp } from 'lucide-react'
 import { useScopedDB } from '../hooks/useScopedDB'
 import { EmptyState } from '../components/ui/primitives'
+import { consumePendingRegistro } from '../lib/nav'
+import { TIPO_AGENDA } from '../lib/constants'
 
 const EMPTY = { titulo: '', data: '', com_quem: '', local: '', notas: '', aprendizado: '', estrelas: 3, vontade_repetir: true }
 
@@ -13,6 +15,26 @@ export default function RegistrosPage() {
   const [editId, setEditId] = useState(null)
   const [expandId, setExpandId] = useState(null)
   const [form, setForm] = useState(EMPTY)
+  const [fromAgenda, setFromAgenda] = useState(null)
+
+  useEffect(() => {
+    const saida = consumePendingRegistro()
+    if (saida) {
+      const tipo = TIPO_AGENDA[saida.tipo] || TIPO_AGENDA.saida
+      setForm({
+        titulo: saida.titulo || tipo.label,
+        data: saida.data || '',
+        com_quem: saida.com_quem || '',
+        local: saida.local || '',
+        notas: saida.notas || '',
+        aprendizado: '',
+        estrelas: 3,
+        vontade_repetir: true,
+      })
+      setFromAgenda(saida)
+      setAdding(true)
+    }
+  }, [])
 
   const submit = (e) => {
     e.preventDefault()
@@ -20,7 +42,7 @@ export default function RegistrosPage() {
     const payload = { ...form, data: form.data || null, com_quem: form.com_quem || null, local: form.local || null, notas: form.notas || null, aprendizado: form.aprendizado || null }
     if (editId) { update(editId, payload); setEditId(null) }
     else insert(payload)
-    setForm(EMPTY); setAdding(false)
+    setForm(EMPTY); setAdding(false); setFromAgenda(null)
   }
 
   const startEdit = (r) => {
@@ -39,6 +61,11 @@ export default function RegistrosPage() {
       {adding && (
         <form onSubmit={submit} className="vl-card space-y-3">
           <h3 className="flex items-center gap-2 font-semibold"><BookOpen size={18} className="text-fuchsia-400" />{editId ? 'Editar' : 'Novo'} registro</h3>
+          {fromAgenda && (
+            <p className="rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
+              Pré-preenchido da agenda — complete como quiser.
+            </p>
+          )}
           <input required className="vl-input" placeholder="Título *" value={form.titulo} onChange={(e) => setForm((f) => ({ ...f, titulo: e.target.value }))} />
           <div className="grid grid-cols-2 gap-3">
             <input type="date" className="vl-input" value={form.data} onChange={(e) => setForm((f) => ({ ...f, data: e.target.value }))} />

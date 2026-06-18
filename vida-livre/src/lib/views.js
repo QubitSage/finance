@@ -13,6 +13,7 @@ export const MODULES_HER = [
 
 export const MODULES_PARTNER = [
   { id: 'home', label: 'Painel', icon: 'Home' },
+  { id: 'pendencias', label: 'Pendências', icon: 'Bell' },
   { id: 'mimos', label: 'Mimos & acordo', icon: 'Heart' },
   { id: 'recompensas', label: 'Marcos & prêmios', icon: 'Trophy' },
   { id: 'agenda', label: 'Agenda dela', icon: 'CalendarHeart' },

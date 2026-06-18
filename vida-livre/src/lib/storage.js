@@ -23,6 +23,8 @@ const DEFAULT_STATE = {
   viagens: [],
   viagens_roteiro: [],
   viagens_mala: [],
+  mimos_variaveis: [],
+  atividades: [],
   settings: {
     user1: 'Bruno',
     user2: 'Vianka',
@@ -34,6 +36,7 @@ const DEFAULT_STATE = {
     saida_extra_nota: '',
     saida_pos_nota: '',
     imported_batches: [],
+    activity_seen_at: {},
   },
 }
 

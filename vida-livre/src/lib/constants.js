@@ -15,6 +15,17 @@ export const STATUS_SAIDA = {
   cancelado: { label: 'Cancelado', className: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
 }
 
+export const TIPO_AGENDA = {
+  saida: { label: 'Saída', emoji: '🚗', desc: 'Sair para qualquer lugar', className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' },
+  date: { label: 'Date', emoji: '💕', desc: 'Encontro romântico com alguém', className: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+}
+
+export const MIMO_VARIAVEL_STATUS = {
+  disponivel: { label: 'Disponível', className: 'bg-cyan-500/15 text-cyan-300' },
+  resgatado: { label: 'Resgatado', className: 'bg-violet-500/15 text-violet-300' },
+  usado: { label: 'Usado', className: 'bg-emerald-500/15 text-emerald-300' },
+}
+
 export const SHARE_NIVEL = {
   contou: { label: 'Contou tudo' },
   resumo: { label: 'Resumo' },

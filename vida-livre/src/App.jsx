@@ -13,10 +13,12 @@ import ViagensPage from './features/ViagensPage'
 import RecompensasPage from './features/RecompensasPage'
 import RegrasPage from './features/RegrasPage'
 import SimulacaoPage from './features/SimulacaoPage'
+import PendenciasPage from './features/PendenciasPage'
 import { MIMOS_SEED } from './lib/constants'
 
 const PAGES = {
   home: HomePage,
+  pendencias: PendenciasPage,
   recompensas: RecompensasPage,
   agenda: AgendaPage,
   registros: RegistrosPage,
@@ -40,6 +42,8 @@ const PAGES = {
   ),
 }
 
+const NAV_PAGES = new Set(['home', 'agenda', 'registros'])
+
 export default function App() {
   const { isHer } = useSession()
   const modules = getModulesForSession(isHer)
@@ -52,10 +56,11 @@ export default function App() {
   const allowed = new Set(modules.map((m) => m.id))
   const safeActive = allowed.has(active) ? active : 'home'
   const Page = PAGES[safeActive] || HomePage
+  const navProps = NAV_PAGES.has(safeActive) ? { onNavigate: setActive } : {}
 
   return (
     <Layout active={safeActive} onNavigate={setActive}>
-      <Page />
+      <Page {...navProps} />
     </Layout>
   )
 }

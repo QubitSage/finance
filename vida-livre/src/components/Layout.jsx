@@ -1,22 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Home, CalendarHeart, BookOpen, Sparkles, Heart,
-  Star, Map, Wallet, Gift, Lock, Menu, X, LogOut, Trophy, ScrollText, Globe,
+  Star, Map, Wallet, Gift, Lock, Menu, X, LogOut, Trophy, ScrollText, Globe, Bell,
 } from 'lucide-react'
 import { getModulesForSession } from '../lib/views'
 import { useSession } from '../contexts/SessionContext'
+import { subscribe } from '../lib/storage'
+import { getPartnerPendingCount } from '../lib/pendencias'
+import SyncIndicator from './SyncIndicator'
 
 const ICONS = {
   Home, CalendarHeart, BookOpen, Sparkles, Heart,
-  Star, Map, Wallet, Gift, Trophy, ScrollText, Globe,
+  Star, Map, Wallet, Gift, Trophy, ScrollText, Globe, Bell,
 }
 
 export default function Layout({ active, onNavigate, children }) {
-  const { sessionUser, isHer, logout } = useSession()
+  const { sessionUser, isHer, user2, logout } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [, tick] = useState(0)
   const modules = getModulesForSession(isHer)
   const activeMod = modules.find((m) => m.id === active)
+  const pendingCount = !isHer ? getPartnerPendingCount(user2) : 0
+
+  useEffect(() => subscribe(() => tick((n) => n + 1)), [])
 
   const handleLogout = () => {
     logout()
@@ -38,12 +45,13 @@ export default function Layout({ active, onNavigate, children }) {
         <nav className="flex-1 space-y-0.5 overflow-y-auto">
           {modules.map((m) => {
             const Icon = ICONS[m.icon]
+            const badge = m.id === 'pendencias' && pendingCount > 0 ? pendingCount : null
             return (
               <button
                 key={m.id}
                 type="button"
                 onClick={() => onNavigate(m.id)}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+                className={`relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                   active === m.id
                     ? 'bg-gradient-to-r from-fuchsia-500/20 to-violet-500/20 text-fuchsia-200'
                     : 'text-[var(--color-vl-muted)] hover:bg-[var(--color-vl-elevated)] hover:text-[var(--color-vl-text)]'
@@ -51,6 +59,11 @@ export default function Layout({ active, onNavigate, children }) {
               >
                 <Icon size={16} />
                 {m.label}
+                {badge != null && (
+                  <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white">
+                    {badge}
+                  </span>
+                )}
               </button>
             )
           })}
@@ -68,6 +81,7 @@ export default function Layout({ active, onNavigate, children }) {
               <p className="text-xs text-[var(--color-vl-muted)] md:hidden">{sessionUser}</p>
             </div>
             <div className="flex items-center gap-2">
+              <SyncIndicator />
               <button type="button" className="vl-btn-icon hidden md:flex" onClick={handleLogout} title="Trocar usuário">
                 <LogOut size={16} />
               </button>
