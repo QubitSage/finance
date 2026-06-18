@@ -39,12 +39,14 @@ export function getGastosPorBucket(month = currentMonth()) {
 
   getCollection('mimos_fixos').forEach((f) => {
     if (f.usado_mes !== month || f.ativo === false) return
+    if (f.contexto === 'comigo') return
     const bucket = f.mesada_bucket || FIXO_MESADA_BUCKET[f.categoria] || 'estetica'
     if (buckets[bucket] != null) buckets[bucket] += Number(f.valor) || 0
   })
 
   getCollection('wishes').forEach((w) => {
     if (w.status !== 'realizado') return
+    if (w.contexto === 'comigo') return
     const when = (w.realizado_em || w.updated_at || w.created_at || '').slice(0, 7)
     if (when !== month) return
     const bucket = w.mesada_bucket || mapWishCategory(w.category)

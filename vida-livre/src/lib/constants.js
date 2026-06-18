@@ -132,6 +132,26 @@ export const MIMO_CATEGORIA = {
   outro: 'Outro',
 }
 
+/** Legenda de contexto dos mimos — Sozinha vs Comigo */
+export const MIMO_CONTEXTO = {
+  sozinha: {
+    label: 'Sozinha',
+    short: 'Sozinha / acompanhada',
+    desc: 'Ela sozinha ou acompanhada de alguém. O mimo é para ela ou para além do casal.',
+    mesada: 'Desconta da mesada dela',
+    emoji: '🌙',
+    className: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+  },
+  comigo: {
+    label: 'Comigo',
+    short: 'Comigo / nós',
+    desc: 'Para o marido, para o trabalho ou para nós — usa junto ou no dia a dia do casal.',
+    mesada: 'Não desconta da mesada — só avisar aqui',
+    emoji: '💑',
+    className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+  },
+}
+
 /** Mesada acumulativa — referência de alocação mensal (total R$2.000) */
 export const MESADA_CREDITO_CICLO = 2000
 

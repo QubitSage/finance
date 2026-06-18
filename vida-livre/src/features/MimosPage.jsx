@@ -10,8 +10,9 @@ import { useSettings } from '../hooks/useSettings'
 import { FilterPills, Badge } from '../components/ui/primitives'
 import { logActivity } from '../lib/activity'
 import {
-  MIMO_PERIODICIDADE, MIMO_CATEGORIA, ACORDO_TIPO, MIMO_VARIAVEL_STATUS, fmtBRL,
+  MIMO_PERIODICIDADE, MIMO_CATEGORIA, ACORDO_TIPO, MIMO_VARIAVEL_STATUS, MIMO_CONTEXTO, fmtBRL,
 } from '../lib/constants'
+import MimosLegenda, { MimoContextoBadge, ContextoSelector } from '../components/MimosLegenda'
 
 const TABS = ['Fixos', 'Variáveis', 'Pedidos', 'Protocolo', 'Acordo']
 const PERIODS = ['mensal', 'semestral', 'anual']
@@ -28,9 +29,9 @@ const STATUS_COLORS = {
   negado: 'bg-rose-500/20 text-rose-300',
   realizado: 'bg-violet-500/20 text-violet-300',
 }
-const WISH_EMPTY = { title: '', description: '', como: '', category: 'pessoal', estimated_cost: '', status: 'pendente', priority: 'média' }
-const FIXO_EMPTY = { nome: '', valor: '', periodicidade: 'mensal', categoria: 'outro', nota: '', ativo: true }
-const VARIAVEL_EMPTY = { nome: '', descricao: '', valor: '' }
+const WISH_EMPTY = { title: '', description: '', como: '', category: 'pessoal', estimated_cost: '', status: 'pendente', priority: 'média', contexto: 'sozinha' }
+const FIXO_EMPTY = { nome: '', valor: '', periodicidade: 'mensal', categoria: 'outro', nota: '', ativo: true, contexto: 'sozinha' }
+const VARIAVEL_EMPTY = { nome: '', descricao: '', valor: '', contexto: 'sozinha' }
 
 function currentMonth() {
   return new Date().toISOString().slice(0, 7)
@@ -110,11 +111,12 @@ export default function MimosPage() {
       descricao: varForm.descricao.trim() || null,
       valor: Number(varForm.valor) || null,
       status: 'disponivel',
+      contexto: varForm.contexto || 'sozinha',
       criado_por: user,
       created_at: new Date().toISOString(),
     }
     if (editVarId) {
-      updateVar(editVarId, { nome: payload.nome, descricao: payload.descricao, valor: payload.valor })
+      updateVar(editVarId, { nome: payload.nome, descricao: payload.descricao, valor: payload.valor, contexto: payload.contexto })
       setEditVarId(null)
     } else {
       insertVar(payload)
@@ -175,6 +177,7 @@ export default function MimosPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      <MimosLegenda />
       <FilterPills options={TABS} value={TABS[tab]} onChange={(v) => setTab(TABS.indexOf(v))} />
 
       {/* ── FIXOS ── */}
@@ -224,7 +227,7 @@ export default function MimosPage() {
                       canEdit={canEditMimosFixos}
                       onToggleUsado={() => toggleUsado(item)}
                       onTogglePago={() => togglePago(item)}
-                      onEdit={() => { setFixoForm({ nome: item.nome, valor: item.valor, periodicidade: item.periodicidade, categoria: item.categoria || 'outro', nota: item.nota || '', ativo: item.ativo !== false }); setEditFixoId(item.id); setAddingFixo(false) }}
+                      onEdit={() => { setFixoForm({ nome: item.nome, valor: item.valor, periodicidade: item.periodicidade, categoria: item.categoria || 'outro', nota: item.nota || '', ativo: item.ativo !== false, contexto: item.contexto || 'sozinha' }); setEditFixoId(item.id); setAddingFixo(false) }}
                       onRemove={() => removeFixo(item.id)}
                     />
                   ))}
@@ -259,6 +262,7 @@ export default function MimosPage() {
               <input className="vl-input" placeholder="Nome do mimo *" value={varForm.nome} onChange={(e) => setVarForm((f) => ({ ...f, nome: e.target.value }))} />
               <textarea className="vl-input resize-none" rows={2} placeholder="Descrição (opcional)" value={varForm.descricao} onChange={(e) => setVarForm((f) => ({ ...f, descricao: e.target.value }))} />
               <input className="vl-input" type="number" placeholder="Valor R$ (opcional)" value={varForm.valor} onChange={(e) => setVarForm((f) => ({ ...f, valor: e.target.value }))} />
+              <ContextoSelector value={varForm.contexto} onChange={(contexto) => setVarForm((f) => ({ ...f, contexto }))} compact />
               <div className="flex gap-2">
                 <button type="button" onClick={saveVar} className="vl-btn-primary flex-1">Salvar</button>
                 <button type="button" onClick={() => { setAddingVar(false); setEditVarId(null); setVarForm(VARIAVEL_EMPTY) }} className="vl-btn-ghost">Cancelar</button>
@@ -286,12 +290,13 @@ export default function MimosPage() {
                           <span className="text-sm font-bold text-rose-300">{fmtBRL(item.valor)}</span>
                         )}
                         <Badge className={st.className}>{st.label}</Badge>
+                        <MimoContextoBadge contexto={item.contexto} size="xs" />
                       </div>
                       {item.descricao && <p className="mt-1 text-xs text-[var(--color-vl-muted)]">{item.descricao}</p>}
                     </div>
                     {canEditMimosFixos && (
                       <div className="flex gap-1">
-                        <button onClick={() => { setVarForm({ nome: item.nome, descricao: item.descricao || '', valor: item.valor || '' }); setEditVarId(item.id); setAddingVar(false) }} className="vl-btn-icon"><Edit3 size={13} /></button>
+                        <button onClick={() => { setVarForm({ nome: item.nome, descricao: item.descricao || '', valor: item.valor || '', contexto: item.contexto || 'sozinha' }); setEditVarId(item.id); setAddingVar(false) }} className="vl-btn-icon"><Edit3 size={13} /></button>
                         <button onClick={() => removeVar(item.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={13} /></button>
                       </div>
                     )}
@@ -338,6 +343,7 @@ export default function MimosPage() {
               <input required className="vl-input" placeholder="Desejo / Mimo *" value={wishForm.title} onChange={(e) => setWishForm((f) => ({ ...f, title: e.target.value }))} />
               <textarea className="vl-input resize-none" rows={2} placeholder="Descrição..." value={wishForm.description} onChange={(e) => setWishForm((f) => ({ ...f, description: e.target.value }))} />
               <textarea className="vl-input resize-none" rows={2} placeholder="Como? Pra quê? O que vai rolar?" value={wishForm.como} onChange={(e) => setWishForm((f) => ({ ...f, como: e.target.value }))} />
+              <ContextoSelector value={wishForm.contexto} onChange={(contexto) => setWishForm((f) => ({ ...f, contexto }))} />
               <div className="grid grid-cols-2 gap-2">
                 <select className="vl-input" value={wishForm.category} onChange={(e) => setWishForm((f) => ({ ...f, category: e.target.value }))}>
                   {WISH_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -378,6 +384,7 @@ export default function MimosPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{w.title}</span>
+                      <MimoContextoBadge contexto={w.contexto} size="xs" />
                       <span className={`rounded-full px-2 py-0.5 text-xs ${PRIORITY_COLORS[w.priority] || ''}`}>{w.priority}</span>
                     </div>
                     {w.description && <p className="mt-0.5 text-xs text-[var(--color-vl-muted)]">{w.description}</p>}
@@ -401,7 +408,7 @@ export default function MimosPage() {
                     )}
                     {isHer && (
                       <>
-                        <button onClick={() => { setEditingWish(w); setWishForm({ title: w.title || '', description: w.description || '', como: w.como || '', category: w.category || 'pessoal', estimated_cost: w.estimated_cost || '', status: w.status, priority: w.priority || 'média' }) }} className="vl-btn-icon"><Edit3 size={14} /></button>
+                        <button onClick={() => { setEditingWish(w); setWishForm({ title: w.title || '', description: w.description || '', como: w.como || '', category: w.category || 'pessoal', estimated_cost: w.estimated_cost || '', status: w.status, priority: w.priority || 'média', contexto: w.contexto || 'sozinha' }) }} className="vl-btn-icon"><Edit3 size={14} /></button>
                         <button onClick={() => removeWish(w.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={14} /></button>
                       </>
                     )}
@@ -496,6 +503,7 @@ function FixoCard({ item, month, isHer, canEdit, onToggleUsado, onTogglePago, on
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{item.nome}</span>
+            <MimoContextoBadge contexto={item.contexto} size="xs" />
             <span className="text-sm font-bold text-rose-300">{fmtBRL(item.valor)}</span>
           </div>
           <p className="mt-0.5 text-xs text-[var(--color-vl-muted)]">{cat}{item.nota ? ` · ${item.nota}` : ''}</p>
@@ -533,6 +541,7 @@ function FixoForm({ form, setForm, onSave, onCancel }) {
   return (
     <div className="vl-card space-y-3">
       <input className="vl-input" placeholder="Nome *" value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} />
+      <ContextoSelector value={form.contexto || 'sozinha'} onChange={(contexto) => setForm((f) => ({ ...f, contexto }))} compact />
       <div className="grid grid-cols-2 gap-2">
         <input className="vl-input" type="number" placeholder="Valor R$" value={form.valor} onChange={(e) => setForm((f) => ({ ...f, valor: e.target.value }))} />
         <select className="vl-input" value={form.periodicidade} onChange={(e) => setForm((f) => ({ ...f, periodicidade: e.target.value }))}>
