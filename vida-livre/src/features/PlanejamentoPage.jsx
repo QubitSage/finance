@@ -2,20 +2,21 @@ import { useEffect, useState } from 'react'
 import { Map, HelpCircle, Wallet, Sparkles } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useLocalDB } from '../hooks/useLocalDB'
-import { getMesadaResumo, ensureMesadaCredit, registrarMovimento } from '../lib/mesada'
+import { getMesadaResumo, ensureMesadaCredit, registrarMovimento, getMesadaOrcamento } from '../lib/mesada'
 import {
-  VIES_PLANEJAMENTO, VIES_ACORDOS_RESPONDIDOS, PROXIMOS_PASSOS,
-  MESADA_ORCAMENTO, fmtBRL,
+  VIES_PLANEJAMENTO, VIES_ACORDOS_RESPONDIDOS, PROXIMOS_PASSOS, fmtBRL,
 } from '../lib/constants'
 import { subscribe } from '../lib/storage'
 import { setNavPreset } from '../lib/nav'
 import PlanejamentoCard from '../components/PlanejamentoCard'
+import MesadaConfigPanel from '../components/MesadaConfigPanel'
 import { Badge } from '../components/ui/primitives'
 
 export default function PlanejamentoPage({ onNavigate }) {
-  const { isPartner } = useSession()
+  const { user, isPartner } = useSession()
   const [, tick] = useState(0)
   const { data: movimentos } = useLocalDB('mesada_movimentos', { order: 'created_at', asc: false })
+  const orcamento = getMesadaOrcamento()
 
   useEffect(() => subscribe(() => tick((n) => n + 1)), [])
   useEffect(() => { ensureMesadaCredit(); tick((n) => n + 1) }, [])
@@ -39,11 +40,15 @@ export default function PlanejamentoPage({ onNavigate }) {
       <PlanejamentoCard resumo={resumo} />
 
       {isPartner && (
-        <div className="flex gap-2">
-          <button type="button" className="vl-btn-primary flex-1 text-sm" onClick={() => setShowMov(true)}>
-            <Wallet size={14} /> Registrar gasto / crédito
-          </button>
-        </div>
+        <>
+          <MesadaConfigPanel onSaved={() => tick((n) => n + 1)} />
+
+          <div className="flex gap-2">
+            <button type="button" className="vl-btn-primary flex-1 text-sm" onClick={() => setShowMov(true)}>
+              <Wallet size={14} /> Registrar gasto / crédito
+            </button>
+          </div>
+        </>
       )}
 
       {showMov && isPartner && (
@@ -62,7 +67,7 @@ export default function PlanejamentoPage({ onNavigate }) {
           </div>
           <input required type="number" step="0.01" className="vl-input" placeholder="Valor R$" value={movForm.valor} onChange={(e) => setMovForm((f) => ({ ...f, valor: e.target.value }))} />
           <select className="vl-input" value={movForm.bucket} onChange={(e) => setMovForm((f) => ({ ...f, bucket: e.target.value }))}>
-            {Object.entries(MESADA_ORCAMENTO).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
+            {Object.entries(orcamento).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
           </select>
           <input className="vl-input" placeholder="Nota (opcional)" value={movForm.nota} onChange={(e) => setMovForm((f) => ({ ...f, nota: e.target.value }))} />
           <div className="flex gap-2">

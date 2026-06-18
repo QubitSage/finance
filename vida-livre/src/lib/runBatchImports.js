@@ -30,6 +30,11 @@ import {
   BATCH_7_QUESTIONARIO_PATCHES,
 } from '../data/batch-7-respostas-planejamento'
 
+import {
+  BATCH_8_ID,
+  BATCH_8_SETTINGS,
+} from '../data/batch-8-mesada-limites'
+
 export const BATCH_4_ID = 'batch-4-marcos-livres'
 
 export function runPendingBatchImports() {
@@ -90,6 +95,12 @@ export function runPendingBatchImports() {
     user2Name: 'Vianka',
   })
   results.push({ batch: BATCH_7_ID, ...r7 })
+
+  const r8 = importBatch({
+    batchId: BATCH_8_ID,
+    settingsPatch: BATCH_8_SETTINGS,
+  })
+  results.push({ batch: BATCH_8_ID, ...r8 })
 
   return results
 }

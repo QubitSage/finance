@@ -53,5 +53,11 @@ export const BATCH_6_SETTINGS = {
     credito_ciclo: 2000,
     saldo: 2000,
     ultimo_credito_mes: null,
+    limites: {
+      estetica: 500,
+      looks: 600,
+      dates: 500,
+      saida_livre: 400,
+    },
   },
 }

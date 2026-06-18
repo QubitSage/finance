@@ -42,6 +42,12 @@ const DEFAULT_STATE = {
       credito_ciclo: 2000,
       saldo: 2000,
       ultimo_credito_mes: null,
+      limites: {
+        estetica: 500,
+        looks: 600,
+        dates: 500,
+        saida_livre: 400,
+      },
     },
   },
 }
@@ -261,7 +267,20 @@ export function importBatch({
   }
 
   if (regrasIntro) nextSettings.regras_intro = regrasIntro
-  if (settingsPatch) Object.assign(nextSettings, settingsPatch)
+  if (settingsPatch) {
+    const { mesada: mesadaPatch, ...restPatch } = settingsPatch
+    Object.assign(nextSettings, restPatch)
+    if (mesadaPatch) {
+      nextSettings.mesada = {
+        ...(nextSettings.mesada || {}),
+        ...mesadaPatch,
+        limites: {
+          ...(nextSettings.mesada?.limites || {}),
+          ...(mesadaPatch.limites || {}),
+        },
+      }
+    }
+  }
 
   if (combinados?.length) {
     const now = new Date().toISOString()
