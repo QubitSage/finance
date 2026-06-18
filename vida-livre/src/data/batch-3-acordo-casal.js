@@ -26,7 +26,7 @@ export const BATCH_3_ACORDO = [
   { tipo: 'obrigacao', texto: 'Buscar pão (quando der)', ordem: 3 },
   { tipo: 'obrigacao', texto: 'Mimar ela', ordem: 4 },
   { tipo: 'obrigacao', texto: 'Liberar ela', ordem: 5 },
-  { tipo: 'entrega', texto: 'Axila', ordem: 0, detalhes: 'Combinado fixo do casal.' },
+  { tipo: 'entrega', texto: 'Axila', ordem: 0, detalhes: 'Sobra pro marido: apenas axila no final do dia.' },
 ]
 
 export const BATCH_3_PROTOCOLO = [

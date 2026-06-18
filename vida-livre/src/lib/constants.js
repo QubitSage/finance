@@ -46,7 +46,7 @@ export const CAT_FANTASIA = {
   novo: { label: 'Novo', className: 'bg-teal-500/15 text-teal-300 border-teal-500/30' },
 }
 
-export const Q_CATS = ['desejo', 'limite', 'fantasia', 'sentimento', 'combinado', 'outro']
+export const Q_CATS = ['planejamento', 'desejo', 'limite', 'fantasia', 'sentimento', 'combinado', 'outro']
 
 export const OBJ_CORES = {
   amber: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', dot: 'bg-amber-400', title: 'text-amber-200' },
@@ -131,6 +131,127 @@ export const MIMO_CATEGORIA = {
   roupa: 'Roupa',
   outro: 'Outro',
 }
+
+/** Mesada acumulativa — referência de alocação mensal (total R$2.000) */
+export const MESADA_CREDITO_CICLO = 2000
+
+export const MESADA_ORCAMENTO = {
+  estetica: {
+    label: 'Estética',
+    desc: 'Salão e derivados',
+    limite: 500,
+    emoji: '💅',
+    className: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+    bar: 'bg-rose-400',
+  },
+  looks: {
+    label: 'Looks',
+    desc: 'Roupas, sapatos, vestidos e derivados',
+    limite: 600,
+    emoji: '👗',
+    className: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30',
+    bar: 'bg-fuchsia-400',
+  },
+  dates: {
+    label: 'Dates & jantares',
+    desc: 'Até 2–3×/mês — ele paga só o seu',
+    limite: 500,
+    emoji: '💕',
+    className: 'bg-pink-500/15 text-pink-300 border-pink-500/30',
+    bar: 'bg-pink-400',
+  },
+  saida_livre: {
+    label: 'Saídas livres',
+    desc: 'Imprevistos e última hora',
+    limite: 400,
+    emoji: '🚗',
+    className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+    bar: 'bg-cyan-400',
+  },
+}
+
+/** Mapeia categoria de mimo fixo → bucket da mesada */
+export const FIXO_MESADA_BUCKET = {
+  unhas: 'estetica',
+  rosto: 'estetica',
+  corpo: 'estetica',
+  cabelo: 'estetica',
+  fitness: 'estetica',
+  roupa: 'looks',
+  outro: 'saida_livre',
+}
+
+/** Viés de planejamento — regras acordadas */
+export const VIES_PLANEJAMENTO = [
+  {
+    id: 'transporte',
+    titulo: 'Transporte / translado',
+    emoji: '🚕',
+    regra: 'Planejado → não desconta da mesada dela. Escondido, sem planejamento ou de última hora → desconta do saldo dela.',
+    status: 'ativo',
+  },
+  {
+    id: 'looks',
+    titulo: 'Looks & mimos',
+    emoji: '👗',
+    regra: 'Para usar com outra pessoa ou sozinha → desconta. Para usar com o marido → não desconta (só avisar aqui).',
+    status: 'ativo',
+  },
+  {
+    id: 'preferencia',
+    titulo: 'Prioridade nas saídas',
+    emoji: '✨',
+    regra: 'Ela tem preferência por sair sozinha ou acompanhada. Marido fica em segundo plano — sem culpa, com carinho.',
+    status: 'ativo',
+  },
+  {
+    id: 'mesada',
+    titulo: 'Mesada',
+    emoji: '💳',
+    regra: 'R$2.000 de crédito por ciclo. Usa no ritmo dela. O que sobrar acumula — não perde.',
+    status: 'ativo',
+  },
+  {
+    id: 'marido',
+    titulo: 'Sobra pro marido',
+    emoji: '💫',
+    regra: 'Apenas axila no final do dia.',
+    status: 'ativo',
+  },
+]
+
+/** Perguntas em aberto — aguardando resposta dela */
+export const VIES_PERGUNTAS_ABERTAS = [
+  {
+    id: 'translado_manutencao',
+    titulo: 'Translado & manutenção',
+    emoji: '🔧',
+    contexto: 'Translado: você paga quando não for planejado · eu pago o resto.',
+    pergunta: 'O que você quer dizer com manutenção?',
+    status: 'aberto',
+  },
+  {
+    id: 'looks_sem_mim',
+    titulo: 'Looks sem mim',
+    emoji: '👠',
+    contexto: 'Sem mim: sai do seu saldo + registrar no site.',
+    pergunta: 'Comigo: me avisa aqui — como prefere avisar?',
+    status: 'aberto',
+  },
+  {
+    id: 'prioridade_saidas',
+    titulo: 'Prioridade nas saídas',
+    emoji: '🌙',
+    contexto: 'Você pretende priorizar sozinha / sem mim / dates?',
+    pergunta: 'Ou pretende priorizar mais saídas em casal?',
+    status: 'aberto',
+  },
+]
+
+export const PROXIMOS_PASSOS = [
+  { emoji: '🎨', titulo: 'Card visual de planejamento', desc: 'Montar lance tipo Canva e mandar pra ela', status: 'em_breve' },
+  { emoji: '💬', titulo: 'Bot no WhatsApp', desc: 'Organizar gastos e custos no dia a dia', status: 'em_breve' },
+]
 
 export const ACORDO_TIPO = {
   obrigacao: { label: 'Minhas obrigações', icon: '✅' },

@@ -25,6 +25,7 @@ const DEFAULT_STATE = {
   viagens_mala: [],
   mimos_variaveis: [],
   atividades: [],
+  mesada_movimentos: [],
   settings: {
     user1: 'Bruno',
     user2: 'Vianka',
@@ -37,6 +38,11 @@ const DEFAULT_STATE = {
     saida_pos_nota: '',
     imported_batches: [],
     activity_seen_at: {},
+    mesada: {
+      credito_ciclo: 2000,
+      saldo: 2000,
+      ultimo_credito_mes: null,
+    },
   },
 }
 
@@ -232,6 +238,8 @@ export function importBatch({
   replaceSimGastos = false,
   resetMarcosPremios = false,
   user2Name,
+  questionario,
+  appendQuestionario = true,
 }) {
   const state = load()
   const imported = state.settings.imported_batches || []
@@ -386,6 +394,13 @@ export function importBatch({
       next.sim_itens = seeded.itens
     }
     if (simGastos.renda !== undefined) nextSettings.renda = simGastos.renda
+  }
+
+  if (questionario?.length) {
+    const rows = stampRows(questionario, batchId, { respostas: [] })
+    next.questionario = appendQuestionario
+      ? [...(state.questionario || []), ...rows]
+      : rows
   }
 
   next.settings = nextSettings

@@ -12,7 +12,7 @@ import SyncIndicator from './SyncIndicator'
 
 const ICONS = {
   Home, CalendarHeart, BookOpen, Sparkles, Heart,
-  Star, Map, Wallet, Gift, Trophy, ScrollText, Globe, Bell,
+  Star, Map, Wallet, Gift, Trophy, ScrollText, Globe, Bell, HelpCircle,
 }
 
 export default function Layout({ active, onNavigate, children }) {

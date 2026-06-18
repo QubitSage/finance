@@ -14,11 +14,15 @@ import RecompensasPage from './features/RecompensasPage'
 import RegrasPage from './features/RegrasPage'
 import SimulacaoPage from './features/SimulacaoPage'
 import PendenciasPage from './features/PendenciasPage'
+import PlanejamentoPage from './features/PlanejamentoPage'
+import QuestionarioPage from './features/QuestionarioPage'
 import { MIMOS_SEED } from './lib/constants'
 
 const PAGES = {
   home: HomePage,
   pendencias: PendenciasPage,
+  planejamento: PlanejamentoPage,
+  'em-aberto': QuestionarioPage,
   recompensas: RecompensasPage,
   agenda: AgendaPage,
   registros: RegistrosPage,
@@ -42,7 +46,7 @@ const PAGES = {
   ),
 }
 
-const NAV_PAGES = new Set(['home', 'agenda', 'registros'])
+const NAV_PAGES = new Set(['home', 'agenda', 'registros', 'planejamento', 'em-aberto'])
 
 export default function App() {
   const { isHer } = useSession()

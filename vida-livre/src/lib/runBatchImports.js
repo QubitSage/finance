@@ -17,6 +17,13 @@ import {
   BATCH_5_SIM_GASTOS,
 } from '../data/batch-5-gastos-casal'
 
+import {
+  BATCH_6_ID,
+  BATCH_6_COMBINADOS,
+  BATCH_6_QUESTIONARIO,
+  BATCH_6_SETTINGS,
+} from '../data/batch-6-mesada-planejamento'
+
 export const BATCH_4_ID = 'batch-4-marcos-livres'
 
 export function runPendingBatchImports() {
@@ -59,6 +66,15 @@ export function runPendingBatchImports() {
     replaceSimGastos: true,
   })
   results.push({ batch: BATCH_5_ID, ...r5 })
+
+  const r6 = importBatch({
+    batchId: BATCH_6_ID,
+    combinados: BATCH_6_COMBINADOS,
+    appendCombinados: true,
+    questionario: BATCH_6_QUESTIONARIO,
+    settingsPatch: BATCH_6_SETTINGS,
+  })
+  results.push({ batch: BATCH_6_ID, ...r6 })
 
   return results
 }

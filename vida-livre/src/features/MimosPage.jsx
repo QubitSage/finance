@@ -180,8 +180,11 @@ export default function MimosPage() {
       {/* ── FIXOS ── */}
       {tab === 0 && (
         <div className="space-y-4">
+          <p className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
+            Manutenções fixas dela — entram na referência de Estética/Looks (ver Planejamento no menu).
+          </p>
           <div className="vl-card-glow">
-            <p className="text-xs text-[var(--color-vl-muted)]">Orçamento mensal fixo</p>
+            <p className="text-xs text-[var(--color-vl-muted)]">Referência mensal (fixos mensais)</p>
             <p className="text-2xl font-bold text-rose-300">{fmtBRL(totalMensal)}</p>
             <p className="mt-1 text-xs text-[var(--color-vl-muted)]">
               {fixosByPeriod.mensal.filter((f) => f.usado_mes === month).length} de {fixosByPeriod.mensal.length} usados este mês

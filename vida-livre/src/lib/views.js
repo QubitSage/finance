@@ -1,8 +1,10 @@
 export const MODULES_HER = [
   { id: 'home', label: 'Meu espaço', icon: 'Home' },
+  { id: 'planejamento', label: 'Planejamento', icon: 'Wallet' },
   { id: 'agenda', label: 'Minha agenda', icon: 'CalendarHeart' },
   { id: 'registros', label: 'Meus registros', icon: 'BookOpen' },
   { id: 'mimos', label: 'Mimos & acordo', icon: 'Heart' },
+  { id: 'em-aberto', label: 'Em aberto', icon: 'HelpCircle' },
   { id: 'fantasias', label: 'Minhas fantasias', icon: 'Sparkles' },
   { id: 'recompensas', label: 'Meus marcos', icon: 'Trophy' },
   { id: 'ela', label: 'Minhas conquistas', icon: 'Star' },
@@ -14,7 +16,9 @@ export const MODULES_HER = [
 export const MODULES_PARTNER = [
   { id: 'home', label: 'Painel', icon: 'Home' },
   { id: 'pendencias', label: 'Pendências', icon: 'Bell' },
+  { id: 'planejamento', label: 'Planejamento', icon: 'Wallet' },
   { id: 'mimos', label: 'Mimos & acordo', icon: 'Heart' },
+  { id: 'em-aberto', label: 'Em aberto', icon: 'HelpCircle' },
   { id: 'recompensas', label: 'Marcos & prêmios', icon: 'Trophy' },
   { id: 'agenda', label: 'Agenda dela', icon: 'CalendarHeart' },
   { id: 'regras', label: 'Regras', icon: 'ScrollText' },

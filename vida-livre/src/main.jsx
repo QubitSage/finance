@@ -7,6 +7,7 @@ import App from './App.jsx'
 import { runPendingBatchImports } from './lib/runBatchImports'
 import { initCloudSync, pushToCloud } from './lib/sync'
 import { isCloudConfigured } from './lib/supabase'
+import { ensureMesadaCredit } from './lib/mesada'
 
 function BootScreen({ message, error, onRetry, onOffline }) {
   return (
@@ -52,6 +53,7 @@ function Root() {
           await initCloudSync()
         }
         runPendingBatchImports()
+        ensureMesadaCredit()
         if (isCloudConfigured) {
           await pushToCloud()
         }
@@ -78,6 +80,7 @@ function Root() {
         onRetry={boot.error ? () => setBootKey((k) => k + 1) : undefined}
         onOffline={boot.error ? () => {
           runPendingBatchImports()
+          ensureMesadaCredit()
           setBoot({ ready: true, error: null, offline: true })
         } : undefined}
       />

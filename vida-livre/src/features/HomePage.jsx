@@ -3,38 +3,37 @@ import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   CalendarHeart, Heart, Sparkles, Clock, AlertCircle, Zap, Trophy,
-  Plus, Bell, Gift, ChevronRight,
+  Plus, Bell, Gift, ChevronRight, Wallet,
 } from 'lucide-react'
 import { getCollection, subscribe } from '../lib/storage'
 import { getSaldoPontos } from '../lib/pontos'
+import { getMesadaResumo, ensureMesadaCredit } from '../lib/mesada'
 import { useSession } from '../contexts/SessionContext'
-import { STATUS_SAIDA, TIPO_AGENDA, fmtBRL } from '../lib/constants'
+import { STATUS_SAIDA, TIPO_AGENDA } from '../lib/constants'
 import { getActivities, getUnreadActivities, markActivitiesSeen, activityForViewer } from '../lib/activity'
 import { getPartnerPendingCount } from '../lib/pendencias'
 import { setNavPreset } from '../lib/nav'
+import PlanejamentoCard from '../components/PlanejamentoCard'
 import { Badge } from '../components/ui/primitives'
 
 function belongsToHer(row, user2) {
   return row.owner === user2 || !row.owner
 }
 
-function currentMonth() {
-  return new Date().toISOString().slice(0, 7)
-}
-
 export default function HomePage({ onNavigate }) {
   const { sessionUser, isHer, isPartner, user2 } = useSession()
   const [, tick] = useState(0)
   useEffect(() => subscribe(() => tick((n) => n + 1)), [])
+  useEffect(() => { ensureMesadaCredit(); tick((n) => n + 1) }, [])
+
+  const mesadaResumo = useMemo(() => getMesadaResumo(), [tick])
 
   const saidas = getCollection('saidas')
   const wishes = getCollection('wishes')
   const fantasias = getCollection('fantasias')
   const marcos = getCollection('marcos')
-  const fixos = getCollection('mimos_fixos')
   const variaveis = getCollection('mimos_variaveis')
   const saldo = getSaldoPontos()
-  const month = currentMonth()
   const marcosPendentes = marcos.filter((m) => m.status === 'pendente')
 
   const herWishes = wishes.filter((w) => belongsToHer(w, user2))
@@ -43,10 +42,6 @@ export default function HomePage({ onNavigate }) {
   const pendingMimos = herWishes.filter((w) => w.status === 'pendente')
   const pendingCount = isPartner ? getPartnerPendingCount(user2) : 0
 
-  const fixosAtivos = fixos.filter((f) => f.ativo !== false)
-  const fixosUsados = fixosAtivos.filter((f) => f.usado_mes === month).length
-  const totalMensal = fixosAtivos.filter((f) => (f.periodicidade || 'mensal') === 'mensal')
-    .reduce((s, f) => s + (Number(f.valor) || 0), 0)
   const mimosDisp = variaveis.filter((m) => m.status === 'disponivel' || m.status === 'resgatado')
 
   const upcoming = useMemo(() => {
@@ -69,7 +64,7 @@ export default function HomePage({ onNavigate }) {
     ? [
         { label: 'Nova saída', icon: CalendarHeart, action: () => { setNavPreset({ agendaTipo: 'saida' }); go('agenda') } },
         { label: 'Novo date', icon: Heart, action: () => { setNavPreset({ agendaTipo: 'date' }); go('agenda') } },
-        { label: 'Pedir mimo', icon: Gift, action: () => go('mimos') },
+        { label: 'Planejamento', icon: Wallet, action: () => go('planejamento') },
         { label: 'Registro', icon: Sparkles, action: () => go('registros') },
       ]
     : [
@@ -155,20 +150,21 @@ export default function HomePage({ onNavigate }) {
         ))}
       </div>
 
-      {(isHer || fixosAtivos.length > 0) && (
-        <section className="vl-card border-rose-500/25">
-          <div className="mb-3 flex items-center justify-between">
-            <h4 className="flex items-center gap-2 font-semibold text-rose-200">
-              <Gift size={16} /> Mimos fixos
+      {(isHer || isPartner) && (
+        <section>
+          <div className="mb-2 flex items-center justify-between">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-fuchsia-200">
+              <Wallet size={14} /> Planejamento & mesada
             </h4>
-            <button type="button" onClick={() => go('mimos')} className="text-xs text-fuchsia-300 hover:underline">Ver todos</button>
+            <button type="button" onClick={() => go('planejamento')} className="text-xs text-fuchsia-300 hover:underline">
+              Ver completo
+            </button>
           </div>
-          <p className="text-2xl font-bold text-rose-300">{fmtBRL(totalMensal)}<span className="text-sm font-normal text-[var(--color-vl-muted)]">/mês</span></p>
-          <p className="mt-1 text-xs text-[var(--color-vl-muted)]">
-            {fixosUsados} de {fixosAtivos.filter((f) => (f.periodicidade || 'mensal') === 'mensal').length} usados este mês
-          </p>
+          <PlanejamentoCard resumo={mesadaResumo} compact />
           {mimosDisp.length > 0 && (
-            <p className="mt-2 text-xs text-cyan-300">{mimosDisp.length} mimo{mimosDisp.length > 1 ? 's' : ''} variável{mimosDisp.length > 1 ? 'is' : ''} disponível{mimosDisp.length > 1 ? 'eis' : ''}</p>
+            <p className="mt-2 text-center text-xs text-cyan-300">
+              {mimosDisp.length} mimo{mimosDisp.length > 1 ? 's' : ''} variável{mimosDisp.length > 1 ? 'is' : ''} disponível{mimosDisp.length > 1 ? 'eis' : ''}
+            </p>
           )}
         </section>
       )}

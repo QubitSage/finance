@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HelpCircle, Plus, Trash2, Edit3, Lock, ChevronDown } from 'lucide-react'
 import { useScopedDB } from '../hooks/useScopedDB'
 import { useSession } from '../contexts/SessionContext'
 import { Q_CATS } from '../lib/constants'
+import { consumeNavPreset } from '../lib/nav'
 import { Badge, FilterPills } from '../components/ui/primitives'
 
 const CAT_COLORS = {
+  planejamento: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   desejo: 'bg-pink-500/15 text-pink-300 border-pink-500/30',
   limite: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
   fantasia: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
@@ -21,7 +23,12 @@ export default function QuestionarioPage() {
   const [myAnswer, setMyAnswer] = useState('')
   const [addingQ, setAddingQ] = useState(false)
   const [editingQ, setEditingQ] = useState(null)
-  const [filterCat, setFilterCat] = useState('todas')
+  const [filterCat, setFilterCat] = useState('planejamento')
+
+  useEffect(() => {
+    const p = consumeNavPreset()
+    if (p?.questionarioFilter) setFilterCat(p.questionarioFilter)
+  }, [])
   const [newQ, setNewQ] = useState({ pergunta: '', categoria: 'desejo', anonimo: false })
 
   const filtered = filterCat === 'todas' ? questions : questions.filter((q) => q.categoria === filterCat)
@@ -87,6 +94,9 @@ export default function QuestionarioPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+        Perguntas em aberto — respondam juntos quando fizer sentido. Planejamento fica aqui até ela responder.
+      </p>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <FilterPills options={['todas', ...Q_CATS]} value={filterCat} onChange={setFilterCat} />
         <button className="vl-btn-primary" onClick={() => { setAddingQ(true); setEditingQ(null) }}><Plus size={16} /> Pergunta</button>
