@@ -1,18 +1,30 @@
+import { useEffect, useState } from 'react'
 import { Map, HelpCircle, Shirt, Trash2 } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useLocalDB } from '../hooks/useLocalDB'
 import { useSettings } from '../hooks/useSettings'
+import { getMesadaResumo, ensureMesadaCredit } from '../lib/mesada'
+import { subscribe } from '../lib/storage'
 import { VIES_PLANEJAMENTO, VIES_ACORDOS_RESPONDIDOS } from '../lib/constants'
 import { Badge } from '../components/ui/primitives'
 import MimosLegenda from '../components/MimosLegenda'
+import PlanejamentoCard from '../components/PlanejamentoCard'
 
 export default function SaidasPlanejamentoPage() {
   const { canEditStructure } = useSession()
   const { settings } = useSettings()
   const { data: templates, remove: removeTpl } = useLocalDB('saida_templates', { order: 'ordem', asc: true })
+  const [, tick] = useState(0)
+
+  useEffect(() => subscribe(() => tick((n) => n + 1)), [])
+  useEffect(() => { ensureMesadaCredit(); tick((n) => n + 1) }, [])
+
+  const resumo = getMesadaResumo()
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      <PlanejamentoCard resumo={resumo} mode="referencia" />
+
       <MimosLegenda />
 
       <section>
