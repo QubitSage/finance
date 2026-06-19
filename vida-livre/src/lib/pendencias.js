@@ -6,8 +6,7 @@ function belongsToHer(row, user2) {
 
 export function getPartnerPendingCount(user2) {
   const wishes = getCollection('wishes').filter((w) => belongsToHer(w, user2) && w.status === 'pendente')
-  const marcos = getCollection('marcos').filter((m) => m.status === 'pendente')
   const saidas = getCollection('saidas')
     .filter((s) => belongsToHer(s, user2) && s.status === 'planejado' && s.share !== 'privado')
-  return wishes.length + marcos.length + saidas.length
+  return wishes.length + saidas.length
 }

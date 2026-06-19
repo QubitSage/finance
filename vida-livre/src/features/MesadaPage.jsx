@@ -1,19 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Map, HelpCircle, Wallet, Sparkles, FileImage } from 'lucide-react'
+import { Wallet, FileImage } from 'lucide-react'
 import { useSession } from '../contexts/SessionContext'
 import { useLocalDB } from '../hooks/useLocalDB'
 import { getMesadaResumo, ensureMesadaCredit, registrarMovimento, getMesadaOrcamento } from '../lib/mesada'
-import {
-  VIES_PLANEJAMENTO, VIES_ACORDOS_RESPONDIDOS, PROXIMOS_PASSOS, fmtBRL,
-} from '../lib/constants'
+import { fmtBRL } from '../lib/constants'
 import { subscribe } from '../lib/storage'
-import { setNavPreset } from '../lib/nav'
 import PlanejamentoCard from '../components/PlanejamentoCard'
 import MesadaConfigPanel from '../components/MesadaConfigPanel'
 import PlanejamentoExportModal from '../components/PlanejamentoExportModal'
-import { Badge } from '../components/ui/primitives'
 
-export default function PlanejamentoPage({ onNavigate }) {
+export default function MesadaPage() {
   const { user, isPartner, user2 } = useSession()
   const [, tick] = useState(0)
   const { data: movimentos } = useLocalDB('mesada_movimentos', { order: 'created_at', asc: false })
@@ -94,46 +90,6 @@ export default function PlanejamentoPage({ onNavigate }) {
         </form>
       )}
 
-      <section>
-        <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-fuchsia-200">
-          <Map size={16} /> Viés de planejamento
-        </h3>
-        <div className="space-y-2">
-          {VIES_PLANEJAMENTO.map((v) => (
-            <div key={v.id} className="vl-card border-emerald-500/20">
-              <p className="flex items-center gap-2 font-medium">
-                <span>{v.emoji}</span> {v.titulo}
-                <Badge className="bg-emerald-500/15 text-emerald-300 text-[10px]">ativo</Badge>
-              </p>
-              <p className="mt-1.5 text-sm leading-relaxed text-[var(--color-vl-muted)]">{v.regra}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h3 className="flex items-center gap-2 text-sm font-semibold text-emerald-200">
-            <HelpCircle size={16} /> Combinado — respostas dela
-          </h3>
-          <button type="button" onClick={() => { setNavPreset({ questionarioFilter: 'planejamento' }); onNavigate?.('em-aberto') }} className="text-xs text-emerald-300 hover:underline">
-            Ver no questionário
-          </button>
-        </div>
-        <div className="space-y-2">
-          {VIES_ACORDOS_RESPONDIDOS.map((p) => (
-            <div key={p.id} className="vl-card border-emerald-500/25 bg-emerald-500/5">
-              <p className="flex items-center gap-2 text-sm font-medium text-emerald-200">
-                <span>{p.emoji}</span> {p.titulo}
-                <Badge className="bg-emerald-500/15 text-emerald-300 text-[10px]">respondido</Badge>
-              </p>
-              <p className="mt-1 text-xs text-[var(--color-vl-muted)]">{p.pergunta}</p>
-              <p className="mt-2 text-sm leading-relaxed text-emerald-100/95">{p.resposta}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {movimentos.length > 0 && (
         <section>
           <h3 className="mb-2 text-sm font-semibold text-[var(--color-vl-muted)]">Movimentos recentes</h3>
@@ -149,24 +105,6 @@ export default function PlanejamentoPage({ onNavigate }) {
           </div>
         </section>
       )}
-
-      <section className="vl-card border-[var(--color-vl-border)] opacity-80">
-        <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--color-vl-muted)]">
-          <Sparkles size={14} /> Próximos passos
-        </h3>
-        <div className="space-y-2">
-          {PROXIMOS_PASSOS.map((p) => (
-            <div key={p.titulo} className="flex items-start gap-3 rounded-xl bg-[var(--color-vl-elevated)] px-3 py-2">
-              <span className="text-lg">{p.emoji}</span>
-              <div>
-                <p className="text-sm font-medium">{p.titulo}</p>
-                <p className="text-xs text-[var(--color-vl-muted)]">{p.desc}</p>
-              </div>
-              <Badge className="ml-auto shrink-0 bg-stone-500/15 text-stone-400 text-[10px]">em breve</Badge>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   )
 }

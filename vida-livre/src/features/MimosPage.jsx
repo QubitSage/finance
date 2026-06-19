@@ -1,20 +1,19 @@
 import { useMemo, useState } from 'react'
 import {
   Heart, Plus, Trash2, Edit3, Check, X, Sparkles, MessageCircle,
-  Shirt, Handshake, Wallet, Gift,
+  Wallet, Gift,
 } from 'lucide-react'
 import { useScopedDB } from '../hooks/useScopedDB'
 import { useLocalDB } from '../hooks/useLocalDB'
 import { useSession } from '../contexts/SessionContext'
-import { useSettings } from '../hooks/useSettings'
 import { FilterPills, Badge } from '../components/ui/primitives'
 import { logActivity } from '../lib/activity'
 import {
-  MIMO_PERIODICIDADE, MIMO_CATEGORIA, ACORDO_TIPO, MIMO_VARIAVEL_STATUS, MIMO_CONTEXTO, fmtBRL,
+  MIMO_PERIODICIDADE, MIMO_CATEGORIA, MIMO_VARIAVEL_STATUS, MIMO_CONTEXTO, fmtBRL,
 } from '../lib/constants'
 import MimosLegenda, { MimoContextoBadge, ContextoSelector } from '../components/MimosLegenda'
 
-const TABS = ['Fixos', 'Variáveis', 'Pedidos', 'Protocolo', 'Acordo']
+const TABS = ['Fixos', 'Variáveis', 'Pedidos']
 const PERIODS = ['mensal', 'semestral', 'anual']
 const WISH_CATEGORIES = ['pessoal', 'beleza', 'roupa', 'viagem', 'experiência', 'tecnologia', 'casa', 'outro']
 const PRIORITY_COLORS = {
@@ -38,16 +37,12 @@ function currentMonth() {
 }
 
 export default function MimosPage() {
-  const { user, isHer, canApproveMimos, canEditMimosFixos, canEditStructure } = useSession()
-  const { settings } = useSettings()
+  const { user, isHer, canApproveMimos, canEditMimosFixos } = useSession()
   const [tab, setTab] = useState(0)
   const month = currentMonth()
 
   const { data: fixos, insert: insertFixo, update: updateFixo, remove: removeFixo } = useLocalDB('mimos_fixos', { order: 'ordem', asc: true })
   const { data: variaveis, insert: insertVar, update: updateVar, remove: removeVar } = useLocalDB('mimos_variaveis', { order: 'created_at', asc: false })
-  const { data: templates, remove: removeTpl } = useLocalDB('saida_templates', { order: 'ordem', asc: true })
-  const { data: acordo, update: updateAcordo, remove: removeAcordo } = useLocalDB('acordo_itens', { order: 'ordem', asc: true })
-
   const wishScope = isHer ? 'mine' : 'hers'
   const { data: wishes, insert: insertWish, update: updateWish, remove: removeWish } = useScopedDB('wishes', { scope: wishScope })
 
@@ -77,9 +72,6 @@ export default function MimosPage() {
 
   const totalMensal = fixosByPeriod.mensal.reduce((s, f) => s + (Number(f.valor) || 0), 0)
   const filteredWishes = filterStatus === 'todos' ? wishes : wishes.filter((w) => w.status === filterStatus)
-
-  const obrigacoes = acordo.filter((a) => a.tipo === 'obrigacao')
-  const entregas = acordo.filter((a) => a.tipo === 'entrega')
 
   const saveFixo = () => {
     if (!fixoForm.nome.trim() || !canEditMimosFixos) return
@@ -169,12 +161,6 @@ export default function MimosPage() {
     setPendingComment('')
   }
 
-  const toggleAcordoCheck = (item) => {
-    const key = item.tipo === 'entrega' ? 'feito_mes' : 'feito_mes'
-    const done = item[key] === month
-    updateAcordo(item.id, done ? { [key]: null, feito_por: null } : { [key]: month, feito_por: user })
-  }
-
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <MimosLegenda />
@@ -184,7 +170,7 @@ export default function MimosPage() {
       {tab === 0 && (
         <div className="space-y-4">
           <p className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
-            Manutenções fixas dela — entram na referência de Estética/Looks (ver Planejamento no menu).
+            Manutenções fixas dela — entram na referência de Estética/Looks (ver Saldo de mesada).
           </p>
           <div className="vl-card-glow">
             <p className="text-xs text-[var(--color-vl-muted)]">Referência mensal (fixos mensais)</p>
@@ -429,65 +415,6 @@ export default function MimosPage() {
         </div>
       )}
 
-      {/* ── PROTOCOLO SAÍDAS ── */}
-      {tab === 3 && (
-        <div className="space-y-4">
-          {settings.saida_extra_nota && (
-            <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">{settings.saida_extra_nota}</p>
-          )}
-          {templates.map((tpl) => (
-            <div key={tpl.id} className="vl-card space-y-2">
-              <div className="flex items-start justify-between gap-2">
-                <h3 className="flex items-center gap-2 font-semibold text-rose-200">
-                  <Shirt size={16} /> {tpl.titulo}
-                </h3>
-                {canEditStructure && (
-                  <button onClick={() => removeTpl(tpl.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={13} /></button>
-                )}
-              </div>
-              <p className="text-sm"><span className="text-[var(--color-vl-muted)]">Roupa:</span> {tpl.roupa}</p>
-              <p className="text-sm"><span className="text-[var(--color-vl-muted)]">Mimos:</span> {tpl.mimos}</p>
-            </div>
-          ))}
-          {settings.saida_pos_nota && (
-            <p className="rounded-xl border border-fuchsia-500/30 bg-fuchsia-500/10 px-3 py-2 text-center text-sm font-medium text-fuchsia-200">
-              {settings.saida_pos_nota}
-            </p>
-          )}
-          {templates.length === 0 && (
-            <p className="py-8 text-center text-sm text-[var(--color-vl-muted)]">Templates de saída aparecem após import do batch.</p>
-          )}
-        </div>
-      )}
-
-      {/* ── ACORDO ── */}
-      {tab === 4 && (
-        <div className="space-y-5">
-          <section>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-emerald-200">
-              <Handshake size={16} /> {ACORDO_TIPO.obrigacao.label}
-            </h3>
-            <div className="space-y-2">
-              {obrigacoes.map((item) => (
-                <AcordoRow key={item.id} item={item} month={month} isHer={isHer} canEdit={canEditStructure} onToggle={() => toggleAcordoCheck(item)} onRemove={() => removeAcordo(item.id)} />
-              ))}
-            </div>
-          </section>
-          <section>
-            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-fuchsia-200">
-              <Sparkles size={16} /> {ACORDO_TIPO.entrega.label}
-            </h3>
-            <div className="space-y-2">
-              {entregas.map((item) => (
-                <AcordoRow key={item.id} item={item} month={month} isHer={isHer} canEdit={canEditStructure} onToggle={() => toggleAcordoCheck(item)} onRemove={() => removeAcordo(item.id)} />
-              ))}
-            </div>
-          </section>
-          {acordo.length === 0 && (
-            <p className="py-8 text-center text-sm text-[var(--color-vl-muted)]">Acordo do casal — recarregue se acabou de importar.</p>
-          )}
-        </div>
-      )}
     </div>
   )
 }
@@ -556,31 +483,6 @@ function FixoForm({ form, setForm, onSave, onCancel }) {
         <button type="button" onClick={onSave} className="vl-btn-primary flex-1">Salvar</button>
         <button type="button" onClick={onCancel} className="vl-btn-ghost">Cancelar</button>
       </div>
-    </div>
-  )
-}
-
-function AcordoRow({ item, month, isHer, canEdit, onToggle, onRemove }) {
-  const done = item.feito_mes === month
-  const canCheck = item.tipo === 'entrega' ? isHer : !isHer
-
-  return (
-    <div className="vl-card flex items-center gap-3 py-3">
-      <button
-        type="button"
-        disabled={!canCheck}
-        onClick={onToggle}
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all ${done ? 'bg-emerald-500/25 text-emerald-300' : 'bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)]'}`}
-      >
-        <Check size={16} />
-      </button>
-      <div className="min-w-0 flex-1">
-        <p className={`text-sm ${done ? 'text-[var(--color-vl-muted)] line-through' : ''}`}>{item.texto}</p>
-        {item.detalhes && <p className="text-xs text-[var(--color-vl-muted)]">{item.detalhes}</p>}
-      </div>
-      {canEdit && (
-        <button onClick={onRemove} className="vl-btn-icon hover:text-rose-400"><Trash2 size={13} /></button>
-      )}
     </div>
   )
 }

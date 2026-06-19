@@ -1,12 +1,12 @@
 import { useMemo, useState, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { CalendarHeart, Plus, Trash2, Edit3, CheckCircle2, Sparkles, BookOpen } from 'lucide-react'
+import { CalendarHeart, Plus, Trash2, Edit3, CheckCircle2, Sparkles } from 'lucide-react'
 import { useScopedDB } from '../hooks/useScopedDB'
 import { useSession } from '../contexts/SessionContext'
 import { STATUS_SAIDA, SHARE_NIVEL, TIPO_AGENDA } from '../lib/constants'
 import { logActivity } from '../lib/activity'
-import { consumeNavPreset, setPendingRegistro } from '../lib/nav'
+import { consumeNavPreset } from '../lib/nav'
 import { Badge, EmptyState, FilterPills } from '../components/ui/primitives'
 
 const EMPTY = {
@@ -21,7 +21,7 @@ const EMPTY = {
   tipo: 'saida',
 }
 
-export default function AgendaPage({ onNavigate }) {
+export default function AgendaPage() {
   const { isHer, user } = useSession()
   const scope = isHer ? 'mine' : 'hers-shared'
   const { data: saidas, insert, update, remove } = useScopedDB('saidas', { scope })
@@ -31,7 +31,6 @@ export default function AgendaPage({ onNavigate }) {
   const [adding, setAdding] = useState(false)
   const [editId, setEditId] = useState(null)
   const [form, setForm] = useState(EMPTY)
-  const [registroPrompt, setRegistroPrompt] = useState(null)
 
   useEffect(() => {
     const p = consumeNavPreset()
@@ -102,10 +101,6 @@ export default function AgendaPage({ onNavigate }) {
 
   const upStatus = (s, st) => {
     update(s.id, { status: st })
-    if (st === 'realizado' && isHer) {
-      setRegistroPrompt(s)
-      setPendingRegistro(s)
-    }
     if (st === 'aconteceu' && !isHer) {
       logActivity({ tipo: 'agenda_aprovada', titulo: 'Agenda aprovada', mensagem: s.titulo, por: user, audience: 'her' })
     }
@@ -151,18 +146,6 @@ export default function AgendaPage({ onNavigate }) {
         <p className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
           Prioridade: sair sozinha e dates. Com ele só se você quiser — avisa bem antes.
         </p>
-      )}
-
-      {registroPrompt && (
-        <div className="vl-card border-fuchsia-500/40 bg-fuchsia-500/10">
-          <p className="text-sm text-fuchsia-100">Marcou como realizado! Quer registrar como foi?</p>
-          <div className="mt-3 flex gap-2">
-            <button type="button" className="vl-btn-primary flex-1 text-sm" onClick={() => { onNavigate?.('registros'); setRegistroPrompt(null) }}>
-              <BookOpen size={14} className="inline" /> Escrever registro
-            </button>
-            <button type="button" className="vl-btn-ghost text-sm" onClick={() => setRegistroPrompt(null)}>Depois</button>
-          </div>
-        </div>
       )}
 
       {adding && canEdit && (
