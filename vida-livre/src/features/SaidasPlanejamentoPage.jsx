@@ -9,6 +9,7 @@ import { VIES_PLANEJAMENTO, VIES_ACORDOS_RESPONDIDOS } from '../lib/constants'
 import { Badge } from '../components/ui/primitives'
 import MimosLegenda from '../components/MimosLegenda'
 import PlanejamentoCard from '../components/PlanejamentoCard'
+import RitualSaidaCard from '../components/RitualSaidaCard'
 
 export default function SaidasPlanejamentoPage() {
   const { canEditStructure } = useSession()
@@ -24,6 +25,8 @@ export default function SaidasPlanejamentoPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <PlanejamentoCard resumo={resumo} mode="referencia" />
+
+      <RitualSaidaCard />
 
       <MimosLegenda />
 

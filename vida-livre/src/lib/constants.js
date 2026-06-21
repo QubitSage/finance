@@ -247,6 +247,46 @@ export const VIES_PLANEJAMENTO = [
   },
 ]
 
+/** Ritual combinado — date, jantar, encontro ou saída */
+export const RITUAL_SAIDA = {
+  titulo: 'Ritual do date / saída',
+  emoji: '✨',
+  intro: 'Sempre que ela tiver date, jantar, encontro ou saída — nosso combinado em três momentos.',
+  fases: [
+    {
+      id: 'antes',
+      titulo: 'Antes — preparar ela',
+      emoji: '🛁',
+      itens: [
+        'Dou banho nela',
+        'Arrumo ela',
+        'Preparo ela para o compromisso',
+      ],
+    },
+    {
+      id: 'durante',
+      titulo: 'Enquanto ela está fora',
+      emoji: '🏠',
+      itens: [
+        'Cuido de arrumar toda a casa',
+        'Estendo toalha',
+        'Arrumo a cama',
+        'Deixo pia e ambiente prontos',
+      ],
+    },
+    {
+      id: 'depois',
+      titulo: 'Quando ela chegar',
+      emoji: '🌙',
+      itens: [
+        'Dou banho nela',
+        'Limpo ela e seco',
+        'Depois como ela',
+      ],
+    },
+  ],
+}
+
 /** Respostas firmadas — combinado do casal */
 export const VIES_ACORDOS_RESPONDIDOS = [
   {
