@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, ScrollText } from 'lucide-react'
+import { Plus, Trash2, Edit3, ScrollText } from 'lucide-react'
 import { useDB } from '../hooks/useDB'
 import { useActor } from '../contexts/ActorContext'
 import { fetchAll, updateRow } from '../lib/db'
@@ -7,6 +7,7 @@ import { REGRA_CATEGORIA } from '../lib/constants'
 import { FilterPills, EmptyState } from '../components/ui/primitives'
 
 const CATEGORIAS = Object.keys(REGRA_CATEGORIA)
+const EMPTY_FORM = { categoria: 'permitido', texto: '', detalhes: '' }
 
 export default function RegrasPage() {
   const { actor } = useActor()
@@ -15,7 +16,8 @@ export default function RegrasPage() {
   const [editingIntro, setEditingIntro] = useState(false)
   const [filter, setFilter] = useState('permitido')
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ categoria: 'permitido', texto: '', detalhes: '' })
+  const [editingId, setEditingId] = useState(null)
+  const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
     fetchAll('vl_regras_intro').then((rows) => setIntro(rows[0]?.texto || ''))
@@ -25,11 +27,22 @@ export default function RegrasPage() {
     updateRow('vl_regras_intro', 'main', { texto: intro }).then(() => setEditingIntro(false))
   }
 
-  const addRegra = () => {
+  const startEdit = (r) => {
+    setForm({ categoria: r.categoria, texto: r.texto, detalhes: r.detalhes || '' })
+    setEditingId(r.id)
+    setAdding(true)
+  }
+
+  const submit = () => {
     if (!form.texto.trim()) return
-    insert({ ...form, criado_por: actor })
-    setForm({ categoria: filter, texto: '', detalhes: '' })
+    if (editingId) {
+      update(editingId, form)
+    } else {
+      insert({ ...form, criado_por: actor })
+    }
+    setForm({ ...EMPTY_FORM, categoria: filter })
     setAdding(false)
+    setEditingId(null)
   }
 
   const filtered = regras.filter((r) => r.categoria === filter)
@@ -67,7 +80,7 @@ export default function RegrasPage() {
       />
 
       {!adding && (
-        <button className="vl-btn-primary w-full text-sm" onClick={() => { setForm((f) => ({ ...f, categoria: filter })); setAdding(true) }}>
+        <button className="vl-btn-primary w-full text-sm" onClick={() => { setForm({ ...EMPTY_FORM, categoria: filter }); setAdding(true) }}>
           <Plus size={14} /> Nova regra
         </button>
       )}
@@ -80,8 +93,8 @@ export default function RegrasPage() {
           <input className="vl-input" placeholder="Regra *" value={form.texto} onChange={(e) => setForm((f) => ({ ...f, texto: e.target.value }))} />
           <textarea className="vl-input resize-none" rows={2} placeholder="Detalhes (opcional)" value={form.detalhes} onChange={(e) => setForm((f) => ({ ...f, detalhes: e.target.value }))} />
           <div className="flex gap-2">
-            <button className="vl-btn-primary flex-1 text-sm" onClick={addRegra}>Salvar</button>
-            <button className="vl-btn-ghost text-sm" onClick={() => setAdding(false)}>Cancelar</button>
+            <button className="vl-btn-primary flex-1 text-sm" onClick={submit}>Salvar</button>
+            <button className="vl-btn-ghost text-sm" onClick={() => { setAdding(false); setEditingId(null) }}>Cancelar</button>
           </div>
         </div>
       )}
@@ -105,6 +118,7 @@ export default function RegrasPage() {
                 >
                   {r.ativo ? 'On' : 'Off'}
                 </button>
+                <button className="vl-btn-icon" onClick={() => startEdit(r)}><Edit3 size={13} /></button>
                 <button className="vl-btn-icon hover:text-[var(--color-vl-danger)]" onClick={() => remove(r.id)}>
                   <Trash2 size={13} />
                 </button>

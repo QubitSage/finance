@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, TrendingDown, TrendingUp } from 'lucide-react'
+import { Plus, TrendingDown, TrendingUp, Trash2 } from 'lucide-react'
 import { useActor } from '../contexts/ActorContext'
-import { getSaldoConfig, getMovimentos, registrarMovimento } from '../lib/ledger'
+import { getSaldoConfig, getMovimentos, registrarMovimento, removerMovimento } from '../lib/ledger'
 import { fmtBRL, CONTEXTO, LADO_LABEL } from '../lib/constants'
 import ContextoSelector from '../components/ContextoSelector'
 import { EmptyState } from '../components/ui/primitives'
@@ -49,6 +49,11 @@ export default function MesadaPage() {
     }
     setForm({ valor: '', contexto: 'sozinha', lado: 'esposa', nota: '' })
     setAdding(false)
+    reload()
+  }
+
+  const excluir = async (m) => {
+    await removerMovimento(m)
     reload()
   }
 
@@ -141,6 +146,9 @@ export default function MesadaPage() {
             <span className={`text-sm font-semibold ${m.tipo === 'credito' ? 'text-[var(--color-vl-success)]' : 'text-[var(--color-vl-danger)]'}`}>
               {m.tipo === 'credito' ? '+' : '-'}{fmtBRL(m.valor)}
             </span>
+            <button className="vl-btn-icon hover:text-[var(--color-vl-danger)]" onClick={() => excluir(m)}>
+              <Trash2 size={13} />
+            </button>
           </div>
         ))}
       </div>

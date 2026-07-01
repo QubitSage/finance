@@ -130,6 +130,12 @@ export default function AgendaPage() {
               </div>
               {e.status === 'planejado' && (
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--color-vl-border)] pt-3">
+                  <button className="vl-pill bg-[var(--color-vl-warning-soft)] text-[var(--color-vl-warning)]" onClick={() => update(e.id, { status: 'aconteceu' })}>Aconteceu</button>
+                  <button className="vl-pill vl-pill-inactive" onClick={() => update(e.id, { status: 'cancelado' })}>Cancelar</button>
+                </div>
+              )}
+              {e.status === 'aconteceu' && (
+                <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--color-vl-border)] pt-3">
                   <button className="vl-pill bg-[var(--color-vl-success-soft)] text-[var(--color-vl-success)]" onClick={() => update(e.id, { status: 'realizado' })}>Realizado</button>
                   <button className="vl-pill vl-pill-inactive" onClick={() => update(e.id, { status: 'cancelado' })}>Cancelar</button>
                 </div>

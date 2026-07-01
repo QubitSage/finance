@@ -13,7 +13,13 @@ export async function getSaldoConfig() {
   return { marido: byLado.marido, esposa: byLado.esposa }
 }
 
-/** Credita o crédito mensal no saldo dela, uma vez por mês (idempotente). */
+/**
+ * Credita o crédito mensal no saldo dela, uma vez por mês (idempotente).
+ * O UPDATE só afeta a linha se `ultimo_credito_mes` ainda não for o mês atual —
+ * o Postgres reavalia esse filtro no momento do lock, então mesmo que duas
+ * chamadas concorrentes (ex: StrictMode) leiam o mesmo saldo "stale", só a
+ * primeira a conseguir o lock realmente credita; a segunda afeta 0 linhas.
+ */
 export async function ensureCreditoMensal() {
   await ensureCloudAuth()
   const mes = currentMonth()
@@ -26,9 +32,10 @@ export async function ensureCreditoMensal() {
     .from('vl_saldo_config')
     .update({ saldo: novoSaldo, ultimo_credito_mes: mes })
     .eq('lado', 'esposa')
+    .or(`ultimo_credito_mes.is.null,ultimo_credito_mes.neq.${mes}`)
     .select()
-    .single()
   if (updateErr) throw updateErr
+  if (!updated?.length) return esposa // outra chamada concorrente já creditou este mês
 
   await supabase.from('vl_movimentos').insert({
     lado: 'esposa',
@@ -40,7 +47,7 @@ export async function ensureCreditoMensal() {
     mes,
   })
 
-  return updated
+  return updated[0]
 }
 
 /**
@@ -78,4 +85,20 @@ export async function getMovimentos({ lado, limit = 50 } = {}) {
   const { data, error } = await query
   if (error) throw error
   return data || []
+}
+
+/** Remove um movimento e desfaz o efeito dele no saldo do lado correspondente. */
+export async function removerMovimento(mov) {
+  await ensureCloudAuth()
+  const { data: cfg, error: cfgErr } = await supabase.from('vl_saldo_config').select('*').eq('lado', mov.lado).single()
+  if (cfgErr) throw cfgErr
+
+  const delta = mov.tipo === 'credito' ? -Number(mov.valor) : Number(mov.valor)
+  const novoSaldo = Number(cfg.saldo) + delta
+
+  const { error: updateErr } = await supabase.from('vl_saldo_config').update({ saldo: novoSaldo }).eq('lado', mov.lado)
+  if (updateErr) throw updateErr
+
+  const { error: delErr } = await supabase.from('vl_movimentos').delete().eq('id', mov.id)
+  if (delErr) throw delErr
 }

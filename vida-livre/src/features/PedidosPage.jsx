@@ -60,14 +60,32 @@ export default function PedidosPage() {
     setEditingId(null)
   }
 
+  const mesAtual = new Date().toISOString().slice(0, 7)
+
   const marcarRealizado = async (p) => {
-    await update(p.id, { status: p.recorrente ? 'disponivel' : 'realizado', usado_mes: new Date().toISOString().slice(0, 7), respondido_por: actor })
+    await update(p.id, { status: 'realizado', usado_mes: mesAtual, respondido_por: actor })
     if (p.valor) {
       await registrarMovimento({
         contexto: p.contexto, tipo: 'debito', valor: p.valor, origem: 'pedido',
         origem_id: p.id, categoria: p.categoria, nota: p.titulo, registrado_por: actor,
       })
     }
+  }
+
+  const toggleUsado = async (p) => {
+    const usado = p.usado_mes === mesAtual
+    await update(p.id, { usado_mes: usado ? null : mesAtual, respondido_por: actor })
+    if (!usado && p.valor) {
+      await registrarMovimento({
+        contexto: p.contexto, tipo: 'debito', valor: p.valor, origem: 'pedido',
+        origem_id: p.id, categoria: p.categoria, nota: p.titulo, registrado_por: actor,
+      })
+    }
+  }
+
+  const togglePago = (p) => {
+    const pago = p.pago_mes === mesAtual
+    update(p.id, { pago_mes: pago ? null : mesAtual, respondido_por: actor })
   }
 
   const responder = (p, status) => update(p.id, { status, respondido_por: actor })
@@ -146,10 +164,26 @@ export default function PedidosPage() {
                     </button>
                   </>
                 )}
-                {(p.recorrente || p.status === 'aprovado') && p.status !== 'realizado' && (
+                {!p.recorrente && p.status === 'aprovado' && (
                   <button className="vl-pill bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)]" onClick={() => marcarRealizado(p)}>
-                    {p.recorrente ? 'Marcar usado' : 'Marcar realizado'}
+                    Marcar realizado
                   </button>
+                )}
+                {p.recorrente && (
+                  <>
+                    <button
+                      className={`vl-pill ${p.usado_mes === mesAtual ? 'bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)]' : 'vl-pill-inactive'}`}
+                      onClick={() => toggleUsado(p)}
+                    >
+                      <Check size={12} className="inline" /> Usei {p.usado_mes === mesAtual ? '✓' : ''}
+                    </button>
+                    <button
+                      className={`vl-pill ${p.pago_mes === mesAtual ? 'bg-[var(--color-vl-success-soft)] text-[var(--color-vl-success)]' : 'vl-pill-inactive'}`}
+                      onClick={() => togglePago(p)}
+                    >
+                      Paguei {p.pago_mes === mesAtual ? '✓' : ''}
+                    </button>
+                  </>
                 )}
               </div>
             </div>
