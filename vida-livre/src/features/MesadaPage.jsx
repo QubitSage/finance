@@ -72,7 +72,7 @@ export default function MesadaPage() {
                 key={t}
                 type="button"
                 onClick={() => setMovForm((f) => ({ ...f, tipo: t }))}
-                className={`rounded-xl px-3 py-1.5 text-xs font-medium ${movForm.tipo === t ? 'bg-fuchsia-500/25 text-fuchsia-200' : 'bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)]'}`}
+                className={`vl-pill ${movForm.tipo === t ? 'vl-pill-active' : 'vl-pill-inactive'}`}
               >
                 {t === 'debito' ? 'Descontar' : 'Creditar'}
               </button>
@@ -80,7 +80,7 @@ export default function MesadaPage() {
           </div>
           <input required type="number" step="0.01" className="vl-input" placeholder="Valor R$" value={movForm.valor} onChange={(e) => setMovForm((f) => ({ ...f, valor: e.target.value }))} />
           <select className="vl-input" value={movForm.bucket} onChange={(e) => setMovForm((f) => ({ ...f, bucket: e.target.value }))}>
-            {Object.entries(orcamento).map(([k, v]) => <option key={k} value={k}>{v.emoji} {v.label}</option>)}
+            {Object.entries(orcamento).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
           </select>
           <input className="vl-input" placeholder="Nota (opcional)" value={movForm.nota} onChange={(e) => setMovForm((f) => ({ ...f, nota: e.target.value }))} />
           <div className="flex gap-2">
@@ -97,7 +97,7 @@ export default function MesadaPage() {
             {movimentos.slice(0, 8).map((m) => (
               <div key={m.id} className="flex items-center justify-between rounded-lg bg-[var(--color-vl-elevated)] px-3 py-2 text-xs">
                 <span className="truncate">{m.nota || (m.tipo === 'debito' ? 'Desconto' : 'Crédito')}</span>
-                <span className={m.tipo === 'debito' ? 'text-rose-300' : 'text-emerald-300'}>
+                <span style={{ color: m.tipo === 'debito' ? 'var(--color-vl-danger)' : 'var(--color-vl-success)' }}>
                   {m.tipo === 'debito' ? '−' : '+'}{fmtBRL(m.valor)}
                 </span>
               </div>

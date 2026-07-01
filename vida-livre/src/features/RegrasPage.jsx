@@ -51,15 +51,15 @@ export default function RegrasPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-5">
-      <div className="vl-card-glow">
+      <div className="vl-card-highlight">
         <div className="mb-2 flex items-center justify-between">
           <h3 className="flex items-center gap-2 font-semibold">
-            <ScrollText size={18} className="text-violet-400" />
+            <ScrollText size={18} className="text-[var(--color-vl-accent)]" />
             {isHer ? 'Nossas regras' : 'Regras do casal'}
           </h3>
           {isHer && (
             <span className="flex items-center gap-1 text-xs text-[var(--color-vl-muted)]">
-              <Lock size={10} /> Somente leitura
+              <Lock size={12} /> Somente leitura
             </span>
           )}
         </div>
@@ -78,7 +78,7 @@ export default function RegrasPage() {
               <button
                 type="button"
                 onClick={() => { setIntroDraft(intro); setEditingIntro(true) }}
-                className="mt-3 text-xs text-violet-300 hover:text-violet-200"
+                className="mt-3 text-xs text-[var(--color-vl-accent)] hover:opacity-80"
               >
                 Editar princípios
               </button>
@@ -87,9 +87,9 @@ export default function RegrasPage() {
         )}
       </div>
 
-      <div className="vl-card flex items-start gap-3 border-amber-500/20 bg-amber-500/5">
-        <ShieldCheck size={18} className="shrink-0 text-amber-400" />
-        <p className="text-sm text-amber-200/80">
+      <div className="vl-card flex items-start gap-3" style={{ borderColor: 'var(--color-vl-warning)', backgroundColor: 'var(--color-vl-warning-soft)' }}>
+        <ShieldCheck size={18} className="shrink-0 text-[var(--color-vl-warning)]" />
+        <p className="text-sm text-[var(--color-vl-text)]">
           {isHer
             ? 'Combinados que vocês definiram juntos. Seu ritmo é o certo.'
             : 'Mantenha atualizado. Ela vê em modo leitura no login dela.'}
@@ -112,7 +112,7 @@ export default function RegrasPage() {
                 key={k}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, categoria: k }))}
-                className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-all ${form.categoria === k ? 'border-fuchsia-400 bg-fuchsia-500/20 text-fuchsia-200' : 'border-[var(--color-vl-border)] text-[var(--color-vl-muted)]'}`}
+                className={`vl-pill flex items-center gap-1.5 ${form.categoria === k ? 'vl-pill-active' : 'vl-pill-inactive'}`}
               >
                 <span className={`h-2 w-2 rounded-full ${v.dot}`} />
                 {v.label}
@@ -151,12 +151,12 @@ export default function RegrasPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm">{item.texto}</p>
                     {item.detalhes && <p className="mt-0.5 text-xs text-[var(--color-vl-muted)]">{item.detalhes}</p>}
-                    {item.revisado_em && <p className="mt-0.5 text-xs text-[var(--color-vl-muted)]/60">Revisado em {item.revisado_em}</p>}
+                    {item.revisado_em && <p className="mt-0.5 text-xs text-[var(--color-vl-muted)] opacity-70">Revisado em {item.revisado_em}</p>}
                   </div>
                   {canEditRules && (
                     <div className="flex gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100">
                       <button type="button" onClick={() => startEdit(item)} className="vl-btn-icon"><Edit3 size={13} /></button>
-                      <button type="button" onClick={() => remove(item.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={13} /></button>
+                      <button type="button" onClick={() => remove(item.id)} className="vl-btn-icon hover:text-[var(--color-vl-danger)]"><Trash2 size={13} /></button>
                     </div>
                   )}
                 </div>

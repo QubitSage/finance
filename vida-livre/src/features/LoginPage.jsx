@@ -44,7 +44,7 @@ export default function LoginPage() {
         animate={{ opacity: 1, y: 0 }}
         className="mb-10 text-center"
       >
-        <h1 className="bg-gradient-to-r from-fuchsia-300 to-violet-300 bg-clip-text text-3xl font-bold text-transparent">
+        <h1 className="text-3xl font-semibold text-[var(--color-vl-text)]">
           Vida Livre
         </h1>
         <p className="mt-2 flex items-center justify-center gap-1.5 text-sm text-[var(--color-vl-muted)]">
@@ -63,12 +63,12 @@ export default function LoginPage() {
         className="w-full max-w-xs"
       >
         <div
-          className={`vl-card-glow relative overflow-hidden border bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 transition-colors ${
-            error ? 'border-rose-500/50' : 'border-fuchsia-500/30'
+          className={`vl-card-highlight relative overflow-hidden p-6 transition-colors ${
+            error ? 'border-[var(--color-vl-danger)]' : ''
           }`}
         >
           <div className="mb-4 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-fuchsia-500/15 text-fuchsia-300">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl vl-tone-accent">
               <KeyRound size={22} />
             </div>
           </div>
@@ -83,7 +83,7 @@ export default function LoginPage() {
             value={code}
             onChange={(e) => tryLogin(e.target.value)}
             placeholder="••••••"
-            className="w-full bg-transparent text-center text-3xl font-bold tracking-[0.35em] text-fuchsia-100 placeholder:text-fuchsia-200/20 focus:outline-none"
+            className="w-full bg-transparent text-center text-3xl font-bold tracking-[0.35em] text-[var(--color-vl-text)] placeholder:text-[var(--color-vl-muted)]/40 focus:outline-none"
             aria-label="Código de acesso"
           />
 
@@ -92,7 +92,7 @@ export default function LoginPage() {
               <span
                 key={i}
                 className={`h-2 w-2 rounded-full transition-colors ${
-                  i < code.length ? 'bg-fuchsia-400' : 'bg-fuchsia-500/20'
+                  i < code.length ? 'bg-[var(--color-vl-accent)]' : 'bg-[var(--color-vl-elevated)]'
                 }`}
               />
             ))}
@@ -102,7 +102,7 @@ export default function LoginPage() {
             <motion.p
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mt-4 text-center text-sm text-rose-300"
+              className="mt-4 text-center text-sm text-[var(--color-vl-danger)]"
             >
               Código incorreto. Tente de novo.
             </motion.p>
@@ -111,7 +111,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={code.length !== CODE_LENGTH}
-            className="mt-5 w-full rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 py-3 text-sm font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-40"
+            className="vl-btn-primary mt-5 w-full py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40"
           >
             Entrar
           </button>
@@ -119,7 +119,7 @@ export default function LoginPage() {
       </motion.form>
 
       <p className="mt-10 flex items-center gap-1 text-xs text-[var(--color-vl-muted)]">
-        <Heart size={12} className="text-rose-400" /> Espaço do casal · privado
+        <Heart size={12} className="text-[var(--color-vl-warm)]" /> Espaço do casal · privado
       </p>
     </div>
   )

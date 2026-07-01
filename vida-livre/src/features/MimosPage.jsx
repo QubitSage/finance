@@ -9,7 +9,7 @@ import { useSession } from '../contexts/SessionContext'
 import { FilterPills, Badge } from '../components/ui/primitives'
 import { logActivity } from '../lib/activity'
 import {
-  MIMO_PERIODICIDADE, MIMO_CATEGORIA, MIMO_VARIAVEL_STATUS, MIMO_CONTEXTO, fmtBRL,
+  MIMO_PERIODICIDADE, MIMO_CATEGORIA, MIMO_VARIAVEL_STATUS, fmtBRL,
 } from '../lib/constants'
 import MimosLegenda, { MimoContextoBadge, ContextoSelector } from '../components/MimosLegenda'
 
@@ -17,16 +17,16 @@ const TABS = ['Fixos', 'Variáveis', 'Pedidos']
 const PERIODS = ['mensal', 'semestral', 'anual']
 const WISH_CATEGORIES = ['pessoal', 'beleza', 'roupa', 'viagem', 'experiência', 'tecnologia', 'casa', 'outro']
 const PRIORITY_COLORS = {
-  baixa: 'bg-stone-500/20 text-stone-300',
-  média: 'bg-amber-500/20 text-amber-300',
-  alta: 'bg-orange-500/20 text-orange-300',
-  urgente: 'bg-rose-500/20 text-rose-300',
+  baixa: 'vl-badge-neutral',
+  média: 'vl-badge-warning',
+  alta: 'vl-badge-warm',
+  urgente: 'vl-badge-danger',
 }
 const STATUS_COLORS = {
-  pendente: 'bg-amber-500/20 text-amber-300',
-  aprovado: 'bg-cyan-500/20 text-cyan-300',
-  negado: 'bg-rose-500/20 text-rose-300',
-  realizado: 'bg-violet-500/20 text-violet-300',
+  pendente: 'vl-badge-warning',
+  aprovado: 'vl-badge-info',
+  negado: 'vl-badge-danger',
+  realizado: 'vl-badge-accent',
 }
 const WISH_EMPTY = { title: '', description: '', como: '', category: 'pessoal', estimated_cost: '', status: 'pendente', priority: 'média', contexto: 'sozinha' }
 const FIXO_EMPTY = { nome: '', valor: '', periodicidade: 'mensal', categoria: 'outro', nota: '', ativo: true, contexto: 'sozinha' }
@@ -169,12 +169,12 @@ export default function MimosPage() {
       {/* ── FIXOS ── */}
       {tab === 0 && (
         <div className="space-y-4">
-          <p className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
+          <p className="rounded-xl bg-[var(--color-vl-accent-soft)] px-3 py-2 text-xs text-[var(--color-vl-accent)]">
             Manutenções fixas dela — entram na referência de Estética/Looks (ver Saldo de mesada).
           </p>
-          <div className="vl-card-glow">
+          <div className="vl-card-highlight">
             <p className="text-xs text-[var(--color-vl-muted)]">Referência mensal (fixos mensais)</p>
-            <p className="text-2xl font-bold text-rose-300">{fmtBRL(totalMensal)}</p>
+            <p className="text-2xl font-semibold text-[var(--color-vl-text)]">{fmtBRL(totalMensal)}</p>
             <p className="mt-1 text-xs text-[var(--color-vl-muted)]">
               {fixosByPeriod.mensal.filter((f) => f.usado_mes === month).length} de {fixosByPeriod.mensal.length} usados este mês
             </p>
@@ -231,7 +231,7 @@ export default function MimosPage() {
       {/* ── VARIÁVEIS ── */}
       {tab === 1 && (
         <div className="space-y-4">
-          <p className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-200">
+          <p className="rounded-xl bg-[var(--color-vl-info-soft)] px-3 py-2 text-xs text-[var(--color-vl-info)]">
             {canEditMimosFixos
               ? 'Mimos especiais que você cria para ela resgatar quando quiser.'
               : 'Mimos que ele preparou — resgate e marque quando usar.'}
@@ -259,7 +259,7 @@ export default function MimosPage() {
           <div className="space-y-2">
             {variaveis.length === 0 && (
               <div className="py-10 text-center">
-                <Gift className="mx-auto mb-2 h-10 w-10 text-[var(--color-vl-muted)]/30" />
+                <Gift className="mx-auto mb-2 h-10 w-10 text-[var(--color-vl-muted)] opacity-30" />
                 <p className="text-sm text-[var(--color-vl-muted)]">Nenhum mimo variável ainda</p>
               </div>
             )}
@@ -270,10 +270,10 @@ export default function MimosPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Gift size={14} className="text-cyan-300" />
+                        <Gift size={14} className="text-[var(--color-vl-muted)]" />
                         <span className="font-medium">{item.nome}</span>
                         {item.valor != null && item.valor > 0 && (
-                          <span className="text-sm font-bold text-rose-300">{fmtBRL(item.valor)}</span>
+                          <span className="text-sm font-semibold text-[var(--color-vl-text)]">{fmtBRL(item.valor)}</span>
                         )}
                         <Badge className={st.className}>{st.label}</Badge>
                         <MimoContextoBadge contexto={item.contexto} size="xs" />
@@ -283,19 +283,19 @@ export default function MimosPage() {
                     {canEditMimosFixos && (
                       <div className="flex gap-1">
                         <button onClick={() => { setVarForm({ nome: item.nome, descricao: item.descricao || '', valor: item.valor || '', contexto: item.contexto || 'sozinha' }); setEditVarId(item.id); setAddingVar(false) }} className="vl-btn-icon"><Edit3 size={13} /></button>
-                        <button onClick={() => removeVar(item.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={13} /></button>
+                        <button onClick={() => removeVar(item.id)} className="vl-btn-icon hover:text-[var(--color-vl-danger)]"><Trash2 size={13} /></button>
                       </div>
                     )}
                   </div>
                   {isHer && item.status !== 'usado' && (
                     <div className="mt-3 flex flex-wrap gap-2 border-t border-[var(--color-vl-border)] pt-3">
                       {item.status === 'disponivel' && (
-                        <button type="button" onClick={() => resgatarVar(item)} className="rounded-lg bg-cyan-500/20 px-3 py-1.5 text-xs font-medium text-cyan-200">
+                        <button type="button" onClick={() => resgatarVar(item)} className="vl-pill vl-pill-inactive">
                           Resgatar
                         </button>
                       )}
                       {(item.status === 'disponivel' || item.status === 'resgatado') && (
-                        <button type="button" onClick={() => usarVar(item)} className="rounded-lg bg-emerald-500/20 px-3 py-1.5 text-xs font-medium text-emerald-200">
+                        <button type="button" onClick={() => usarVar(item)} className="vl-pill bg-[var(--color-vl-success-soft)] text-[var(--color-vl-success)]">
                           Marcar como usado
                         </button>
                       )}
@@ -313,19 +313,19 @@ export default function MimosPage() {
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { val: wishes.filter((w) => w.status === 'pendente').length, label: 'Pendentes', color: 'text-rose-300' },
-              { val: wishes.filter((w) => w.status === 'aprovado').length, label: 'Aprovados', color: 'text-cyan-300' },
+              { val: wishes.filter((w) => w.status === 'pendente').length, label: 'Pendentes', color: 'text-[var(--color-vl-warning)]' },
+              { val: wishes.filter((w) => w.status === 'aprovado').length, label: 'Aprovados', color: 'text-[var(--color-vl-info)]' },
               { val: wishes.length, label: 'Total', color: 'text-[var(--color-vl-text)]' },
             ].map((s) => (
               <div key={s.label} className="vl-card">
-                <p className={`text-2xl font-bold ${s.color}`}>{s.val}</p>
+                <p className={`text-2xl font-semibold ${s.color}`}>{s.val}</p>
                 <p className="text-xs text-[var(--color-vl-muted)]">{s.label}</p>
               </div>
             ))}
           </div>
 
           {(addingWish || editingWish) && isHer && (
-            <form onSubmit={submitWish} className="vl-card space-y-3 border-fuchsia-500/30">
+            <form onSubmit={submitWish} className="vl-card space-y-3">
               <input required className="vl-input" placeholder="Desejo / Mimo *" value={wishForm.title} onChange={(e) => setWishForm((f) => ({ ...f, title: e.target.value }))} />
               <textarea className="vl-input resize-none" rows={2} placeholder="Descrição..." value={wishForm.description} onChange={(e) => setWishForm((f) => ({ ...f, description: e.target.value }))} />
               <textarea className="vl-input resize-none" rows={2} placeholder="Como? Pra quê? O que vai rolar?" value={wishForm.como} onChange={(e) => setWishForm((f) => ({ ...f, como: e.target.value }))} />
@@ -350,7 +350,7 @@ export default function MimosPage() {
           )}
 
           {!isHer && (
-            <p className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-3 py-2 text-xs text-cyan-200">
+            <p className="rounded-xl px-3 py-2 text-xs vl-tone-info">
               Pedidos dela — aprove ou negue aqui (ou use Pendências no menu).
             </p>
           )}
@@ -360,7 +360,7 @@ export default function MimosPage() {
           <div className="space-y-2">
             {filteredWishes.length === 0 && (
               <div className="py-10 text-center">
-                <Heart className="mx-auto mb-2 h-10 w-10 text-[var(--color-vl-muted)]/30" />
+                <Heart className="mx-auto mb-2 h-10 w-10 text-[var(--color-vl-muted)] opacity-30" />
                 <p className="text-sm text-[var(--color-vl-muted)]">Nenhum desejo aqui ainda</p>
               </div>
             )}
@@ -371,31 +371,31 @@ export default function MimosPage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium">{w.title}</span>
                       <MimoContextoBadge contexto={w.contexto} size="xs" />
-                      <span className={`rounded-full px-2 py-0.5 text-xs ${PRIORITY_COLORS[w.priority] || ''}`}>{w.priority}</span>
+                      <Badge className={PRIORITY_COLORS[w.priority] || 'vl-badge-neutral'}>{w.priority}</Badge>
                     </div>
                     {w.description && <p className="mt-0.5 text-xs text-[var(--color-vl-muted)]">{w.description}</p>}
-                    <div className="mt-1.5 flex flex-wrap gap-2 text-xs text-[var(--color-vl-muted)]">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-[var(--color-vl-muted)]">
                       <span>{w.category}</span>
                       {w.estimated_cost != null && <span>{fmtBRL(w.estimated_cost)}</span>}
-                      <span className={`rounded-full px-2 py-0.5 ${STATUS_COLORS[w.status] || ''}`}>{w.status}</span>
+                      <Badge className={STATUS_COLORS[w.status] || 'vl-badge-neutral'}>{w.status}</Badge>
                     </div>
-                    {w.como && <p className="mt-1.5 flex items-start gap-1 text-xs italic text-[var(--color-vl-muted)]"><Sparkles size={10} className="mt-0.5 text-fuchsia-400" /> {w.como}</p>}
-                    {w.resposta && <p className="mt-1.5 flex items-start gap-1 text-xs italic"><MessageCircle size={10} className="mt-0.5 text-rose-300" /> "{w.resposta}"</p>}
+                    {w.como && <p className="mt-1.5 flex items-start gap-1 text-xs italic text-[var(--color-vl-muted)]"><Sparkles size={10} className="mt-0.5 text-[var(--color-vl-accent)]" /> {w.como}</p>}
+                    {w.resposta && <p className="mt-1.5 flex items-start gap-1 text-xs italic text-[var(--color-vl-muted)]"><MessageCircle size={10} className="mt-0.5 text-[var(--color-vl-warm)]" /> "{w.resposta}"</p>}
                   </div>
                   <div className="flex gap-1">
                     {w.status === 'pendente' && canApproveMimos && (
                       <>
-                        <button onClick={() => setPendingAction({ id: w.id, title: w.title, type: 'aprovado' })} className="vl-btn-icon text-emerald-400"><Check size={14} /></button>
-                        <button onClick={() => setPendingAction({ id: w.id, title: w.title, type: 'negado' })} className="vl-btn-icon text-rose-400"><X size={14} /></button>
+                        <button onClick={() => setPendingAction({ id: w.id, title: w.title, type: 'aprovado' })} className="vl-btn-icon text-[var(--color-vl-success)]"><Check size={14} /></button>
+                        <button onClick={() => setPendingAction({ id: w.id, title: w.title, type: 'negado' })} className="vl-btn-icon text-[var(--color-vl-danger)]"><X size={14} /></button>
                       </>
                     )}
                     {w.status === 'aprovado' && isHer && (
-                      <button onClick={() => updateWish(w.id, { status: 'realizado' })} className="vl-btn-icon text-violet-400"><Sparkles size={14} /></button>
+                      <button onClick={() => updateWish(w.id, { status: 'realizado' })} className="vl-btn-icon text-[var(--color-vl-accent)]"><Sparkles size={14} /></button>
                     )}
                     {isHer && (
                       <>
                         <button onClick={() => { setEditingWish(w); setWishForm({ title: w.title || '', description: w.description || '', como: w.como || '', category: w.category || 'pessoal', estimated_cost: w.estimated_cost || '', status: w.status, priority: w.priority || 'média', contexto: w.contexto || 'sozinha' }) }} className="vl-btn-icon"><Edit3 size={14} /></button>
-                        <button onClick={() => removeWish(w.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={14} /></button>
+                        <button onClick={() => removeWish(w.id)} className="vl-btn-icon hover:text-[var(--color-vl-danger)]"><Trash2 size={14} /></button>
                       </>
                     )}
                   </div>
@@ -431,14 +431,14 @@ function FixoCard({ item, month, isHer, canEdit, onToggleUsado, onTogglePago, on
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium">{item.nome}</span>
             <MimoContextoBadge contexto={item.contexto} size="xs" />
-            <span className="text-sm font-bold text-rose-300">{fmtBRL(item.valor)}</span>
+            <span className="text-sm font-semibold text-[var(--color-vl-text)]">{fmtBRL(item.valor)}</span>
           </div>
           <p className="mt-0.5 text-xs text-[var(--color-vl-muted)]">{cat}{item.nota ? ` · ${item.nota}` : ''}</p>
         </div>
         {canEdit && (
           <div className="flex gap-1">
             <button onClick={onEdit} className="vl-btn-icon"><Edit3 size={13} /></button>
-            <button onClick={onRemove} className="vl-btn-icon hover:text-rose-400"><Trash2 size={13} /></button>
+            <button onClick={onRemove} className="vl-btn-icon hover:text-[var(--color-vl-danger)]"><Trash2 size={13} /></button>
           </div>
         )}
       </div>
@@ -447,7 +447,7 @@ function FixoCard({ item, month, isHer, canEdit, onToggleUsado, onTogglePago, on
           type="button"
           onClick={onToggleUsado}
           disabled={!isHer}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${used ? 'bg-violet-500/25 text-violet-200' : 'bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)]'} ${!isHer ? 'opacity-70' : ''}`}
+          className={`vl-pill ${used ? 'bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)]' : 'vl-pill-inactive'} ${!isHer ? 'opacity-70' : ''}`}
         >
           <Check size={12} className="inline" /> {isHer ? 'Usei' : 'Ela usou'} {used ? '✓' : ''}
         </button>
@@ -455,7 +455,7 @@ function FixoCard({ item, month, isHer, canEdit, onToggleUsado, onTogglePago, on
           type="button"
           onClick={onTogglePago}
           disabled={!canEdit}
-          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${paid ? 'bg-emerald-500/25 text-emerald-200' : 'bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)]'} ${!canEdit ? 'opacity-60' : ''}`}
+          className={`vl-pill ${paid ? 'bg-[var(--color-vl-success-soft)] text-[var(--color-vl-success)]' : 'vl-pill-inactive'} ${!canEdit ? 'opacity-60' : ''}`}
         >
           <Wallet size={12} className="inline" /> Paguei {paid ? '✓' : ''}
         </button>

@@ -24,12 +24,12 @@ export default function MobileBottomNav({ active, isHer, pendingCount, icons, on
               <span className="relative flex h-8 w-9 items-center justify-center">
                 <Icon size={20} strokeWidth={isActive ? 2.25 : 1.75} />
                 {badge != null && (
-                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white">
+                  <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
                     {badge > 9 ? '9+' : badge}
                   </span>
                 )}
               </span>
-              <span className="max-w-full truncate text-[9px] font-medium leading-tight">{tab.label}</span>
+              <span className="max-w-full truncate text-[11px] font-medium leading-tight">{tab.label}</span>
             </button>
           )
         })}

@@ -52,7 +52,7 @@ export default function PlanejamentoExportModal({ open, onClose, resumo, nome })
           >
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] px-4 py-3 pt-safe print:hidden">
               <div>
-                <p className="font-semibold text-fuchsia-200">Card de planejamento</p>
+                <p className="font-semibold text-[var(--color-vl-text)]">Card de planejamento</p>
                 <p className="text-xs text-[var(--color-vl-muted)]">Salvar PNG ou imprimir / PDF</p>
               </div>
               <div className="flex flex-wrap gap-2">

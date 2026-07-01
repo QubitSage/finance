@@ -122,7 +122,7 @@ export default function AgendaPage() {
             <button type="button" className="vl-btn-primary text-sm" onClick={() => openNew('saida')}>
               <Plus size={14} /> Saída
             </button>
-            <button type="button" className="vl-btn-ghost border border-rose-500/40 text-sm text-rose-200" onClick={() => openNew('date')}>
+            <button type="button" className="vl-btn-ghost border border-[var(--color-vl-warm)] text-sm text-[var(--color-vl-warm)]" onClick={() => openNew('date')}>
               <Plus size={14} /> Date
             </button>
           </div>
@@ -137,13 +137,13 @@ export default function AgendaPage() {
       />
 
       {!canEdit && (
-        <p className="rounded-xl border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs text-violet-200">
+        <p className="rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-accent-soft)] px-3 py-2 text-xs text-[var(--color-vl-accent)]">
           Saídas e dates compartilhados — ela prioriza sozinha e dates; casal só quando ela quiser (aviso prévio).
         </p>
       )}
 
       {canEdit && (
-        <p className="rounded-xl border border-fuchsia-500/25 bg-fuchsia-500/10 px-3 py-2 text-xs text-fuchsia-200">
+        <p className="rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-accent-soft)] px-3 py-2 text-xs text-[var(--color-vl-accent)]">
           Prioridade: sair sozinha e dates. Com ele só se você quiser — avisa bem antes.
         </p>
       )}
@@ -151,7 +151,7 @@ export default function AgendaPage() {
       {adding && canEdit && (
         <form onSubmit={submit} className="vl-card space-y-3">
           <h3 className="flex items-center gap-2 font-semibold">
-            <CalendarHeart size={18} className="text-fuchsia-400" />
+            <CalendarHeart size={18} className="text-[var(--color-vl-accent)]" />
             {editId ? 'Editar' : 'Nova'} {tipoLabel.label.toLowerCase()}
           </h3>
           <div className="flex gap-2">
@@ -160,9 +160,9 @@ export default function AgendaPage() {
                 key={k}
                 type="button"
                 onClick={() => setForm((f) => ({ ...f, tipo: k }))}
-                className={`rounded-xl px-3 py-1.5 text-xs font-medium ${form.tipo === k ? v.className + ' border' : 'bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)]'}`}
+                className={`vl-pill ${form.tipo === k ? 'vl-pill-active' : 'vl-pill-inactive'}`}
               >
-                {v.emoji} {v.label}
+                {v.label}
               </button>
             ))}
           </div>
@@ -229,13 +229,13 @@ export default function AgendaPage() {
                   {canEdit && (
                     <>
                       {s.status === 'planejado' && (
-                        <button type="button" onClick={() => upStatus(s, 'aconteceu')} className="vl-btn-icon text-amber-400" title="Confirmar"><CheckCircle2 size={16} /></button>
+                        <button type="button" onClick={() => upStatus(s, 'aconteceu')} className="vl-btn-icon text-[var(--color-vl-warning)]" title="Confirmar"><CheckCircle2 size={16} /></button>
                       )}
                       {s.status === 'aconteceu' && (
-                        <button type="button" onClick={() => upStatus(s, 'realizado')} className="vl-btn-icon text-emerald-400" title="Realizado"><Sparkles size={16} /></button>
+                        <button type="button" onClick={() => upStatus(s, 'realizado')} className="vl-btn-icon text-[var(--color-vl-success)]" title="Realizado"><Sparkles size={16} /></button>
                       )}
                       <button type="button" onClick={() => startEdit(s)} className="vl-btn-icon"><Edit3 size={15} /></button>
-                      <button type="button" onClick={() => remove(s.id)} className="vl-btn-icon hover:text-rose-400"><Trash2 size={15} /></button>
+                      <button type="button" onClick={() => remove(s.id)} className="vl-btn-icon hover:text-[var(--color-vl-danger)]"><Trash2 size={15} /></button>
                     </>
                   )}
                   {!canEdit && s.status === 'planejado' && (

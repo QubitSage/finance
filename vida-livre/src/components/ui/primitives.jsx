@@ -1,6 +1,6 @@
-export function Badge({ children, className = '' }) {
+export function Badge({ children, className = 'vl-badge-neutral' }) {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${className}`}>
+    <span className={className}>
       {children}
     </span>
   )
@@ -13,6 +13,37 @@ export function EmptyState({ icon: Icon, title, sub, action }) {
       <p className="font-medium text-[var(--color-vl-text)]">{title}</p>
       {sub && <p className="mt-1 max-w-xs text-sm text-[var(--color-vl-muted)]">{sub}</p>}
       {action && <div className="mt-4">{action}</div>}
+    </div>
+  )
+}
+
+export function IconTile({ icon: Icon, size = 16, className = 'vl-tone-accent', tileClassName = 'h-8 w-8' }) {
+  return (
+    <span className={`flex shrink-0 items-center justify-center rounded-lg ${tileClassName} ${className}`}>
+      <Icon size={size} />
+    </span>
+  )
+}
+
+export function ProgressRow({ label, icon, value, max, formatValue }) {
+  const pct = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="flex items-center gap-2 text-[var(--color-vl-text)]">
+          {icon && <IconTile icon={icon} size={14} className="vl-tone-neutral" tileClassName="h-6 w-6" />}
+          {label}
+        </span>
+        <span className="text-[var(--color-vl-muted)]">
+          {formatValue ? formatValue(value, max) : `${pct}%`}
+        </span>
+      </div>
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-vl-elevated)]">
+        <div
+          className="h-full rounded-full bg-[var(--color-vl-accent)] transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
     </div>
   )
 }

@@ -27,10 +27,10 @@ export default function Layout({ active, onNavigate, children }) {
     <div className="vl-app-shell flex min-h-[100dvh]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4 md:flex">
         <div className="mb-6 px-2">
-          <h1 className="bg-gradient-to-r from-fuchsia-300 to-violet-300 bg-clip-text text-lg font-bold text-transparent">
+          <h1 className="text-lg font-semibold text-[var(--color-vl-text)]">
             Vida Livre
           </h1>
-          <p className="mt-1 text-sm font-medium text-fuchsia-200/90">{sessionUser}</p>
+          <p className="mt-1 text-sm font-medium text-[var(--color-vl-accent)]">{sessionUser}</p>
           <p className="mt-0.5 flex items-center gap-1 text-xs text-[var(--color-vl-muted)]">
             <Lock size={10} /> {isHer ? 'Seu espaço privado' : 'Painel do parceiro'}
           </p>
@@ -46,7 +46,7 @@ export default function Layout({ active, onNavigate, children }) {
                 onClick={() => onNavigate(m.id)}
                 className={`relative flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
                   active === m.id
-                    ? 'bg-gradient-to-r from-fuchsia-500/20 to-violet-500/20 text-fuchsia-200'
+                    ? 'bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)]'
                     : 'text-[var(--color-vl-muted)] hover:bg-[var(--color-vl-elevated)] hover:text-[var(--color-vl-text)]'
                 }`}
               >
@@ -69,7 +69,7 @@ export default function Layout({ active, onNavigate, children }) {
       <div className="flex min-h-[100dvh] flex-1 flex-col md:ml-60">
         <header className="vl-mobile-header sticky top-0 z-30 md:hidden">
           <div className="flex items-center gap-3 px-4 pb-3 pt-safe">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-fuchsia-500/30 to-violet-500/20 text-xs font-bold text-fuchsia-200 ring-1 ring-fuchsia-500/20">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--color-vl-accent-soft)] text-xs font-semibold text-[var(--color-vl-accent)]">
               VL
             </div>
             <div className="min-w-0 flex-1">

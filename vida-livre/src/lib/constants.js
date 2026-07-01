@@ -9,21 +9,21 @@ export function resolveUserFromCode(code, user1, user2) {
 }
 
 export const STATUS_SAIDA = {
-  planejado: { label: 'Planejado', className: 'bg-blue-500/15 text-blue-300 border-blue-500/30' },
-  aconteceu: { label: 'Aprovado', className: 'bg-amber-500/15 text-amber-300 border-amber-500/30' },
-  realizado: { label: 'Realizado', className: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30' },
-  cancelado: { label: 'Cancelado', className: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+  planejado: { label: 'Planejado', className: 'vl-badge-info' },
+  aconteceu: { label: 'Aprovado', className: 'vl-badge-warning' },
+  realizado: { label: 'Realizado', className: 'vl-badge-success' },
+  cancelado: { label: 'Cancelado', className: 'vl-badge-danger' },
 }
 
 export const TIPO_AGENDA = {
-  saida: { label: 'Saída', emoji: '🚗', desc: 'Sair sozinha ou acompanhada — prioridade dela', className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30' },
-  date: { label: 'Date', emoji: '💕', desc: 'Encontro romântico com alguém', className: 'bg-rose-500/15 text-rose-300 border-rose-500/30' },
+  saida: { label: 'Saída', emoji: '🚗', desc: 'Sair sozinha ou acompanhada — prioridade dela', className: 'vl-badge-info' },
+  date: { label: 'Date', emoji: '💕', desc: 'Encontro romântico com alguém', className: 'vl-badge-warm' },
 }
 
 export const MIMO_VARIAVEL_STATUS = {
-  disponivel: { label: 'Disponível', className: 'bg-cyan-500/15 text-cyan-300' },
-  resgatado: { label: 'Resgatado', className: 'bg-violet-500/15 text-violet-300' },
-  usado: { label: 'Usado', className: 'bg-emerald-500/15 text-emerald-300' },
+  disponivel: { label: 'Disponível', className: 'vl-badge-info' },
+  resgatado: { label: 'Resgatado', className: 'vl-badge-accent' },
+  usado: { label: 'Usado', className: 'vl-badge-success' },
 }
 
 export const SHARE_NIVEL = {
@@ -33,10 +33,10 @@ export const SHARE_NIVEL = {
 }
 
 export const CAT_COMBINADO = {
-  permitido: { label: 'Permitido', dot: 'bg-emerald-400' },
-  proibido: { label: 'Proibido', dot: 'bg-rose-400' },
-  liberdade: { label: 'Liberdade', dot: 'bg-cyan-400' },
-  protocolo: { label: 'Protocolo', dot: 'bg-amber-400' },
+  permitido: { label: 'Permitido', dot: 'bg-[var(--color-vl-success)]' },
+  proibido: { label: 'Proibido', dot: 'bg-[var(--color-vl-danger)]' },
+  liberdade: { label: 'Liberdade', dot: 'bg-[var(--color-vl-info)]' },
+  protocolo: { label: 'Protocolo', dot: 'bg-[var(--color-vl-warning)]' },
 }
 
 export const CAT_FANTASIA = {
@@ -116,10 +116,10 @@ export const MARCO_TIPO = {
 }
 
 export const MIMO_PERIODICIDADE = {
-  mensal: { label: 'Mensal', className: 'bg-rose-500/15 text-rose-300' },
-  semestral: { label: 'Semestral', className: 'bg-violet-500/15 text-violet-300' },
-  anual: { label: 'Anual', className: 'bg-blue-500/15 text-blue-300' },
-  saida: { label: 'Por saída', className: 'bg-amber-500/15 text-amber-300' },
+  mensal: { label: 'Mensal', className: 'vl-badge-warm' },
+  semestral: { label: 'Semestral', className: 'vl-badge-accent' },
+  anual: { label: 'Anual', className: 'vl-badge-info' },
+  saida: { label: 'Por saída', className: 'vl-badge-warning' },
 }
 
 export const MIMO_CATEGORIA = {
@@ -140,7 +140,7 @@ export const MIMO_CONTEXTO = {
     desc: 'Ela sozinha ou acompanhada de alguém. O mimo é para ela ou para além do casal.',
     mesada: 'Desconta da mesada dela',
     emoji: '🌙',
-    className: 'bg-violet-500/15 text-violet-300 border-violet-500/30',
+    className: 'vl-badge-accent',
   },
   comigo: {
     label: 'Comigo',
@@ -148,7 +148,7 @@ export const MIMO_CONTEXTO = {
     desc: 'Para o marido, para o trabalho ou para nós — usa junto ou no dia a dia do casal.',
     mesada: 'Não desconta da mesada — só avisar aqui',
     emoji: '💑',
-    className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
+    className: 'vl-badge-info',
   },
 }
 
@@ -160,33 +160,29 @@ export const MESADA_ORCAMENTO = {
     label: 'Estética',
     desc: 'Salão, manutenção, unha, pé, cílios e derivados',
     limite: 500,
-    emoji: '💅',
-    className: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-    bar: 'bg-rose-400',
+    icon: 'Sparkles',
+    className: 'vl-tone-accent',
   },
   looks: {
     label: 'Looks',
     desc: 'Roupas, sapatos, vestidos e derivados',
     limite: 600,
-    emoji: '👗',
-    className: 'bg-fuchsia-500/15 text-fuchsia-300 border-fuchsia-500/30',
-    bar: 'bg-fuchsia-400',
+    icon: 'Shirt',
+    className: 'vl-tone-warm',
   },
   dates: {
     label: 'Dates & jantares',
     desc: 'Até 2–3×/mês — ele paga só o seu',
     limite: 500,
-    emoji: '💕',
-    className: 'bg-pink-500/15 text-pink-300 border-pink-500/30',
-    bar: 'bg-pink-400',
+    icon: 'Heart',
+    className: 'vl-tone-info',
   },
   saida_livre: {
     label: 'Saídas livres',
     desc: 'Imprevistos e última hora',
     limite: 400,
-    emoji: '🚗',
-    className: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30',
-    bar: 'bg-cyan-400',
+    icon: 'Car',
+    className: 'vl-tone-success',
   },
 }
 
