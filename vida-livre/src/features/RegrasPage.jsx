@@ -20,7 +20,9 @@ export default function RegrasPage() {
   const [form, setForm] = useState(EMPTY_FORM)
 
   useEffect(() => {
-    fetchAll('vl_regras_intro').then((rows) => setIntro(rows[0]?.texto || ''))
+    fetchAll('vl_regras_intro', { order: 'id', ascending: true })
+      .then((rows) => setIntro(rows[0]?.texto || ''))
+      .catch((err) => console.error('Falha ao carregar introdução:', err.message))
   }, [])
 
   const saveIntro = () => {
