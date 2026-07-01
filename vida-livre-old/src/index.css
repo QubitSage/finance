@@ -1,0 +1,266 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", system-ui, sans-serif;
+
+  /* Neutral surface scale (light default) */
+  --color-vl-bg: #fafaf9;
+  --color-vl-surface: #ffffff;
+  --color-vl-elevated: #f5f5f4;
+  --color-vl-border: #e7e5e4;
+  --color-vl-muted: #78716c;
+  --color-vl-text: #1c1917;
+
+  /* Accents — one primary, one low-frequency warm accent */
+  --color-vl-accent: #6d28d9;
+  --color-vl-accent-soft: #ede9fe;
+  --color-vl-warm: #e11d48;
+  --color-vl-warm-soft: #ffe4e6;
+
+  /* Semantic status, desaturated */
+  --color-vl-success: #15803d;
+  --color-vl-success-soft: #dcfce7;
+  --color-vl-warning: #b45309;
+  --color-vl-warning-soft: #fef3c7;
+  --color-vl-danger: #be123c;
+  --color-vl-danger-soft: #ffe4e6;
+  --color-vl-info: #0369a1;
+  --color-vl-info-soft: #e0f2fe;
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    overflow-x: clip;
+  }
+
+  /* Dark mode: same token names, follows OS preference automatically */
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-vl-bg: #0c0a12;
+      --color-vl-surface: #14101f;
+      --color-vl-elevated: #1c1629;
+      --color-vl-border: #2a2238;
+      --color-vl-muted: #948aa8;
+      --color-vl-text: #f0eaf8;
+
+      --color-vl-accent: #c4b5fd;
+      --color-vl-accent-soft: #2e2249;
+      --color-vl-warm: #fb7185;
+      --color-vl-warm-soft: #3a1620;
+
+      --color-vl-success: #4ade80;
+      --color-vl-success-soft: #14351f;
+      --color-vl-warning: #fbbf24;
+      --color-vl-warning-soft: #3a2c0d;
+      --color-vl-danger: #fb7185;
+      --color-vl-danger-soft: #3a1620;
+      --color-vl-info: #38bdf8;
+      --color-vl-info-soft: #0f2c3a;
+    }
+  }
+
+  body {
+    @apply bg-[var(--color-vl-bg)] text-[var(--color-vl-text)] font-sans antialiased;
+    overscroll-behavior-y: none;
+  }
+}
+
+/*
+  Spacing convention (no custom tokens — use Tailwind's scale consistently):
+  - inline gaps: gap-2 (tight icon+text), gap-3 (default)
+  - stacking:    space-y-3 inside a card, space-y-5 between fields,
+                 space-y-6 / space-y-8 between page sections
+  - card padding: p-4 md:p-6 (mobile-first)
+*/
+
+@layer components {
+  .vl-app-shell {
+    background: var(--color-vl-bg);
+  }
+
+  .pt-safe {
+    padding-top: max(env(safe-area-inset-top, 0px), 0.5rem);
+  }
+
+  .pb-safe {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+  }
+
+  .vl-mobile-header {
+    background: color-mix(in srgb, var(--color-vl-bg) 88%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--color-vl-border);
+  }
+
+  .vl-main-content {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 768px) {
+    .vl-main-content {
+      padding-bottom: 1.5rem;
+    }
+  }
+
+  .vl-bottom-nav {
+    background: color-mix(in srgb, var(--color-vl-surface) 94%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--color-vl-border);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.35rem);
+  }
+
+  .vl-tab-btn {
+    @apply rounded-xl text-[var(--color-vl-muted)] transition-all active:scale-95;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .vl-tab-btn-active {
+    @apply rounded-xl bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)];
+  }
+
+  .vl-card {
+    @apply rounded-2xl border border-[var(--color-vl-border)] bg-[var(--color-vl-surface)] p-4 shadow-sm md:p-6;
+  }
+  .vl-card-highlight {
+    @apply rounded-2xl border border-[var(--color-vl-border)] border-l-2 border-l-[var(--color-vl-accent)] bg-[var(--color-vl-surface)] p-4 shadow-sm md:p-6;
+  }
+  .vl-input {
+    @apply w-full rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] px-3 py-2.5 text-sm text-[var(--color-vl-text)] placeholder:text-[var(--color-vl-muted)] outline-none transition-all focus:border-[var(--color-vl-accent)] focus:ring-2 focus:ring-[var(--color-vl-accent)]/15;
+  }
+
+  @media (max-width: 767px) {
+    .vl-input {
+      @apply py-3 text-base;
+    }
+    .vl-btn-primary {
+      @apply min-h-11 px-5 py-3;
+    }
+    .vl-btn-ghost {
+      @apply min-h-11 px-5 py-3;
+    }
+    .vl-btn-icon {
+      @apply h-11 w-11;
+    }
+  }
+  .vl-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--color-vl-accent)] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98];
+  }
+  .vl-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] px-4 py-2.5 text-sm font-medium text-[var(--color-vl-muted)] transition-all hover:border-[var(--color-vl-accent)]/40 hover:text-[var(--color-vl-text)] active:scale-[0.98];
+  }
+  .vl-btn-icon {
+    @apply flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)] transition-all hover:border-[var(--color-vl-accent)]/40 hover:text-[var(--color-vl-text)];
+  }
+  .vl-pill {
+    @apply flex-shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all;
+  }
+  .vl-pill-active {
+    @apply bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)];
+  }
+  .vl-pill-inactive {
+    @apply border border-[var(--color-vl-border)] bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)] hover:border-[var(--color-vl-accent)]/30 hover:text-[var(--color-vl-text)];
+  }
+  .vl-label {
+    @apply mb-1 block text-xs font-medium text-[var(--color-vl-muted)];
+  }
+  .vl-section-title {
+    @apply mb-2 text-sm font-semibold text-[var(--color-vl-muted)];
+  }
+  .vl-divider {
+    @apply border-t border-[var(--color-vl-border)];
+  }
+
+  /* Tone = color pair only (bg + text), for icon tiles and other unshaped uses */
+  .vl-tone-neutral {
+    @apply bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)];
+  }
+  .vl-tone-accent {
+    @apply bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)];
+  }
+  .vl-tone-warm {
+    @apply bg-[var(--color-vl-warm-soft)] text-[var(--color-vl-warm)];
+  }
+  .vl-tone-success {
+    @apply bg-[var(--color-vl-success-soft)] text-[var(--color-vl-success)];
+  }
+  .vl-tone-warning {
+    @apply bg-[var(--color-vl-warning-soft)] text-[var(--color-vl-warning)];
+  }
+  .vl-tone-danger {
+    @apply bg-[var(--color-vl-danger-soft)] text-[var(--color-vl-danger)];
+  }
+  .vl-tone-info {
+    @apply bg-[var(--color-vl-info-soft)] text-[var(--color-vl-info)];
+  }
+
+  /* Badge = tone + pill shape, for status/category tags */
+  .vl-badge,
+  .vl-badge-neutral,
+  .vl-badge-accent,
+  .vl-badge-warm,
+  .vl-badge-success,
+  .vl-badge-warning,
+  .vl-badge-danger,
+  .vl-badge-info {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium;
+  }
+  .vl-badge-neutral {
+    @apply bg-[var(--color-vl-elevated)] text-[var(--color-vl-muted)];
+  }
+  .vl-badge-accent {
+    @apply bg-[var(--color-vl-accent-soft)] text-[var(--color-vl-accent)];
+  }
+  .vl-badge-warm {
+    @apply bg-[var(--color-vl-warm-soft)] text-[var(--color-vl-warm)];
+  }
+  .vl-badge-success {
+    @apply bg-[var(--color-vl-success-soft)] text-[var(--color-vl-success)];
+  }
+  .vl-badge-warning {
+    @apply bg-[var(--color-vl-warning-soft)] text-[var(--color-vl-warning)];
+  }
+  .vl-badge-danger {
+    @apply bg-[var(--color-vl-danger-soft)] text-[var(--color-vl-danger)];
+  }
+  .vl-badge-info {
+    @apply bg-[var(--color-vl-info-soft)] text-[var(--color-vl-info)];
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .planejamento-print-card,
+  .planejamento-print-card * {
+    visibility: visible;
+  }
+
+  .planejamento-print-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}
